@@ -2,14 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { GroceryItem, GroceryListState } from "@/lib/types";
-import { loadGroceryList, saveGroceryList } from "@/lib/storage";
+import { createItemId } from "@/lib/ids";
+import {
+  clearCorruptedGroceryList,
+  loadGroceryList,
+  saveGroceryList,
+  sanitizeGroceryList,
+} from "@/lib/storage";
 
 export function useGroceryList() {
   const [items, setItems] = useState<GroceryListState>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setItems(loadGroceryList());
+    const loaded = loadGroceryList();
+    const { items: clean } = sanitizeGroceryList(loaded);
+    setItems(clean);
     setHydrated(true);
   }, []);
 
@@ -29,21 +37,21 @@ export function useGroceryList() {
   const addItem = useCallback((name: string, aisleId: GroceryItem["aisleId"]) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? `item-${crypto.randomUUID()}`
-        : `item-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const item: GroceryItem = {
-      id,
+      id: createItemId("item"),
       name: trimmed,
       aisleId,
       checked: false,
     };
-    setItems((prev) => [...prev, item]);
+    setItems((prev) => {
+      const next = [...prev, item];
+      const { items: clean } = sanitizeGroceryList(next);
+      return clean;
+    });
   }, []);
 
   const resetToSample = useCallback(() => {
-    setItems(loadGroceryList());
+    setItems(clearCorruptedGroceryList());
   }, []);
 
   return { items, hydrated, toggleItem, addItem, resetToSample, setItems };

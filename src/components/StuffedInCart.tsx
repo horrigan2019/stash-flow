@@ -3,6 +3,7 @@
 import { ChevronDown, ShoppingCart } from "lucide-react";
 import type { GroceryItem } from "@/lib/types";
 import { AISLES } from "@/lib/aisles";
+import { uniqueById } from "@/lib/unique-by-id";
 
 interface StuffedInCartProps {
   items: GroceryItem[];
@@ -21,6 +22,8 @@ export function StuffedInCart({
   onToggleOpen,
   onToggleItem,
 }: StuffedInCartProps) {
+  const uniqueItems = uniqueById(items);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-emerald-50/60">
       <button
@@ -33,9 +36,9 @@ export function StuffedInCart({
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-emerald-950">Stuffed in Cart</h3>
           <p className="text-xs text-emerald-800/80">
-            {items.length === 0
+            {uniqueItems.length === 0
               ? "Checked items land here"
-              : `${items.length} item${items.length === 1 ? "" : "s"} bagged`}
+              : `${uniqueItems.length} item${uniqueItems.length === 1 ? "" : "s"} bagged`}
           </p>
         </div>
         <ChevronDown
@@ -48,12 +51,12 @@ export function StuffedInCart({
 
       {open ? (
         <ul className="space-y-1 border-t border-emerald-200/60 px-2 py-2">
-          {items.length === 0 ? (
+          {uniqueItems.length === 0 ? (
             <li className="px-3 py-2 text-sm text-emerald-800/70">
               Cart is empty — check items as you walk.
             </li>
           ) : (
-            items.map((item) => (
+            uniqueItems.map((item) => (
               <li key={item.id}>
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-emerald-100/60">
                   <input

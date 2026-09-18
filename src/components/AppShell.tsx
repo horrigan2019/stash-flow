@@ -6,15 +6,14 @@ import { BottomNav } from "@/components/BottomNav";
 import { WeeklyStash } from "@/components/WeeklyStash";
 import { FeastRunway } from "@/components/FeastRunway";
 import { PantrySettings } from "@/components/PantrySettings";
-import { SAMPLE_ITEMS } from "@/lib/sample-data";
-import { saveGroceryList } from "@/lib/storage";
+import { clearCorruptedGroceryList } from "@/lib/storage";
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>("weekly-stash");
   const [stashKey, setStashKey] = useState(0);
 
   function handleResetStash() {
-    saveGroceryList(SAMPLE_ITEMS.map((item) => ({ ...item })));
+    clearCorruptedGroceryList();
     setStashKey((k) => k + 1);
     setActiveTab("weekly-stash");
   }

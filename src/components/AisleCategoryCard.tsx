@@ -2,6 +2,7 @@
 
 import { ChevronDown, Lock } from "lucide-react";
 import type { AisleMeta, GroceryItem } from "@/lib/types";
+import { uniqueById } from "@/lib/unique-by-id";
 
 interface AisleCategoryCardProps {
   aisle: AisleMeta;
@@ -18,7 +19,7 @@ export function AisleCategoryCard({
   onToggleOpen,
   onToggleItem,
 }: AisleCategoryCardProps) {
-  const pending = items.filter((i) => !i.checked);
+  const pending = uniqueById(items.filter((i) => !i.checked));
   const countLabel =
     pending.length === 0
       ? "All stuffed"
