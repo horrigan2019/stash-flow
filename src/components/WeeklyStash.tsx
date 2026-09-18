@@ -26,7 +26,7 @@ function guessAisle(phrase: string): AisleId {
 }
 
 export function WeeklyStash() {
-  const { items, hydrated, toggleItem, addItem } = useGroceryList();
+  const { items, hydrated, toggleItem, addItems } = useGroceryList();
   const [openAisles, setOpenAisles] = useState<Record<string, boolean>>({
     produce: true,
   });
@@ -57,10 +57,14 @@ export function WeeklyStash() {
       .replace(/^we need\s+/i, "")
       .replace(/^add\s+/i, "")
       .split(/\s+and\s+/i);
-    for (const part of parts) {
-      const name = part.trim();
-      if (name) addItem(name.charAt(0).toUpperCase() + name.slice(1), guessAisle(name));
-    }
+    const entries = parts
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((name) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        aisleId: guessAisle(name),
+      }));
+    addItems(entries);
   }
 
   if (!hydrated) {

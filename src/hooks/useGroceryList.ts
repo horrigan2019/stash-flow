@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { GroceryItem, GroceryListState } from "@/lib/types";
+import type { AisleId, GroceryItem, GroceryListState } from "@/lib/types";
 import { createItemId } from "@/lib/ids";
 import {
   clearCorruptedGroceryList,
+  ensureUniqueItemIds,
   loadGroceryList,
   saveGroceryList,
   sanitizeGroceryList,
@@ -15,9 +16,10 @@ export function useGroceryList() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // loadGroceryList already sanitizes + rewrites corrupted localStorage.
     const loaded = loadGroceryList();
     const { items: clean } = sanitizeGroceryList(loaded);
-    setItems(clean);
+    setItems(ensureUniqueItemIds(clean));
     setHydrated(true);
   }, []);
 
@@ -34,7 +36,7 @@ export function useGroceryList() {
     );
   }, []);
 
-  const addItem = useCallback((name: string, aisleId: GroceryItem["aisleId"]) => {
+  const addItem = useCallback((name: string, aisleId: AisleId) => {
     const trimmed = name.trim();
     if (!trimmed) return;
     const item: GroceryItem = {
@@ -44,15 +46,48 @@ export function useGroceryList() {
       checked: false,
     };
     setItems((prev) => {
-      const next = [...prev, item];
-      const { items: clean } = sanitizeGroceryList(next);
-      return clean;
+      const next = ensureUniqueItemIds([...prev, item]);
+      return sanitizeGroceryList(next).items;
     });
   }, []);
+
+  /** Batch add (voice spill) — one state update, unique id per entry. */
+  const addItems = useCallback(
+    (entries: { name: string; aisleId: AisleId }[]) => {
+      const prepared = entries
+        .map(({ name, aisleId }) => ({
+          name: name.trim(),
+          aisleId,
+        }))
+        .filter((e) => e.name.length > 0)
+        .map(({ name, aisleId }) => ({
+          id: createItemId("item"),
+          name,
+          aisleId,
+          checked: false,
+        }));
+
+      if (prepared.length === 0) return;
+
+      setItems((prev) => {
+        const next = ensureUniqueItemIds([...prev, ...prepared]);
+        return sanitizeGroceryList(next).items;
+      });
+    },
+    [],
+  );
 
   const resetToSample = useCallback(() => {
     setItems(clearCorruptedGroceryList());
   }, []);
 
-  return { items, hydrated, toggleItem, addItem, resetToSample, setItems };
+  return {
+    items,
+    hydrated,
+    toggleItem,
+    addItem,
+    addItems,
+    resetToSample,
+    setItems,
+  };
 }
