@@ -29,8 +29,12 @@ export function useGroceryList() {
   const addItem = useCallback((name: string, aisleId: GroceryItem["aisleId"]) => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `item-${crypto.randomUUID()}`
+        : `item-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const item: GroceryItem = {
-      id: `voice-${Date.now()}`,
+      id,
       name: trimmed,
       aisleId,
       checked: false,
