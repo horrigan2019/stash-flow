@@ -1,0 +1,2905 @@
+<title>Oh Stuffing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  :root{
+    --bg:#FBF7F0;
+    --surface:#FFFFFF;
+    --surface-2:#F3ECDC;
+    --ink:#2B2620;
+    --muted:#6B6255;
+    --accent:#3F6B4A;
+    --accent-ink:#FFFFFF;
+    --accent-2:#E0703A;
+    --accent-2-ink:#FFFFFF;
+    --border:#E4DCC9;
+    --danger:#B23B3B;
+    --radius:16px;
+    --focus:#2B6CB0;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1B1812;
+      --surface:#242019;
+      --surface-2:#2E2919;
+      --ink:#F3EEE3;
+      --muted:#B8AD98;
+      --accent:#6FA87D;
+      --accent-ink:#12281A;
+      --accent-2:#F08B57;
+      --accent-2-ink:#3A1A08;
+      --border:#3A3327;
+      --danger:#E07A7A;
+      --focus:#7FB2E8;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1B1812;
+    --surface:#242019;
+    --surface-2:#2E2919;
+    --ink:#F3EEE3;
+    --muted:#B8AD98;
+    --accent:#6FA87D;
+    --accent-ink:#12281A;
+    --accent-2:#F08B57;
+    --accent-2-ink:#3A1A08;
+    --border:#3A3327;
+    --danger:#E07A7A;
+    --focus:#7FB2E8;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Karla","Trebuchet MS",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body[data-textsize="large"]{ font-size:118%; }
+  body[data-textsize="xl"]{ font-size:138%; }
+  body[data-contrast="high"]{
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#EFEFEF;
+    --ink:#000000; --muted:#2A2A2A; --border:#000000;
+    --accent:#1F5C2E; --accent-ink:#FFFFFF;
+    --accent-2:#A6420F; --accent-2-ink:#FFFFFF;
+  }
+  body[data-contrast="high"][data-theme="dark"],
+  body[data-contrast="high"]:not([data-theme="light"]){
+  }
+  @media (prefers-color-scheme:dark){
+    body[data-contrast="high"]:not([data-theme="light"]){
+      --bg:#000000; --surface:#000000; --surface-2:#141414;
+      --ink:#FFFFFF; --muted:#DDDDDD; --border:#FFFFFF;
+      --accent:#7FE39B; --accent-ink:#00230D;
+      --accent-2:#FFB58A; --accent-2-ink:#3A1A08;
+    }
+  }
+  body[data-contrast="high"][data-theme="dark"]{
+    --bg:#000000; --surface:#000000; --surface-2:#141414;
+    --ink:#FFFFFF; --muted:#DDDDDD; --border:#FFFFFF;
+    --accent:#7FE39B; --accent-ink:#00230D;
+    --accent-2:#FFB58A; --accent-2-ink:#3A1A08;
+  }
+
+  h1,h2,h3{ font-family:"Fraunces","Georgia",serif; font-weight:600; margin:0; text-wrap:balance; }
+  .wrap{ max-width:560px; margin:0 auto; padding:0 16px 120px; }
+
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+    background:var(--bg);
+    padding:14px 16px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .brand h1{ font-size:1.5rem; color:var(--accent); }
+  .brand .tag{ color:var(--muted); font-size:.8rem; }
+  .gear{
+    border:1px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:999px; width:44px; height:44px; font-size:1.1rem; cursor:pointer; flex:none;
+  }
+  .gear:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:3px solid var(--focus); outline-offset:2px;
+  }
+
+  form.add{ display:flex; gap:8px; margin-top:12px; }
+  .add input[type=text]{
+    flex:1; min-width:0; font-size:1.05rem; padding:14px 14px;
+    border-radius:var(--radius); border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink);
+  }
+  .mic-btn, .add-btn{
+    flex:none; width:52px; height:52px; border-radius:999px; border:none;
+    font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .add-btn{ background:var(--accent); color:var(--accent-ink); }
+  .mic-btn{ background:var(--accent-2); color:var(--accent-2-ink); }
+  .mic-btn[data-listening="true"]{ animation:pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(224,112,58,.45);} 50%{ box-shadow:0 0 0 10px rgba(224,112,58,0);} }
+  @media (prefers-reduced-motion:reduce){ .mic-btn[data-listening="true"]{ animation:none; } }
+
+  .hint{ color:var(--muted); font-size:.82rem; margin-top:8px; }
+  .listen-banner{
+    margin-top:10px; padding:10px 12px; border-radius:12px;
+    background:var(--surface-2); color:var(--ink); font-size:.9rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-2); flex:none; }
+
+  .toolbar{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .chip-btn{
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:999px; padding:8px 14px; font-size:.85rem; cursor:pointer;
+  }
+  .chip-btn[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+
+  main{ margin-top:14px; }
+  .dept{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    margin-bottom:12px; overflow:hidden;
+  }
+  .dept-head{
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    background:var(--surface-2);
+  }
+  .dept-emoji{ font-size:1.2rem; flex:none; }
+  .dept-name{ font-family:"Fraunces",serif; font-weight:600; font-size:1.05rem; flex:1; }
+  .dept-count{
+    font-variant-numeric:tabular-nums; font-size:.8rem; color:var(--muted);
+    background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:2px 9px;
+  }
+  .reorder-btns{ display:none; gap:4px; }
+  .reorder-btns.on{ display:flex; }
+  .reorder-btns button{
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink); cursor:pointer; font-size:.9rem;
+  }
+
+  ul.items{ list-style:none; margin:0; padding:6px 6px 10px; }
+  ul.items li{
+    display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:10px;
+  }
+  ul.items li:hover{ background:var(--surface-2); }
+  ul.items li input[type=checkbox]{ width:22px; height:22px; flex:none; accent-color:var(--accent); }
+  .item-text{ flex:1; font-size:1rem; }
+  li.done .item-text{ text-decoration:line-through; color:var(--muted); }
+  .move-btn{
+    border:none; background:transparent; color:var(--muted); font-size:1rem; cursor:pointer;
+    width:32px; height:32px; border-radius:8px; flex:none;
+  }
+  .move-btn:hover{ background:var(--surface-2); color:var(--ink); }
+  .move-btn.repeat-on{ color:var(--accent-2); }
+
+  .empty{
+    text-align:center; padding:40px 20px; color:var(--muted);
+  }
+
+  .footer-actions{
+    position:sticky; bottom:env(safe-area-inset-bottom,0px); z-index:10;
+    background:var(--bg); border-top:1px solid var(--border);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    display:flex; gap:10px; max-width:560px; margin:0 auto;
+  }
+  .footer-actions button{
+    flex:1; padding:12px; border-radius:12px; font-size:.95rem; cursor:pointer;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+  }
+  .footer-actions button.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+
+  dialog{
+    border:none; border-radius:var(--radius); padding:0; color:var(--ink); background:var(--surface);
+    max-width:420px; width:calc(100% - 32px);
+  }
+  dialog::backdrop{ background:rgba(0,0,0,.4); }
+  .dialog-inner{ padding:18px; }
+  .dialog-inner h2{ font-size:1.15rem; margin-bottom:12px; }
+  .field-row{ margin-bottom:16px; }
+  .field-row label{ display:block; font-size:.85rem; color:var(--muted); margin-bottom:6px; }
+  .seg{ display:flex; gap:6px; }
+  .seg button{
+    flex:1; padding:9px; border-radius:9px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); cursor:pointer; font-size:.85rem;
+  }
+  .seg button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .color-swatches{ display:flex; gap:12px; flex-wrap:wrap; }
+  .color-swatch{
+    width:36px; height:36px; border-radius:50%; border:2px solid var(--border);
+    cursor:pointer; padding:0; position:relative; box-sizing:border-box;
+  }
+  .color-swatch[aria-pressed="true"]{ border-color:var(--ink); box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+  .color-swatch[aria-pressed="true"]::after{
+    content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:.95rem; text-shadow:0 1px 2px rgba(0,0,0,.6);
+  }
+  select.dept-select{
+    width:100%; padding:10px; border-radius:9px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:.95rem;
+  }
+  .dialog-close{
+    display:block; width:100%; margin-top:6px; padding:11px; border-radius:10px;
+    background:var(--accent); color:var(--accent-ink); border:none; font-size:.95rem; cursor:pointer;
+  }
+
+  .item-meta{ display:block; font-size:.78rem; color:var(--muted); margin-top:2px; }
+
+  .meal-form{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .meal-form input, .meal-form textarea{
+    font-size:.95rem; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-family:inherit; resize:vertical;
+  }
+  .meal-form button{
+    padding:11px; border-radius:10px; border:none; background:var(--accent); color:var(--accent-ink);
+    font-size:.95rem; cursor:pointer;
+  }
+  .meal-list{ list-style:none; margin:0; padding:0; border-top:1px solid var(--border); }
+  .meal-list li{
+    display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-bottom:1px solid var(--border);
+  }
+  .meal-name{ font-weight:700; }
+  .meal-ing{ font-size:.85rem; color:var(--muted); }
+  .meal-del{
+    flex:none; border:none; background:transparent; color:var(--danger); font-size:1rem; cursor:pointer;
+    width:32px; height:32px; border-radius:8px;
+  }
+  .meal-del:hover{ background:var(--surface-2); }
+  .meal-empty{ color:var(--muted); font-size:.88rem; padding:8px 0 14px; }
+
+  .waste-stats{
+    display:flex; gap:10px; margin-bottom:14px;
+  }
+  .waste-stat{
+    flex:1; background:var(--surface-2); border-radius:12px; padding:10px 12px; text-align:center;
+  }
+  .waste-stat b{ display:block; font-size:1.3rem; font-variant-numeric:tabular-nums; font-family:"Fraunces",serif; }
+  .waste-stat span{ font-size:.72rem; color:var(--muted); }
+
+  .waste-form{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .waste-form-row{ display:flex; gap:8px; }
+  .waste-form input[type=text]{
+    flex:1; min-width:0; font-size:.95rem; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink);
+  }
+  .waste-form select{
+    font-size:.9rem; padding:10px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); flex:none;
+  }
+  .waste-form button{
+    padding:11px; border-radius:10px; border:none; background:var(--accent); color:var(--accent-ink);
+    font-size:.95rem; cursor:pointer;
+  }
+
+  .waste-list{ list-style:none; margin:0; padding:0; border-top:1px solid var(--border); }
+  .waste-list li{
+    display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border);
+  }
+  .waste-body{ flex:1; min-width:0; }
+  .waste-name{ font-weight:700; }
+  .waste-when{ font-size:.82rem; margin-top:2px; }
+  .badge{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:.78rem; font-weight:600; }
+  .badge-green{ background:#DCEFDE; color:#1F5C2E; }
+  .badge-yellow{ background:#FBEBC4; color:#7A5A00; }
+  .badge-red{ background:#F6D9D6; color:#8A2A22; }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]) .badge-green{ background:#1E3324; color:#9BE3AC; }
+    :root:not([data-theme="light"]) .badge-yellow{ background:#3A2F0F; color:#F0CE72; }
+    :root:not([data-theme="light"]) .badge-red{ background:#3A1E1B; color:#F1A79E; }
+  }
+  :root[data-theme="dark"] .badge-green{ background:#1E3324; color:#9BE3AC; }
+  :root[data-theme="dark"] .badge-yellow{ background:#3A2F0F; color:#F0CE72; }
+  :root[data-theme="dark"] .badge-red{ background:#3A1E1B; color:#F1A79E; }
+  .waste-actions{ display:flex; gap:4px; flex:none; }
+  .waste-actions button{
+    border:1px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:8px; padding:6px 9px; font-size:.82rem; cursor:pointer;
+  }
+  .waste-empty{ color:var(--muted); font-size:.88rem; padding:8px 0 16px; }
+
+  .event-card{
+    border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:14px; background:var(--surface-2);
+  }
+  .event-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:4px; }
+  .event-name{ font-family:"Fraunces",serif; font-weight:600; font-size:1.05rem; }
+  .event-countdown{ font-size:.8rem; color:var(--muted); white-space:nowrap; }
+  .event-section-label{ font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:10px 0 4px; }
+  .event-chip-list{ display:flex; flex-wrap:wrap; gap:6px; }
+  .event-chip{
+    display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:.82rem;
+    background:var(--surface); border:1px solid var(--border);
+  }
+  .event-chip.ready{ border-color:var(--accent); }
+  .event-chip.added{ opacity:.55; text-decoration:line-through; }
+
+  .store-chip{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:.82rem;
+    background:var(--surface); border:1px solid var(--border); margin:0 6px 6px 0;
+  }
+  .store-chip .membership-tag{ font-size:.72rem; color:var(--accent-2); }
+  .store-chip button{ border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:.85rem; padding:0; }
+  #priceTable th, #priceTable td{ padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+  #priceTable th{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  #priceTable input[type=number]{
+    width:70px; padding:6px; border-radius:8px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:.85rem;
+  }
+  .plan-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 12px; border-radius:10px; background:var(--surface-2); margin-bottom:6px;
+  }
+  .plan-row.best{ border:1.5px solid var(--accent); }
+  .plan-stops{ font-weight:700; }
+  .plan-total{ font-variant-numeric:tabular-nums; }
+  .plan-note{ font-size:.78rem; color:var(--muted); }
+  .plan-detail-store{
+    border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-top:8px; background:var(--surface);
+  }
+  .plan-detail-store h4{ font-size:.9rem; margin:0 0 4px; }
+
+  .camera-row{ display:flex; gap:10px; margin-bottom:4px; }
+  .camera-tile{
+    position:relative; flex:1; aspect-ratio:1/1; border-radius:14px;
+    border:1.5px dashed var(--border); background:var(--surface-2); overflow:hidden;
+  }
+  .camera-tile input[type=file]{
+    position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;
+  }
+  .camera-tile-label{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; text-align:center; font-size:.82rem; color:var(--muted); pointer-events:none; padding:8px;
+  }
+  .camera-tile-icon{ font-size:1.6rem; }
+  .camera-tile-preview{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  }
+  .camera-retake{
+    position:absolute; top:6px; right:6px; width:28px; height:28px; border-radius:999px;
+    border:none; background:rgba(0,0,0,.55); color:#fff; font-size:.85rem; cursor:pointer; z-index:2;
+  }
+
+  .produce-lookup{ margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+  .produce-lookup h3{ font-size:.95rem; margin-bottom:8px; }
+  .produce-tip-box{
+    margin-top:8px; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:.9rem; min-height:20px;
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div>
+        <h1>Oh Stuffing</h1>
+        <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
+      </div>
+      <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
+    </div>
+
+    <form class="add" id="addForm">
+      <label for="itemInput" style="position:absolute;left:-9999px;">Add grocery items</label>
+      <input type="text" id="itemInput" placeholder="Type items, like: apples, eggs, waffles" autocomplete="off">
+      <button type="button" class="mic-btn" id="micBtn" aria-label="Add items by voice" aria-pressed="false">🎤</button>
+      <button type="submit" class="add-btn" aria-label="Add to list">+</button>
+    </form>
+    <div class="hint" id="micHint">Tip: tap the mic, say "flour, eggs, and bananas," then tap again to stop. Works in Chrome, Edge, and Safari once Oh Stuffing is live on its own site (blocked in this preview) — not a "hey Oh Stuffing" wake word, just tap-to-talk.</div>
+    <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
+
+    <div class="toolbar">
+      <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
+      <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
+      <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
+      <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
+      <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
+      <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
+      <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
+      <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
+      <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
+      <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
+      <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
+    </div>
+  </header>
+
+  <main id="listArea"></main>
+</div>
+
+<div class="footer-actions">
+  <button type="button" class="primary" id="startOverBtn">Clear whole list</button>
+</div>
+
+<dialog id="settingsDialog">
+  <div class="dialog-inner">
+    <h2>Settings</h2>
+    <div class="field-row">
+      <label>Text size</label>
+      <div class="seg" id="textSizeSeg">
+        <button data-val="normal" type="button" aria-pressed="true">Normal</button>
+        <button data-val="large" type="button" aria-pressed="false">Large</button>
+        <button data-val="xl" type="button" aria-pressed="false">Extra large</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Contrast</label>
+      <div class="seg" id="contrastSeg">
+        <button data-val="normal" type="button" aria-pressed="true">Standard</button>
+        <button data-val="high" type="button" aria-pressed="false">High contrast</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>App look</label>
+      <div class="seg" id="themeSeg">
+        <button data-val="system" type="button" aria-pressed="true">Match device</button>
+        <button data-val="light" type="button" aria-pressed="false">Light</button>
+        <button data-val="dark" type="button" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>App color</label>
+      <div class="color-swatches" id="accentSeg">
+        <button class="color-swatch" type="button" data-val="green" aria-pressed="true" style="background:#3F6B4A" aria-label="Green (default)"></button>
+        <button class="color-swatch" type="button" data-val="blue" aria-pressed="false" style="background:#2F5D8A" aria-label="Blue"></button>
+        <button class="color-swatch" type="button" data-val="purple" aria-pressed="false" style="background:#6A4C93" aria-label="Purple"></button>
+        <button class="color-swatch" type="button" data-val="teal" aria-pressed="false" style="background:#1D7A72" aria-label="Teal"></button>
+        <button class="color-swatch" type="button" data-val="berry" aria-pressed="false" style="background:#8C2F5A" aria-label="Berry"></button>
+        <button class="color-swatch" type="button" data-val="slate" aria-pressed="false" style="background:#3D4A5C" aria-label="Slate"></button>
+      </div>
+      <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
+    </div>
+    <button class="dialog-close" id="closeSettings" type="button">Done</button>
+  </div>
+</dialog>
+
+<dialog id="repeatDialog">
+  <div class="dialog-inner">
+    <h2 id="repeatTitle">Repeat this item?</h2>
+    <div class="field-row">
+      <label for="repeatSelect">Oh Stuffing will add it back for you automatically — no need to retype it</label>
+      <select class="dept-select" id="repeatSelect">
+        <option value="0">Don't repeat</option>
+        <option value="7">Every week</option>
+        <option value="14">Every 2 weeks</option>
+        <option value="30">Every month</option>
+        <option value="monthly2">Twice a month, on set dates (e.g. paydays)</option>
+      </select>
+    </div>
+    <div class="field-row" id="monthlyDatesRow" hidden>
+      <label>Which dates each month? (1–28, to stay safe across short months)</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="repeatDate1" min="1" max="28" value="1" style="width:70px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+        <span>and</span>
+        <input type="number" id="repeatDate2" min="1" max="28" value="16" style="width:70px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+      </div>
+    </div>
+    <button class="dialog-close" id="repeatSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="assignDialog">
+  <div class="dialog-inner">
+    <h2 id="assignTitle">Where does this go?</h2>
+    <div class="field-row">
+      <label for="assignSelect">Pick an aisle — Oh Stuffing will remember it next time</label>
+      <select class="dept-select" id="assignSelect"></select>
+    </div>
+    <button class="dialog-close" id="assignSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="sendStoreDialog">
+  <div class="dialog-inner">
+    <h2>Send to my store</h2>
+    <div class="field-row">
+      <label for="storeUrlInput">Your online store's website (saved for next time)</label>
+      <input type="text" id="storeUrlInput" placeholder="e.g. https://www.walmart.com/grocery" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+    </div>
+    <div class="hint" style="margin-bottom:14px;">This copies your unchecked items to your clipboard, grouped by aisle, and opens your store's site so you can paste them into search or your cart. Full one-tap "add to cart" only works for stores with their own official integration — that's a bigger, later step, done one store at a time.</div>
+    <button class="dialog-close" id="copyAndOpenStore" type="button">📋 Copy list &amp; open store</button>
+  </div>
+</dialog>
+
+<dialog id="shareDialog">
+  <div class="dialog-inner">
+    <h2>Share your list</h2>
+    <div class="hint" style="margin-bottom:14px;">Sends your unchecked items, organized by aisle, exactly like what you see in the app.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="dialog-close" id="shareNativeBtn" type="button" hidden>🔗 Share…</button>
+      <button class="dialog-close" id="shareTextBtn" type="button" style="background:var(--accent-2);color:var(--accent-2-ink);">📱 Text message</button>
+      <button class="dialog-close" id="shareEmailBtn" type="button">✉️ Email</button>
+      <button class="dialog-close" id="shareCopyBtn" type="button" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">📋 Just copy it</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="wasteDialog">
+  <div class="dialog-inner">
+    <h2>Countdown</h2>
+    <div class="hint" style="margin-bottom:12px;">Leftovers and opened jars or bottles — tracked so nothing quietly goes bad.</div>
+    <div class="waste-stats">
+      <div class="waste-stat"><b id="statEaten">0</b><span>used in time</span></div>
+      <div class="waste-stat"><b id="statTossed">0</b><span>tossed</span></div>
+    </div>
+    <div class="hint" style="margin-bottom:12px;">Dates are general estimates, not food-safety guarantees — when something looks, smells, or feels off, toss it regardless of the date.</div>
+    <form class="waste-form" id="wasteForm">
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What is this?</label>
+        <select id="wasteKind" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+          <option value="leftover">Cooked leftover</option>
+          <option value="opened">Opened jar/bottle</option>
+        </select>
+      </div>
+      <div id="wasteMealRow">
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Leftover from which meal?</label>
+        <select id="wasteMealSelect" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;"></select>
+      </div>
+      <div id="wasteNameRow">
+        <input type="text" id="wasteName" placeholder="e.g. Cream cheese" autocomplete="off" style="width:100%;box-sizing:border-box;">
+      </div>
+      <button type="submit">Start the clock</button>
+    </form>
+    <ul class="waste-list" id="wasteList"></ul>
+    <div class="waste-empty" id="wasteEmpty" hidden>Nothing being tracked. Add a leftover or an opened item above and Oh Stuffing will tell you how long it's good for.</div>
+
+    <div class="produce-lookup">
+      <h3>🥬 How should I store this?</h3>
+      <input type="text" id="produceLookupInput" placeholder="e.g. tomatoes, berries, potatoes" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+      <div class="produce-tip-box" id="produceTipBox"></div>
+    </div>
+
+    <button class="dialog-close" id="closeWaste" type="button" style="margin-top:16px;">Done</button>
+  </div>
+</dialog>
+
+<dialog id="pantryDialog">
+  <div class="dialog-inner">
+    <h2>What's My Stock</h2>
+    <div id="pantryUnavailable" class="hint" hidden>Photo recognition isn't available in this view right now — it needs this app open directly in Claude, with photo access allowed.</div>
+
+    <div id="pantryScanArea">
+      <div class="hint" style="margin-bottom:10px;">Snap your pantry and/or fridge — we'll spot what's there so you can skip buying it again.</div>
+      <div class="camera-row">
+        <div class="camera-tile" id="pantryTile">
+          <input type="file" id="pantryPhotoInput" accept="image/*" capture="environment">
+          <label for="pantryPhotoInput" class="camera-tile-label" id="pantryTileLabel">
+            <span class="camera-tile-icon">📷</span>
+            <span>Take pantry photo</span>
+          </label>
+          <img class="camera-tile-preview" id="pantryPreview" hidden alt="Pantry photo preview">
+          <button type="button" class="camera-retake" id="pantryRetake" hidden aria-label="Retake pantry photo">✕</button>
+        </div>
+        <div class="camera-tile" id="fridgeTile">
+          <input type="file" id="fridgePhotoInput" accept="image/*" capture="environment">
+          <label for="fridgePhotoInput" class="camera-tile-label" id="fridgeTileLabel">
+            <span class="camera-tile-icon">📷</span>
+            <span>Take fridge photo</span>
+          </label>
+          <img class="camera-tile-preview" id="fridgePreview" hidden alt="Fridge photo preview">
+          <button type="button" class="camera-retake" id="fridgeRetake" hidden aria-label="Retake fridge photo">✕</button>
+        </div>
+      </div>
+      <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead.</div>
+      <button class="dialog-close" id="scanPantryBtn" type="button">🔍 See what's there</button>
+      <div class="hint" id="pantryStatus" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="pantryResults" hidden style="margin-top:16px;">
+      <h3 style="font-size:.95rem;margin-bottom:8px;">Here's what we spotted — uncheck anything wrong:</h3>
+      <ul class="meal-list" id="pantryResultList" style="border-top:none;"></ul>
+      <div class="waste-form-row" style="margin-top:8px;">
+        <input type="text" id="pantryAddMissed" placeholder="Add anything we missed, comma separated">
+        <button type="button" id="pantryAddMissedBtn" class="move-btn" style="width:auto;padding:0 12px;">+ Add</button>
+      </div>
+      <button class="dialog-close" id="savePantryBtn" type="button" style="margin-top:10px;">✅ Save to my stock</button>
+    </div>
+
+    <div class="produce-lookup">
+      <h3>🧺 What's already in your stock</h3>
+      <div id="pantryChips" class="hint"></div>
+      <button class="chip-btn" id="checkAgainstListBtn" type="button" style="margin-top:10px;">Check my current list against this</button>
+      <button class="chip-btn" id="clearPantryBtn" type="button" style="margin-top:10px;">Clear stock</button>
+      <div id="pantryMatches" style="margin-top:10px;"></div>
+    </div>
+
+    <button class="dialog-close" id="closePantry" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="recipeDialog">
+  <div class="dialog-inner">
+    <h2>Recipe vault</h2>
+    <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works here — scaling, diet swaps, and scanning a photo need this app open directly in Claude.</div>
+    <form class="meal-form" id="recipeForm">
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe name</label>
+        <input type="text" id="recipeTitle" placeholder="e.g. Grandma's Lasagna" autocomplete="off">
+      </div>
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Serves how many, as written?</label>
+        <input type="number" id="recipeServings" min="1" value="4" style="width:90px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+      </div>
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Paste or type the recipe — ingredients &amp; steps</label>
+        <textarea id="recipeText" rows="5" placeholder="2 cups flour&#10;1 tsp salt&#10;...&#10;&#10;Mix ingredients, then..."></textarea>
+      </div>
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Or scan a recipe card or cookbook page</label>
+        <div class="camera-row" style="max-width:130px;">
+          <div class="camera-tile" id="recipePhotoTileWrap">
+            <input type="file" id="recipePhotoInput" accept="image/*" capture="environment">
+            <label for="recipePhotoInput" class="camera-tile-label" id="recipePhotoLabel">
+              <span class="camera-tile-icon">📷</span>
+              <span>Scan recipe</span>
+            </label>
+            <img class="camera-tile-preview" id="recipePhotoPreview" hidden alt="Recipe photo preview">
+            <button type="button" class="camera-retake" id="recipePhotoRetake" hidden aria-label="Retake recipe photo">✕</button>
+          </div>
+        </div>
+        <button type="button" class="chip-btn" id="recipeScanPhotoBtn" style="margin-top:8px;" hidden>🔍 Read photo into the fields above</button>
+        <div class="hint" id="recipeScanStatus" style="margin-top:6px;"></div>
+      </div>
+      <button type="submit">Save recipe</button>
+    </form>
+    <ul class="meal-list" id="recipeList"></ul>
+    <div class="meal-empty" id="recipeEmpty" hidden>No recipes saved yet — paste one in above, or scan a photo of one.</div>
+    <button class="dialog-close" id="closeRecipeVault" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="recipeDetailDialog">
+  <div class="dialog-inner">
+    <h2 id="recipeDetailTitle">Recipe</h2>
+    <div class="hint" id="recipeDetailMeta" style="margin-bottom:8px;"></div>
+    <div class="produce-tip-box" id="recipeDetailText" style="white-space:pre-wrap;max-height:220px;overflow-y:auto;"></div>
+
+    <div style="margin-top:14px;">
+      <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Scale to how many servings?</label>
+      <div class="waste-form-row">
+        <input type="number" id="scaleServingsInput" min="1" style="width:90px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+        <button type="button" id="scaleBtn" class="chip-btn">Scale it</button>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Adapt for a diet</label>
+      <div class="waste-form-row">
+        <select id="dietSelect" class="dept-select" style="flex:1;">
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+          <option value="gluten-free">Gluten-free</option>
+          <option value="dairy-free">Dairy-free</option>
+          <option value="low-carb">Low-carb</option>
+          <option value="nut-free">Nut-free</option>
+        </select>
+        <button type="button" id="adaptBtn" class="chip-btn">Adapt it</button>
+      </div>
+    </div>
+
+    <div class="hint" id="recipeActionStatus" style="margin-top:8px;"></div>
+    <div id="recipeResultBox" hidden style="margin-top:10px;">
+      <div class="waste-name" id="recipeResultLabel"></div>
+      <div class="produce-tip-box" id="recipeResultText" style="white-space:pre-wrap;max-height:220px;overflow-y:auto;margin-top:6px;"></div>
+    </div>
+
+    <button class="dialog-close" id="addRecipeToListBtn" type="button" style="margin-top:14px;">🛒 Add ingredients to my list</button>
+    <button class="dialog-close" id="deleteRecipeBtn" type="button" style="margin-top:10px;background:var(--danger);color:#fff;">🗑️ Delete this recipe</button>
+    <button class="dialog-close" id="closeRecipeDetail" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Back to vault</button>
+  </div>
+</dialog>
+
+<dialog id="eventDialog">
+  <div class="dialog-inner">
+    <h2>Holidays &amp; Event Plans</h2>
+    <div class="hint" style="margin-bottom:12px;">Plan ahead for a holiday or party — we'll work out what's safe to buy early so you're not fighting the crowds (or empty shelves) right before.</div>
+    <form class="meal-form" id="eventForm">
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Event</label>
+        <input type="text" id="eventName" placeholder="e.g. Thanksgiving dinner" autocomplete="off">
+      </div>
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Date</label>
+        <input type="date" id="eventDate" style="padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+      </div>
+      <div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+          <label for="eventItems" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What do you need — we'll guess for the occasion, you edit</label>
+          <button type="button" id="eventSuggestAgain" class="move-btn" style="width:auto;padding:0 8px;font-size:.78rem;" hidden>🔄 Re-suggest</button>
+        </div>
+        <textarea id="eventItems" rows="3" placeholder="Type the event above and we'll try to fill this in — or just type what you need"></textarea>
+        <div id="eventSuggestHint" class="hint" style="margin-top:4px;" hidden></div>
+      </div>
+      <button type="submit">Plan it</button>
+    </form>
+    <div id="eventListArea"></div>
+    <div class="meal-empty" id="eventEmpty" hidden>No events yet — plan one above and we'll spread out what to buy when.</div>
+    <div class="hint" style="margin-top:14px;">Heads up: this shows what's ready to buy whenever you open the app — it can't send you a push notification on its own yet.</div>
+    <button class="dialog-close" id="closeEvent" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="storeCompareDialog">
+  <div class="dialog-inner" style="max-width:520px;">
+    <h2>Compare Stores</h2>
+    <div class="hint" style="margin-bottom:14px;">There's no live feed of what's on sale where — so type in prices as you see them (an app, a flyer, memory), from the stores you actually shop at, and this works out the cheapest way to split your list.</div>
+
+    <div class="event-section-label" style="margin-top:0;">My stores</div>
+    <div id="myStoresChips" class="hint" style="margin-bottom:8px;"></div>
+    <form id="storeForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+      <input type="text" id="storeNameInput" placeholder="e.g. Costco, Kroger, Aldi" autocomplete="off" style="flex:1;min-width:140px;padding:9px 10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.9rem;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--muted);white-space:nowrap;">
+        <input type="checkbox" id="storeMembershipCheck" style="width:16px;height:16px;"> Needs a membership
+      </label>
+      <button type="submit" class="chip-btn">+ Add store</button>
+    </form>
+
+    <div id="priceEntrySection" hidden>
+      <div class="event-section-label">Prices for what's on your list</div>
+      <div class="hint" style="margin-bottom:8px;">Only fill in what you actually know — blanks are fine.</div>
+      <div style="overflow-x:auto;">
+        <table id="priceTable" style="border-collapse:collapse;width:100%;font-size:.85rem;"></table>
+      </div>
+      <button type="button" class="dialog-close" id="findPlanBtn" style="margin-top:14px;">🧮 Find the best plan</button>
+    </div>
+    <div class="hint" id="priceEntryEmpty">Add at least one store, and have some unchecked items on your list, to compare prices.</div>
+
+    <div id="planResults" style="margin-top:16px;" hidden></div>
+
+    <button class="dialog-close" id="closeStoreCompare" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="flyerDialog">
+  <div class="dialog-inner">
+    <h2>Check A Flyer</h2>
+    <div id="flyerUnavailable" class="hint" hidden>This needs the app open directly in Claude, with photo access allowed.</div>
+    <div id="flyerScanArea">
+      <div class="hint" style="margin-bottom:10px;">Snap a photo of a real weekly ad or flyer — from the store's app, website, email, or the paper one — and we'll check it against what's still on your list.</div>
+      <div>
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Which store is this?</label>
+        <input type="text" id="flyerStoreName" placeholder="e.g. Kroger" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;margin-bottom:12px;">
+      </div>
+      <div class="camera-row">
+        <div class="camera-tile" id="flyerTile1">
+          <input type="file" id="flyerPhotoInput1" accept="image/*" capture="environment">
+          <label for="flyerPhotoInput1" class="camera-tile-label" id="flyerTileLabel1">
+            <span class="camera-tile-icon">📷</span>
+            <span>Flyer photo</span>
+          </label>
+          <img class="camera-tile-preview" id="flyerPreview1" hidden alt="Flyer photo preview">
+          <button type="button" class="camera-retake" id="flyerRetake1" hidden aria-label="Retake flyer photo">✕</button>
+        </div>
+        <div class="camera-tile" id="flyerTile2">
+          <input type="file" id="flyerPhotoInput2" accept="image/*" capture="environment">
+          <label for="flyerPhotoInput2" class="camera-tile-label" id="flyerTileLabel2">
+            <span class="camera-tile-icon">📷</span>
+            <span>2nd page (optional)</span>
+          </label>
+          <img class="camera-tile-preview" id="flyerPreview2" hidden alt="Second flyer photo preview">
+          <button type="button" class="camera-retake" id="flyerRetake2" hidden aria-label="Retake second flyer photo">✕</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Or paste text copied from an online ad — no photo needed</label>
+        <textarea id="flyerPastedText" rows="3" placeholder="Paste the sale list here, exactly as copied from the store's website or app" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-family:inherit;font-size:.95rem;resize:vertical;"></textarea>
+      </div>
+      <button class="dialog-close" id="checkFlyerBtn" type="button" style="margin-top:12px;">🔍 Check my list against this</button>
+      <div class="hint" id="flyerStatus" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="flyerResults" hidden style="margin-top:16px;">
+      <div class="event-section-label" style="margin-top:0;">On sale, from what you photographed</div>
+      <ul class="meal-list" id="flyerResultList" style="border-top:none;"></ul>
+    </div>
+
+    <button class="dialog-close" id="closeFlyer" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="mealPlanDialog">
+  <div class="dialog-inner">
+    <h2>Meal Planning</h2>
+    <form class="meal-form" id="mealForm">
+      <div>
+        <label for="mealName" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What are you making?</label>
+        <input type="text" id="mealName" placeholder="e.g. Tacos" autocomplete="off">
+      </div>
+      <div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+          <label for="mealIngredients" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What it needs — we'll guess, you edit</label>
+          <button type="button" id="mealSuggestAgain" class="move-btn" style="width:auto;padding:0 8px;font-size:.78rem;" hidden>🔄 Re-suggest</button>
+        </div>
+        <textarea id="mealIngredients" rows="2" placeholder="Type a meal above and we'll try to fill this in — or just type what you need"></textarea>
+        <div id="mealSuggestHint" class="hint" style="margin-top:4px;" hidden></div>
+      </div>
+      <button type="submit">Add meal &amp; put it on my list</button>
+    </form>
+    <ul class="meal-list" id="mealList"></ul>
+    <div class="meal-empty" id="mealEmpty" hidden>No meals added yet — planning one will add what it needs straight to your sorted list.</div>
+    <button class="dialog-close" id="closeMealPlan" type="button">Done</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Department model (default order = a common big-box layout) ----------
+  var DEPARTMENTS = [
+    { id:"produce",   name:"Produce",              emoji:"🥬" },
+    { id:"bakery",    name:"Bakery",                emoji:"🍞" },
+    { id:"deli",      name:"Deli",                  emoji:"🧀" },
+    { id:"meat",      name:"Meat & Seafood",        emoji:"🥩" },
+    { id:"dairy",     name:"Dairy & Eggs",          emoji:"🥛" },
+    { id:"frozen",    name:"Frozen",                emoji:"🧊" },
+    { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
+    { id:"baking",    name:"Baking & Pantry",       emoji:"🧁" },
+    { id:"canned",    name:"Canned & Soup",         emoji:"🥫" },
+    { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
+    { id:"condiments",name:"Condiments & Sauces",   emoji:"🍯" },
+    { id:"snacks",    name:"Snacks",                emoji:"🍪" },
+    { id:"beverages", name:"Beverages",             emoji:"🥤" },
+    { id:"household", name:"Household & Paper",     emoji:"🧻" },
+    { id:"personal",  name:"Personal Care",         emoji:"🧴" },
+    { id:"other",     name:"Unsorted",              emoji:"❓" }
+  ];
+  var DEPT_BY_ID = {};
+  DEPARTMENTS.forEach(function(d){ DEPT_BY_ID[d.id] = d; });
+
+  // ---------- Keyword dictionary: many everyday items -> department id ----------
+  var KEYWORDS = {
+    produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish"],
+    bakery: ["bread","baguette","bagel","bagels","bun","buns","roll","rolls","muffin","muffins","croissant","croissants","tortilla","tortillas","pita","donut","donuts","cake","dinner rolls","sourdough","hamburger buns","hot dog buns","taco shells"],
+    deli: ["deli meat","turkey slices","ham slices","salami","prosciutto","sliced cheese","deli cheese","rotisserie chicken","pepperoni sliced","sub sandwich"],
+    meat: ["chicken","chicken breast","chicken thighs","beef","ground beef","steak","pork","pork chops","bacon","sausage","sausages","turkey","ham","lamb","shrimp","salmon","fish","tilapia","cod","tuna steak","ground turkey","hot dogs","meatballs"],
+    dairy: ["milk","eggs","egg","cheese","cheddar","mozzarella","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","string cheese","parmesan"],
+    frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
+    breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
+    canned: ["canned beans","black beans","chickpeas","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
+    pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
+    condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
+    snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
+    beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice"],
+    household: ["paper towels","toilet paper","napkins","aluminum foil","foil","plastic wrap","trash bags","dish soap","laundry detergent","sponges","ziploc bags","food storage bags","paper plates","cleaning spray"],
+    personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"]
+  };
+  var WORD_TO_DEPT = {};
+  Object.keys(KEYWORDS).forEach(function(dept){
+    KEYWORDS[dept].forEach(function(term){ WORD_TO_DEPT[term] = dept; });
+  });
+
+  // ---------- Built-in meal -> typical ingredients (auto-suggest, always editable) ----------
+  var MEAL_SUGGESTIONS = {
+    "tacos": ["ground beef","taco shells","cheddar cheese","lettuce","tomato","salsa","sour cream"],
+    "beef tacos": ["ground beef","taco shells","cheddar cheese","lettuce","tomato","salsa","sour cream"],
+    "chicken tacos": ["chicken breast","taco shells","cheddar cheese","lettuce","tomato","salsa"],
+    "spaghetti": ["spaghetti","ground beef","marinara sauce","parmesan cheese","garlic"],
+    "spaghetti and meatballs": ["spaghetti","ground beef","breadcrumbs","eggs","marinara sauce","parmesan cheese"],
+    "grilled cheese": ["bread","cheddar cheese","butter"],
+    "chili": ["ground beef","kidney beans","canned tomatoes","onion","chili powder","cheddar cheese"],
+    "pancakes": ["pancake mix","eggs","milk","butter","maple syrup"],
+    "waffles": ["frozen waffles","butter","maple syrup"],
+    "burgers": ["ground beef","hamburger buns","cheddar cheese","lettuce","tomato","ketchup","mustard"],
+    "cheeseburgers": ["ground beef","hamburger buns","cheddar cheese","lettuce","tomato","ketchup","mustard"],
+    "stir fry": ["chicken breast","broccoli","bell pepper","soy sauce","rice","garlic","ginger"],
+    "chicken stir fry": ["chicken breast","broccoli","bell pepper","soy sauce","rice","garlic","ginger"],
+    "chicken parmesan": ["chicken breast","marinara sauce","mozzarella cheese","parmesan cheese","spaghetti","breadcrumbs"],
+    "quesadillas": ["tortillas","cheddar cheese","chicken breast","salsa","sour cream"],
+    "fajitas": ["chicken breast","bell pepper","onion","tortillas","salsa","sour cream"],
+    "mac and cheese": ["macaroni","cheddar cheese","milk","butter","flour"],
+    "pizza": ["pizza dough","tomato sauce","mozzarella cheese","pepperoni"],
+    "blt": ["bacon","lettuce","tomato","bread","mayo"],
+    "omelette": ["eggs","cheddar cheese","milk","bell pepper","onion"],
+    "salad": ["lettuce","tomato","cucumber","salad dressing","cheese"],
+    "chicken salad": ["chicken breast","lettuce","tomato","cucumber","salad dressing"],
+    "roast chicken": ["chicken","potatoes","carrots","onion","olive oil"],
+    "burrito bowl": ["rice","black beans","chicken breast","salsa","cheddar cheese","lettuce"],
+    "burritos": ["tortillas","rice","black beans","chicken breast","salsa","cheddar cheese"],
+    "soup": ["chicken broth","carrots","celery","onion","noodles"],
+    "chicken soup": ["chicken breast","chicken broth","carrots","celery","onion","noodles"],
+    "sandwich": ["bread","deli meat","cheese","lettuce","mayo"],
+    "sandwiches": ["bread","deli meat","cheese","lettuce","mayo"],
+    "fried rice": ["rice","eggs","frozen peas","soy sauce","garlic"],
+    "chicken fried rice": ["rice","chicken breast","eggs","frozen peas","soy sauce","garlic"],
+    "meatloaf": ["ground beef","breadcrumbs","eggs","ketchup","onion"],
+    "lasagna": ["lasagna noodles","ground beef","marinara sauce","mozzarella cheese","ricotta cheese"],
+    "shrimp scampi": ["shrimp","spaghetti","garlic","butter","lemon","parmesan cheese"],
+    "pork chops": ["pork chops","potatoes","green beans"],
+    "meatballs": ["ground beef","breadcrumbs","eggs","marinara sauce","parmesan cheese"],
+    "chicken alfredo": ["chicken breast","fettuccine","heavy cream","parmesan cheese","garlic","butter"]
+  };
+
+  // ---------- Waste tracking: shelf-life guidance (general estimates — USDA FoodKeeper style) ----------
+  var LEFTOVER_DAYS_DEFAULT = 4; // USDA general guidance: most cooked leftovers, 3-4 days
+  var OPENED_SHELF_LIFE_DAYS = {
+    "mayo":60,"mayonnaise":60,"ketchup":180,"mustard":365,"cream cheese":10,
+    "sour cream":14,"salsa":10,"bbq sauce":120,"barbecue sauce":120,"ranch":21,
+    "ranch dressing":21,"salad dressing":90,"jam":365,"jelly":365,"peanut butter":90,
+    "pickles":730,"olives":180,"parmesan cheese":180,"shredded cheese":7,"cheese":14,
+    "milk":7,"orange juice":7,"apple juice":10,"hummus":7,"guacamole":2,
+    "tortillas":10,"maple syrup":365,"honey":365,"soy sauce":730,"hot sauce":730,
+    "sriracha":180,"gravy":2,"broth":5,"chicken broth":5,"vegetable broth":5,
+    "tomato sauce":5,"marinara sauce":5,"worcestershire":365
+  };
+  var OPENED_DAYS_FALLBACK = 14;
+  var PRODUCE_STORAGE = {
+    "tomato":"Keep on the counter, out of direct sun — the fridge makes them mealy.",
+    "tomatoes":"Keep on the counter, out of direct sun — the fridge makes them mealy.",
+    "potato":"Cool, dark, and dry — not the fridge (cold turns the starch to sugar).",
+    "potatoes":"Cool, dark, and dry — not the fridge (cold turns the starch to sugar).",
+    "onion":"Cool, dry, and out of the fridge, away from potatoes.",
+    "onions":"Cool, dry, and out of the fridge, away from potatoes.",
+    "banana":"Counter, away from other fruit — they release a gas that speeds ripening.",
+    "bananas":"Counter, away from other fruit — they release a gas that speeds ripening.",
+    "avocado":"Counter until ripe, then move to the fridge to buy a few extra days.",
+    "avocados":"Counter until ripe, then move to the fridge to buy a few extra days.",
+    "berries":"Fridge, unwashed until you eat them — rinse right before serving.",
+    "strawberries":"Fridge, unwashed until you eat them — rinse right before serving.",
+    "blueberries":"Fridge, unwashed until you eat them — rinse right before serving.",
+    "raspberries":"Fridge, unwashed until you eat them — rinse right before serving.",
+    "lettuce":"Fridge, wrapped loosely in a paper towel inside a bag.",
+    "leafy greens":"Fridge, wrapped loosely in a paper towel inside a bag.",
+    "spinach":"Fridge, wrapped loosely in a paper towel inside a bag.",
+    "kale":"Fridge, wrapped loosely in a paper towel inside a bag.",
+    "garlic":"Cool, dry, and out of the fridge.",
+    "cucumber":"Fridge — they're sensitive to cold, so keep them away from the very back.",
+    "cucumbers":"Fridge — they're sensitive to cold, so keep them away from the very back.",
+    "lemon":"Counter for about a week, fridge for several weeks longer.",
+    "lime":"Counter for about a week, fridge for several weeks longer.",
+    "orange":"Counter for about a week, fridge for several weeks longer.",
+    "apple":"Fridge keeps them crisp far longer than the counter.",
+    "apples":"Fridge keeps them crisp far longer than the counter.",
+    "mushroom":"Fridge, in a paper bag — plastic traps moisture and turns them slimy.",
+    "mushrooms":"Fridge, in a paper bag — plastic traps moisture and turns them slimy.",
+    "herbs":"Trim the stems and stand them in a glass of water, loosely bagged, in the fridge — like flowers.",
+    "basil":"Counter in a glass of water, out of direct sun — basil hates the cold.",
+    "cilantro":"Trim the stems, stand in a glass of water, loosely bagged, in the fridge.",
+    "parsley":"Trim the stems, stand in a glass of water, loosely bagged, in the fridge.",
+    "carrot":"Fridge — trim any green tops first, they pull moisture from the root.",
+    "carrots":"Fridge — trim any green tops first, they pull moisture from the root.",
+    "celery":"Fridge, wrapped in foil (not plastic) — it stays crisp far longer.",
+    "broccoli":"Fridge, unwashed, in a loosely sealed bag.",
+    "cauliflower":"Fridge, unwashed, in a loosely sealed bag.",
+    "peppers":"Fridge, in the crisper drawer.",
+    "bell pepper":"Fridge, in the crisper drawer.",
+    "corn":"Fridge, in the husk, and use within a couple of days for best sweetness.",
+    "grapes":"Fridge, unwashed, in their original bag or a loosely sealed container."
+  };
+  // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
+  var DEPT_LEAD_DAYS = {
+    produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
+    breakfast: 30, baking: 60, canned: 90, pasta: 90, condiments: 60,
+    snacks: 30, beverages: 30, household: 90, personal: 90, other: 10
+  };
+  function earliestBuyDate(dept, eventDateStr){
+    var lead = DEPT_LEAD_DAYS[dept] !== undefined ? DEPT_LEAD_DAYS[dept] : DEPT_LEAD_DAYS.other;
+    var earliest = addDays(eventDateStr, -lead);
+    var today = todayStr();
+    return earliest < today ? today : earliest;
+  }
+
+  function lookupInDict(name, dict){
+    var key = name.trim().toLowerCase();
+    if(!key) return null;
+    if(dict[key] !== undefined) return dict[key];
+    var stripped = singularize(key);
+    if(dict[stripped] !== undefined) return dict[stripped];
+    var bestKey = null;
+    Object.keys(dict).forEach(function(k){
+      if(key.indexOf(k) !== -1 || k.indexOf(key) !== -1){
+        if(!bestKey || k.length > bestKey.length) bestKey = k;
+      }
+    });
+    return bestKey ? dict[bestKey] : null;
+  }
+  function addDays(dateStr, n){
+    var d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function formatDate(dateStr){
+    var d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+  }
+
+  // ---------- Built-in holiday/event -> typical shopping items (auto-suggest, always editable) ----------
+  var EVENT_SUGGESTIONS = {
+    "thanksgiving": ["turkey","stuffing mix","cranberry sauce","canned pumpkin","pie crust","green beans","mashed potatoes","turkey gravy","dinner rolls","butter"],
+    "christmas": ["ham","mashed potatoes","dinner rolls","green bean casserole","eggnog","cookies","butter","gravy"],
+    "christmas dinner": ["ham","mashed potatoes","dinner rolls","green bean casserole","eggnog","cookies","butter","gravy"],
+    "christmas eve": ["ham","mashed potatoes","dinner rolls","eggnog","cookies"],
+    "easter": ["ham","deviled eggs","eggs","potato salad","dinner rolls","carrots","asparagus"],
+    "fourth of july": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","corn","watermelon","chips","soda"],
+    "4th of july": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","corn","watermelon","chips","soda"],
+    "july 4th": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","corn","watermelon","chips","soda"],
+    "independence day": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","corn","watermelon","chips","soda"],
+    "labor day": ["hamburger buns","hot dog buns","ground beef","hot dogs","chips","soda","watermelon","potato salad"],
+    "labor day bbq": ["hamburger buns","hot dog buns","ground beef","hot dogs","chips","soda","watermelon","potato salad"],
+    "memorial day": ["hamburger buns","hot dog buns","ground beef","hot dogs","chips","soda","watermelon","potato salad"],
+    "bbq": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","chips","soda"],
+    "cookout": ["hamburger buns","hot dog buns","ground beef","hot dogs","cheddar cheese","ketchup","mustard","chips","soda"],
+    "super bowl": ["chips","salsa","guacamole","chicken wings","soda","beer","pizza","ranch dressing"],
+    "super bowl party": ["chips","salsa","guacamole","chicken wings","soda","beer","pizza","ranch dressing"],
+    "game day": ["chips","salsa","guacamole","chicken wings","soda","beer","pizza","ranch dressing"],
+    "halloween": ["candy","pumpkin","pumpkin seeds","apple cider","caramel"],
+    "halloween party": ["candy","pumpkin","chips","soda","cookies"],
+    "new year's eve": ["champagne","sparkling cider","chips","salsa","cheese","crackers","soda"],
+    "nye": ["champagne","sparkling cider","chips","salsa","cheese","crackers","soda"],
+    "new years eve": ["champagne","sparkling cider","chips","salsa","cheese","crackers","soda"],
+    "birthday party": ["cake mix","frosting","candles","ice cream","chips","soda","paper plates","napkins"],
+    "graduation party": ["chips","soda","paper plates","napkins","sandwich platter","cookies"],
+    "baby shower": ["cake mix","frosting","chips","soda","paper plates","napkins","punch"],
+    "picnic": ["sandwich bread","deli meat","cheese","chips","fruit","lemonade","napkins"]
+  };
+  function findEventSuggestion(name){
+    var raw = name.trim().toLowerCase();
+    if(!raw) return null;
+    var key = raw.replace(/\s+(party|dinner|celebration|bash|gathering)\s*$/,"").trim();
+    var lookupOrder = [raw, key];
+    for(var i=0;i<lookupOrder.length;i++){
+      var k = lookupOrder[i];
+      if(state.learnedEvents && state.learnedEvents[k]) return state.learnedEvents[k];
+      if(EVENT_SUGGESTIONS[k]) return EVENT_SUGGESTIONS[k];
+    }
+    var bestKey = null;
+    var allKeys = Object.keys(EVENT_SUGGESTIONS).concat(state.learnedEvents ? Object.keys(state.learnedEvents) : []);
+    var candidates = [raw, key];
+    allKeys.forEach(function(k){
+      candidates.forEach(function(c){
+        if(!c) return;
+        if(c === k || k.indexOf(c) !== -1 || c.indexOf(k) !== -1){
+          if(!bestKey || k.length > bestKey.length) bestKey = k;
+        }
+      });
+    });
+    if(bestKey) return (state.learnedEvents && state.learnedEvents[bestKey]) || EVENT_SUGGESTIONS[bestKey];
+    return null;
+  }
+
+  function findMealSuggestion(name){
+    var raw = name.trim().toLowerCase();
+    if(!raw) return null;
+    // strip common filler so "taco night" / "tacos for dinner" still match "tacos"
+    var key = raw
+      .replace(/\s+(night|day|tonight|for dinner|for lunch|dinner|lunch|time)\s*$/,"")
+      .trim();
+    var lookupOrder = [raw, key];
+    for(var i=0;i<lookupOrder.length;i++){
+      var k = lookupOrder[i];
+      if(state.learnedMeals && state.learnedMeals[k]) return state.learnedMeals[k];
+      if(MEAL_SUGGESTIONS[k]) return MEAL_SUGGESTIONS[k];
+    }
+    // fall back: longest known meal name whose singular/plural form matches, in either direction
+    var bestKey = null;
+    var allKeys = Object.keys(MEAL_SUGGESTIONS).concat(state.learnedMeals ? Object.keys(state.learnedMeals) : []);
+    var candidates = [raw, key, singularize(key), key + "s"];
+    allKeys.forEach(function(k){
+      var kSingular = singularize(k);
+      candidates.forEach(function(c){
+        if(!c) return;
+        if(c === k || c === kSingular || k.indexOf(c) !== -1 || c.indexOf(k) !== -1){
+          if(!bestKey || k.length > bestKey.length) bestKey = k;
+        }
+      });
+    });
+    if(bestKey) return (state.learnedMeals && state.learnedMeals[bestKey]) || MEAL_SUGGESTIONS[bestKey];
+    return null;
+  }
+
+  // ---------- Storage ----------
+  var STORE_KEY = "ostuffing.v1";
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  var saved = loadState();
+  var state = saved || {
+    order: DEPARTMENTS.map(function(d){ return d.id; }),
+    learned: {},       // itemName(lowercase) -> deptId, remembered corrections/unknowns
+    items: [],         // {id, text, dept, done, meals:[mealName,...]}
+    regulars: {},      // itemName(lowercase) -> {text, dept, days, lastAdded (yyyy-mm-dd)}
+    meals: [],         // {id, name, ingredients:[text,...]}
+    learnedMeals: {},  // mealName(lowercase) -> [ingredient,...], taught by the user's own edits
+    storeUrl: "",      // saved online store link for "Send to my store"
+    tracked: [],       // {id, text, kind:'leftover'|'opened', addedDate, goodUntil}
+    wasteStats: { eaten:0, tossed:0 },
+    pantryItems: {},   // itemName(lowercase) -> { addedDate }
+    recipes: [],       // {id, title, servings, text}
+    events: [],        // {id, name, date, items:[{text, dept, earliestBuyDate, addedToList}]}
+    learnedEvents: {}, // eventName(lowercase) -> [item,...], taught by the user's own edits
+    myStores: [],      // {id, name, membership:boolean}
+    priceEntries: {},  // itemText(lowercase) -> { storeId: price }
+    prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" }
+  };
+  // migrate: ensure every current department id is present in saved order
+  DEPARTMENTS.forEach(function(d){
+    if(state.order.indexOf(d.id) === -1) state.order.push(d.id);
+  });
+  if(!state.prefs) state.prefs = { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" };
+  if(!state.prefs.accentColor) state.prefs.accentColor = "green";
+  if(!state.regulars) state.regulars = {};
+  if(!state.meals) state.meals = [];
+  if(!state.learnedMeals) state.learnedMeals = {};
+  if(state.storeUrl === undefined) state.storeUrl = "";
+  if(!state.tracked) state.tracked = [];
+  if(!state.wasteStats) state.wasteStats = { eaten:0, tossed:0 };
+  if(!state.pantryItems) state.pantryItems = {};
+  if(!state.recipes) state.recipes = [];
+  if(!state.events) state.events = [];
+  if(!state.learnedEvents) state.learnedEvents = {};
+  if(!state.myStores) state.myStores = [];
+  if(!state.priceEntries) state.priceEntries = {};
+  state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
+
+  // ---------- Categorizer ----------
+  function singularize(w){
+    if(w.length > 3 && w.endsWith("ies")) return w.slice(0,-3)+"y";
+    if(w.length > 3 && w.endsWith("es") && !w.endsWith("oes")) return w.slice(0,-2);
+    if(w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0,-1);
+    return w;
+  }
+  function classify(rawText){
+    var text = rawText.trim().toLowerCase();
+    if(!text) return null;
+    if(state.learned[text]) return state.learned[text];
+    if(WORD_TO_DEPT[text]) return WORD_TO_DEPT[text];
+    // try phrase without leading quantity words / articles
+    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
+    stripped = stripped.replace(/^\d+\s*/,"").trim();
+    if(stripped && stripped !== text){
+      if(state.learned[stripped]) return state.learned[stripped];
+      if(WORD_TO_DEPT[stripped]) return WORD_TO_DEPT[stripped];
+    }
+    // try each word / bigram against dictionary
+    var words = stripped.split(/\s+/).filter(Boolean);
+    for(var i=0;i<words.length;i++){
+      var w = singularize(words[i]);
+      if(WORD_TO_DEPT[w]) return WORD_TO_DEPT[w];
+    }
+    for(var j=0;j<words.length-1;j++){
+      var bigram = words[j]+" "+words[j+1];
+      if(WORD_TO_DEPT[bigram]) return WORD_TO_DEPT[bigram];
+    }
+    return "other";
+  }
+
+  function splitEntry(raw){
+    return raw.split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+
+  // ---------- Recurring items ----------
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function daysBetween(a,b){
+    return Math.round((new Date(b) - new Date(a)) / 86400000);
+  }
+  function mostRecentMonthlyTrigger(monthDays, todayISO){
+    var today = new Date(todayISO + "T00:00:00");
+    var y = today.getFullYear(), m = today.getMonth();
+    var candidates = [];
+    monthDays.forEach(function(md){
+      candidates.push(new Date(y, m, md));
+      candidates.push(new Date(y, m-1, md));
+    });
+    candidates = candidates.filter(function(d){ return d <= today; });
+    if(!candidates.length) return null;
+    candidates.sort(function(a,b){ return b-a; });
+    var best = candidates[0];
+    return best.getFullYear()+"-"+String(best.getMonth()+1).padStart(2,"0")+"-"+String(best.getDate()).padStart(2,"0");
+  }
+  function addRegularsThatAreDue(){
+    var today = todayStr();
+    var changed = false;
+    Object.keys(state.regulars).forEach(function(key){
+      var reg = state.regulars[key];
+      var due;
+      if(reg.monthDays){
+        var trigger = mostRecentMonthlyTrigger(reg.monthDays, today);
+        due = trigger !== null && (!reg.lastAdded || reg.lastAdded < trigger);
+      } else {
+        due = !reg.lastAdded || daysBetween(reg.lastAdded, today) >= reg.days;
+      }
+      if(!due) return;
+      var alreadyOnList = state.items.some(function(it){
+        return it.text.trim().toLowerCase() === key && !it.done;
+      });
+      if(alreadyOnList) return;
+      state.items.push({
+        id: "i"+Date.now()+Math.random().toString(16).slice(2),
+        text: reg.text, dept: reg.dept, done:false
+      });
+      reg.lastAdded = today;
+      changed = true;
+    });
+    if(changed) saveState();
+  }
+
+  function addItems(raw, mealName){
+    var parts = splitEntry(raw);
+    parts.forEach(function(p){
+      var text = p.replace(/\s+/g," ").trim();
+      if(!text) return;
+      var key = text.toLowerCase();
+      var existing = state.items.find(function(it){
+        return !it.done && it.text.trim().toLowerCase() === key;
+      });
+      if(existing){
+        if(mealName && existing.meals.indexOf(mealName) === -1) existing.meals.push(mealName);
+        return;
+      }
+      var dept = classify(text);
+      state.items.push({
+        id: "i"+Date.now()+Math.random().toString(16).slice(2),
+        text: text,
+        dept: dept,
+        done: false,
+        meals: mealName ? [mealName] : []
+      });
+    });
+    saveState();
+    render();
+  }
+
+  // ---------- Rendering ----------
+  var listArea = document.getElementById("listArea");
+
+  function render(){
+    listArea.innerHTML = "";
+    var reordering = document.getElementById("reorderToggle").getAttribute("aria-pressed") === "true";
+    var anyItems = state.items.length > 0;
+
+    if(!anyItems){
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.innerHTML = "Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.";
+      listArea.appendChild(empty);
+      return;
+    }
+
+    state.order.forEach(function(deptId, idx){
+      var dept = DEPT_BY_ID[deptId];
+      if(!dept) return;
+      var itemsInDept = state.items.filter(function(it){ return it.dept === deptId; });
+      if(itemsInDept.length === 0 && !reordering) return;
+
+      var section = document.createElement("section");
+      section.className = "dept";
+
+      var head = document.createElement("div");
+      head.className = "dept-head";
+      head.innerHTML =
+        '<span class="dept-emoji" aria-hidden="true">'+dept.emoji+'</span>' +
+        '<span class="dept-name">'+dept.name+'</span>' +
+        '<span class="dept-count">'+itemsInDept.length+'</span>';
+
+      var moveWrap = document.createElement("div");
+      moveWrap.className = "reorder-btns" + (reordering ? " on" : "");
+      var upBtn = document.createElement("button");
+      upBtn.type = "button"; upBtn.textContent = "↑"; upBtn.setAttribute("aria-label","Move "+dept.name+" earlier");
+      upBtn.disabled = idx === 0;
+      upBtn.addEventListener("click", function(){ moveDept(deptId, -1); });
+      var downBtn = document.createElement("button");
+      downBtn.type = "button"; downBtn.textContent = "↓"; downBtn.setAttribute("aria-label","Move "+dept.name+" later");
+      downBtn.disabled = idx === state.order.length - 1;
+      downBtn.addEventListener("click", function(){ moveDept(deptId, 1); });
+      moveWrap.appendChild(upBtn);
+      moveWrap.appendChild(downBtn);
+      head.appendChild(moveWrap);
+      section.appendChild(head);
+
+      if(itemsInDept.length){
+        var ul = document.createElement("ul");
+        ul.className = "items";
+        itemsInDept.forEach(function(it){
+          var li = document.createElement("li");
+          if(it.done) li.className = "done";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = it.done;
+          cb.setAttribute("aria-label", (it.done ? "Uncheck " : "Check ") + it.text);
+          cb.addEventListener("change", function(){
+            it.done = cb.checked; saveState(); render();
+          });
+          var textWrap = document.createElement("span");
+          textWrap.className = "item-text";
+          textWrap.tabIndex = 0;
+          textWrap.setAttribute("role","button");
+          var metaParts = [];
+          if(it.meals && it.meals.length) metaParts.push("for " + it.meals.join(", "));
+          if(it.saleNote) metaParts.push("🏷️ " + it.saleNote);
+          var metaStr = metaParts.join(" · ");
+          textWrap.setAttribute("aria-label", it.text + (metaStr ? ", " + metaStr : "") + ", in " + dept.name + ". Activate to move to a different aisle.");
+          textWrap.addEventListener("click", function(){ openAssign(it); });
+          textWrap.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openAssign(it); } });
+          var mainLine = document.createElement("span");
+          mainLine.textContent = it.text;
+          textWrap.appendChild(mainLine);
+          if(metaStr){
+            var meta = document.createElement("span");
+            meta.className = "item-meta";
+            meta.textContent = metaStr;
+            textWrap.appendChild(meta);
+          }
+          var span = textWrap;
+          var repKey = it.text.trim().toLowerCase();
+          var isRepeating = !!state.regulars[repKey];
+          var rep = document.createElement("button");
+          rep.className = "move-btn" + (isRepeating ? " repeat-on" : "");
+          rep.type = "button";
+          rep.textContent = "🔁";
+          rep.setAttribute("aria-label", (isRepeating ? "Change or stop repeat for " : "Repeat ") + it.text);
+          rep.addEventListener("click", function(){ openRepeat(it); });
+          var del = document.createElement("button");
+          del.className = "move-btn";
+          del.type = "button";
+          del.textContent = "✕";
+          del.setAttribute("aria-label", "Remove " + it.text);
+          del.addEventListener("click", function(){
+            state.items = state.items.filter(function(x){ return x.id !== it.id; });
+            saveState(); render();
+          });
+          li.appendChild(cb);
+          li.appendChild(span);
+          li.appendChild(rep);
+          li.appendChild(del);
+          ul.appendChild(li);
+        });
+        section.appendChild(ul);
+      }
+
+      listArea.appendChild(section);
+    });
+  }
+
+  function moveDept(deptId, dir){
+    var idx = state.order.indexOf(deptId);
+    var newIdx = idx + dir;
+    if(newIdx < 0 || newIdx >= state.order.length) return;
+    var tmp = state.order[idx];
+    state.order[idx] = state.order[newIdx];
+    state.order[newIdx] = tmp;
+    saveState();
+    render();
+  }
+
+  // ---------- Assign / re-teach dialog ----------
+  var assignDialog = document.getElementById("assignDialog");
+  var assignSelect = document.getElementById("assignSelect");
+  var assignTitle = document.getElementById("assignTitle");
+  var currentAssignItem = null;
+
+  DEPARTMENTS.forEach(function(d){
+    var opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.emoji + " " + d.name;
+    assignSelect.appendChild(opt);
+  });
+
+  function openAssign(item){
+    currentAssignItem = item;
+    assignTitle.textContent = 'Where does "' + item.text + '" go?';
+    assignSelect.value = item.dept;
+    assignDialog.showModal();
+  }
+  document.getElementById("assignSave").addEventListener("click", function(){
+    if(currentAssignItem){
+      currentAssignItem.dept = assignSelect.value;
+      state.learned[currentAssignItem.text.trim().toLowerCase()] = assignSelect.value;
+      saveState();
+    }
+    assignDialog.close();
+    render();
+  });
+
+  // ---------- Repeat dialog ----------
+  var repeatDialog = document.getElementById("repeatDialog");
+  var repeatSelect = document.getElementById("repeatSelect");
+  var repeatTitle = document.getElementById("repeatTitle");
+  var currentRepeatItem = null;
+
+  var monthlyDatesRow = document.getElementById("monthlyDatesRow");
+  var repeatDate1 = document.getElementById("repeatDate1");
+  var repeatDate2 = document.getElementById("repeatDate2");
+  function syncMonthlyRowVisibility(){
+    monthlyDatesRow.hidden = repeatSelect.value !== "monthly2";
+  }
+  repeatSelect.addEventListener("change", syncMonthlyRowVisibility);
+
+  function openRepeat(item){
+    currentRepeatItem = item;
+    repeatTitle.textContent = 'Repeat "' + item.text + '"?';
+    var key = item.text.trim().toLowerCase();
+    var reg = state.regulars[key];
+    if(reg && reg.monthDays){
+      repeatSelect.value = "monthly2";
+      repeatDate1.value = reg.monthDays[0];
+      repeatDate2.value = reg.monthDays[1];
+    } else {
+      repeatSelect.value = reg ? String(reg.days) : "0";
+    }
+    syncMonthlyRowVisibility();
+    repeatDialog.showModal();
+  }
+  document.getElementById("repeatSave").addEventListener("click", function(){
+    if(currentRepeatItem){
+      var key = currentRepeatItem.text.trim().toLowerCase();
+      if(repeatSelect.value === "monthly2"){
+        var d1 = Math.min(28, Math.max(1, parseInt(repeatDate1.value,10) || 1));
+        var d2 = Math.min(28, Math.max(1, parseInt(repeatDate2.value,10) || 16));
+        state.regulars[key] = {
+          text: currentRepeatItem.text, dept: currentRepeatItem.dept,
+          monthDays: [d1, d2].sort(function(a,b){return a-b;}),
+          lastAdded: todayStr()
+        };
+      } else {
+        var days = parseInt(repeatSelect.value, 10);
+        if(days > 0){
+          state.regulars[key] = {
+            text: currentRepeatItem.text, dept: currentRepeatItem.dept,
+            days: days, lastAdded: todayStr()
+          };
+        } else {
+          delete state.regulars[key];
+        }
+      }
+      saveState();
+    }
+    repeatDialog.close();
+    render();
+  });
+
+  // ---------- Shared: formatted list text ----------
+  function buildListText(){
+    var lines = ["Oh Stuffing — shopping list", ""];
+    var any = false;
+    state.order.forEach(function(deptId){
+      var dept = DEPT_BY_ID[deptId];
+      var itemsInDept = state.items.filter(function(it){ return it.dept === deptId && !it.done; });
+      if(!itemsInDept.length) return;
+      any = true;
+      lines.push(dept.name + ":");
+      itemsInDept.forEach(function(it){ lines.push("- " + it.text); });
+      lines.push("");
+    });
+    if(!any) lines.push("(list is empty)");
+    return lines.join("\n").trim();
+  }
+
+  // ---------- Send to my store ----------
+  var sendStoreDialog = document.getElementById("sendStoreDialog");
+  var storeUrlInput = document.getElementById("storeUrlInput");
+  document.getElementById("sendStoreBtn").addEventListener("click", function(){
+    storeUrlInput.value = state.storeUrl || "";
+    sendStoreDialog.showModal();
+  });
+  document.getElementById("copyAndOpenStore").addEventListener("click", function(){
+    state.storeUrl = storeUrlInput.value.trim();
+    saveState();
+    var text = buildListText();
+    if(text && navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(function(){});
+    }
+    if(state.storeUrl){
+      var url = state.storeUrl.match(/^https?:\/\//) ? state.storeUrl : "https://" + state.storeUrl;
+      window.open(url, "_blank");
+    }
+    sendStoreDialog.close();
+  });
+
+  // ---------- Share list ----------
+  var shareDialog = document.getElementById("shareDialog");
+  document.getElementById("shareBtn").addEventListener("click", function(){
+    document.getElementById("shareNativeBtn").hidden = !navigator.share;
+    shareDialog.showModal();
+  });
+  document.getElementById("shareNativeBtn").addEventListener("click", function(){
+    var text = buildListText();
+    if(navigator.share){
+      navigator.share({ title: "Oh Stuffing — shopping list", text: text }).catch(function(){});
+    }
+    shareDialog.close();
+  });
+  document.getElementById("shareTextBtn").addEventListener("click", function(){
+    var text = buildListText();
+    window.open("sms:?&body=" + encodeURIComponent(text), "_blank");
+    shareDialog.close();
+  });
+  document.getElementById("shareEmailBtn").addEventListener("click", function(){
+    var text = buildListText();
+    window.open("mailto:?subject=" + encodeURIComponent("Oh Stuffing — shopping list") + "&body=" + encodeURIComponent(text), "_blank");
+    shareDialog.close();
+  });
+  document.getElementById("shareCopyBtn").addEventListener("click", function(){
+    var text = buildListText();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(function(){});
+    }
+    shareDialog.close();
+  });
+
+  // ---------- Countdown (leftovers & opened items waste tracker) ----------
+  var wasteDialog = document.getElementById("wasteDialog");
+  var wasteForm = document.getElementById("wasteForm");
+  var wasteNameInput = document.getElementById("wasteName");
+  var wasteKindSelect = document.getElementById("wasteKind");
+  var wasteListEl = document.getElementById("wasteList");
+  var wasteEmptyEl = document.getElementById("wasteEmpty");
+  var wasteMealRow = document.getElementById("wasteMealRow");
+  var wasteMealSelect = document.getElementById("wasteMealSelect");
+  var wasteNameRow = document.getElementById("wasteNameRow");
+  var produceLookupInput = document.getElementById("produceLookupInput");
+  var produceTipBox = document.getElementById("produceTipBox");
+
+  function populateWasteMealSelect(){
+    var prev = wasteMealSelect.value;
+    wasteMealSelect.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = state.meals.length ? "Choose a meal…" : "No meals planned yet";
+    wasteMealSelect.appendChild(placeholder);
+    state.meals.forEach(function(m){
+      var opt = document.createElement("option");
+      opt.value = m.name;
+      opt.textContent = m.name;
+      wasteMealSelect.appendChild(opt);
+    });
+    var customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.textContent = "Something else… (type it in)";
+    wasteMealSelect.appendChild(customOpt);
+    // keep the previous choice selected if it still exists
+    if([].slice.call(wasteMealSelect.options).some(function(o){ return o.value === prev; })){
+      wasteMealSelect.value = prev;
+    }
+  }
+  function refreshWasteFormMode(){
+    var isLeftover = wasteKindSelect.value === "leftover";
+    wasteMealRow.hidden = !isLeftover;
+    var pickedRealMeal = isLeftover && wasteMealSelect.value && wasteMealSelect.value !== "__custom__";
+    wasteNameRow.hidden = pickedRealMeal;
+    if(!isLeftover) wasteNameInput.placeholder = "e.g. Cream cheese, Ketchup, Salsa";
+    else wasteNameInput.placeholder = "Type the leftover's name";
+  }
+  wasteKindSelect.addEventListener("change", function(){ populateWasteMealSelect(); refreshWasteFormMode(); });
+  wasteMealSelect.addEventListener("change", refreshWasteFormMode);
+
+  document.getElementById("wasteBtn").addEventListener("click", function(){
+    renderWasteList();
+    populateWasteMealSelect();
+    refreshWasteFormMode();
+    produceLookupInput.value = "";
+    produceTipBox.textContent = "";
+    wasteDialog.showModal();
+  });
+  document.getElementById("closeWaste").addEventListener("click", function(){ wasteDialog.close(); });
+
+  wasteForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var kind = wasteKindSelect.value;
+    var name;
+    if(kind === "leftover" && wasteMealSelect.value && wasteMealSelect.value !== "__custom__"){
+      name = wasteMealSelect.value + " leftovers";
+    } else {
+      name = wasteNameInput.value.trim();
+    }
+    if(!name) return;
+    var days = kind === "leftover" ? LEFTOVER_DAYS_DEFAULT : (lookupInDict(name, OPENED_SHELF_LIFE_DAYS) || OPENED_DAYS_FALLBACK);
+    var today = todayStr();
+    state.tracked.push({
+      id: "w"+Date.now()+Math.random().toString(16).slice(2),
+      text: name, kind: kind, addedDate: today, goodUntil: addDays(today, days)
+    });
+    saveState();
+    wasteNameInput.value = "";
+    wasteMealSelect.value = "";
+    refreshWasteFormMode();
+    renderWasteList();
+  });
+
+  function renderWasteList(){
+    document.getElementById("statEaten").textContent = state.wasteStats.eaten;
+    document.getElementById("statTossed").textContent = state.wasteStats.tossed;
+    wasteListEl.innerHTML = "";
+    var sorted = state.tracked.slice().sort(function(a,b){ return a.goodUntil < b.goodUntil ? -1 : 1; });
+    wasteEmptyEl.hidden = sorted.length > 0;
+    var today = todayStr();
+    sorted.forEach(function(t){
+      var daysLeft = daysBetween(today, t.goodUntil);
+      var badgeClass = "badge-green", badgeText = "Good " + daysLeft + " more day" + (daysLeft===1?"":"s");
+      if(daysLeft < 0){ badgeClass = "badge-red"; badgeText = "Past good-by — use judgment or toss"; }
+      else if(daysLeft === 0){ badgeClass = "badge-red"; badgeText = "Use today"; }
+      else if(daysLeft <= 1){ badgeClass = "badge-yellow"; badgeText = "Use very soon"; }
+
+      var li = document.createElement("li");
+      var body = document.createElement("div");
+      body.className = "waste-body";
+      var nameEl = document.createElement("div");
+      nameEl.className = "waste-name";
+      nameEl.textContent = (t.kind === "leftover" ? "🥡 " : "🍯 ") + t.text;
+      var whenEl = document.createElement("div");
+      whenEl.className = "waste-when";
+      whenEl.innerHTML = 'Good until ' + formatDate(t.goodUntil) + ' &nbsp; <span class="badge ' + badgeClass + '">' + badgeText + '</span>';
+      body.appendChild(nameEl);
+      body.appendChild(whenEl);
+
+      var actions = document.createElement("div");
+      actions.className = "waste-actions";
+      var ateBtn = document.createElement("button");
+      ateBtn.type = "button"; ateBtn.textContent = "✅ Ate it";
+      ateBtn.addEventListener("click", function(){
+        state.wasteStats.eaten++;
+        state.tracked = state.tracked.filter(function(x){ return x.id !== t.id; });
+        saveState(); renderWasteList();
+      });
+      var tossBtn = document.createElement("button");
+      tossBtn.type = "button"; tossBtn.textContent = "🗑️ Tossed it";
+      tossBtn.addEventListener("click", function(){
+        state.wasteStats.tossed++;
+        state.tracked = state.tracked.filter(function(x){ return x.id !== t.id; });
+        saveState(); renderWasteList();
+      });
+      actions.appendChild(ateBtn);
+      actions.appendChild(tossBtn);
+
+      li.appendChild(body);
+      li.appendChild(actions);
+      wasteListEl.appendChild(li);
+    });
+  }
+
+  produceLookupInput.addEventListener("input", function(){
+    var tip = lookupInDict(produceLookupInput.value, PRODUCE_STORAGE);
+    produceTipBox.textContent = tip || (produceLookupInput.value.trim() ? "Don't have a tip for that one yet — as a rule, most fridge produce keeps best loosely wrapped, and most counter produce likes to stay dry and out of direct sun." : "");
+  });
+
+  // ---------- Meal plan ----------
+  var mealPlanDialog = document.getElementById("mealPlanDialog");
+  var mealForm = document.getElementById("mealForm");
+  var mealNameInput = document.getElementById("mealName");
+  var mealIngredientsInput = document.getElementById("mealIngredients");
+  var mealListEl = document.getElementById("mealList");
+  var mealEmptyEl = document.getElementById("mealEmpty");
+
+  document.getElementById("mealPlanBtn").addEventListener("click", function(){
+    renderMealList();
+    mealPlanDialog.showModal();
+  });
+  document.getElementById("closeMealPlan").addEventListener("click", function(){ mealPlanDialog.close(); });
+
+  var mealSuggestAgainBtn = document.getElementById("mealSuggestAgain");
+  var mealSuggestHint = document.getElementById("mealSuggestHint");
+  var lastAutoFillText = "";       // what we last wrote in, so we know if the user has since edited it
+  var lastSuggestionSource = null; // the suggestion array currently backing the textarea
+
+  function showSuggestion(list, isNew){
+    lastSuggestionSource = list;
+    mealIngredientsInput.value = list.join(", ");
+    lastAutoFillText = mealIngredientsInput.value;
+    mealSuggestHint.hidden = false;
+    mealSuggestHint.textContent = "Guessed from \"" + mealNameInput.value.trim() + "\" — edit anything above.";
+    mealSuggestAgainBtn.hidden = false;
+  }
+
+  mealNameInput.addEventListener("input", function(){
+    // only auto-fill if the ingredients box is empty or still exactly what we last suggested
+    var untouched = mealIngredientsInput.value.trim() === "" || mealIngredientsInput.value === lastAutoFillText;
+    if(!untouched) return;
+    var suggestion = findMealSuggestion(mealNameInput.value);
+    if(suggestion){
+      showSuggestion(suggestion, true);
+    } else {
+      mealSuggestHint.hidden = true;
+      mealSuggestAgainBtn.hidden = true;
+      if(mealIngredientsInput.value === lastAutoFillText){
+        mealIngredientsInput.value = "";
+        lastAutoFillText = "";
+      }
+    }
+  });
+  mealSuggestAgainBtn.addEventListener("click", function(){
+    var suggestion = findMealSuggestion(mealNameInput.value);
+    if(suggestion) showSuggestion(suggestion, false);
+  });
+  mealIngredientsInput.addEventListener("input", function(){
+    if(mealIngredientsInput.value !== lastAutoFillText){
+      mealSuggestHint.hidden = true; // they're customizing it now
+    }
+  });
+
+  mealForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = mealNameInput.value.trim();
+    var ingredientsRaw = mealIngredientsInput.value.trim();
+    if(!name || !ingredientsRaw) return;
+    var ingredients = splitEntry(ingredientsRaw);
+    state.meals.push({ id: "m"+Date.now()+Math.random().toString(16).slice(2), name: name, ingredients: ingredients });
+    // remember whatever the user ended up with, so next time this meal auto-fills too
+    state.learnedMeals[name.toLowerCase()] = ingredients;
+    addItems(ingredientsRaw, name); // adds/tags items and saves + renders the list
+    mealNameInput.value = "";
+    mealIngredientsInput.value = "";
+    lastAutoFillText = "";
+    mealSuggestHint.hidden = true;
+    mealSuggestAgainBtn.hidden = true;
+    renderMealList();
+    mealNameInput.focus();
+  });
+
+  function renderMealList(){
+    mealListEl.innerHTML = "";
+    mealEmptyEl.hidden = state.meals.length > 0;
+    state.meals.forEach(function(meal){
+      var li = document.createElement("li");
+      var body = document.createElement("div");
+      body.style.flex = "1";
+      var nameEl = document.createElement("div");
+      nameEl.className = "meal-name";
+      nameEl.textContent = meal.name;
+      var ingEl = document.createElement("div");
+      ingEl.className = "meal-ing";
+      ingEl.textContent = meal.ingredients.join(", ");
+      body.appendChild(nameEl);
+      body.appendChild(ingEl);
+      var del = document.createElement("button");
+      del.className = "meal-del";
+      del.type = "button";
+      del.textContent = "🗑️";
+      del.setAttribute("aria-label", "Remove meal " + meal.name);
+      del.addEventListener("click", function(){ removeMeal(meal.id); });
+      li.appendChild(body);
+      li.appendChild(del);
+      mealListEl.appendChild(li);
+    });
+  }
+
+  function removeMeal(mealId){
+    var meal = state.meals.find(function(m){ return m.id === mealId; });
+    if(!meal) return;
+    // find items only tagged for this meal, not yet checked off
+    var onlyForThisMeal = state.items.filter(function(it){
+      return !it.done && it.meals.indexOf(meal.name) !== -1 && it.meals.length === 1;
+    });
+    var removeItemsToo = false;
+    if(onlyForThisMeal.length){
+      removeItemsToo = confirm(
+        'Remove "' + meal.name + '" from your meal plan.\n\nAlso take the ' +
+        onlyForThisMeal.length + ' item' + (onlyForThisMeal.length===1?'':'s') +
+        ' it added off your list?\n(' + onlyForThisMeal.map(function(it){return it.text;}).join(", ") + ')'
+      );
+    }
+    state.meals = state.meals.filter(function(m){ return m.id !== mealId; });
+    state.items.forEach(function(it){
+      var idx = it.meals.indexOf(meal.name);
+      if(idx !== -1) it.meals.splice(idx,1);
+    });
+    if(removeItemsToo){
+      var removeIds = onlyForThisMeal.map(function(it){ return it.id; });
+      state.items = state.items.filter(function(it){ return removeIds.indexOf(it.id) === -1; });
+    }
+    saveState();
+    renderMealList();
+    render();
+  }
+
+  // ---------- Add form ----------
+  var addForm = document.getElementById("addForm");
+  var itemInput = document.getElementById("itemInput");
+  addForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var val = itemInput.value;
+    if(val.trim()){
+      addItems(val);
+      itemInput.value = "";
+    }
+    itemInput.focus();
+  });
+
+  // ---------- Toolbar ----------
+  var reorderToggle = document.getElementById("reorderToggle");
+  reorderToggle.addEventListener("click", function(){
+    var on = reorderToggle.getAttribute("aria-pressed") === "true";
+    reorderToggle.setAttribute("aria-pressed", (!on).toString());
+    render();
+  });
+  document.getElementById("clearDone").addEventListener("click", function(){
+    state.items = state.items.filter(function(it){ return !it.done; });
+    saveState(); render();
+  });
+  document.getElementById("startOverBtn").addEventListener("click", function(){
+    if(state.items.length === 0) return;
+    if(confirm("Clear your whole list? This can't be undone.")){
+      state.items = [];
+      saveState(); render();
+    }
+  });
+
+  // ---------- Settings dialog ----------
+  var settingsDialog = document.getElementById("settingsDialog");
+  document.getElementById("settingsBtn").addEventListener("click", function(){ settingsDialog.showModal(); });
+  document.getElementById("closeSettings").addEventListener("click", function(){ settingsDialog.close(); });
+
+  function wireSeg(segId, applyFn, prefKey){
+    var seg = document.getElementById(segId);
+    var buttons = seg.querySelectorAll("button");
+    buttons.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        buttons.forEach(function(b){ b.setAttribute("aria-pressed", (b===btn).toString()); });
+        state.prefs[prefKey] = btn.getAttribute("data-val");
+        saveState();
+        applyFn(btn.getAttribute("data-val"));
+      });
+    });
+  }
+  function applyTextSize(v){ document.body.setAttribute("data-textsize", v === "normal" ? "" : v); }
+  function applyContrast(v){ document.body.setAttribute("data-contrast", v); }
+  function applyTheme(v){
+    if(v === "system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", v);
+  }
+
+  // ---------- App color (accent) presets ----------
+  var ACCENT_PRESETS = {
+    green:  { light:{accent:"#3F6B4A", accentInk:"#FFFFFF", accent2:"#E0703A", accent2Ink:"#FFFFFF"}, dark:{accent:"#6FA87D", accentInk:"#12281A", accent2:"#F08B57", accent2Ink:"#3A1A08"} },
+    blue:   { light:{accent:"#2F5D8A", accentInk:"#FFFFFF", accent2:"#D98A2B", accent2Ink:"#3A2200"}, dark:{accent:"#7FB4E0", accentInk:"#04213A", accent2:"#F0B15A", accent2Ink:"#3A2200"} },
+    purple: { light:{accent:"#6A4C93", accentInk:"#FFFFFF", accent2:"#D6604D", accent2Ink:"#FFFFFF"}, dark:{accent:"#B79CE0", accentInk:"#241436", accent2:"#F0917E", accent2Ink:"#3A0F08"} },
+    teal:   { light:{accent:"#1D7A72", accentInk:"#FFFFFF", accent2:"#E0A93A", accent2Ink:"#3A2600"}, dark:{accent:"#6ED3C8", accentInk:"#04211D", accent2:"#F0CE72", accent2Ink:"#3A2600"} },
+    berry:  { light:{accent:"#8C2F5A", accentInk:"#FFFFFF", accent2:"#E0913A", accent2Ink:"#3A2400"}, dark:{accent:"#E08AB2", accentInk:"#3A0F22", accent2:"#F0C179", accent2Ink:"#3A2400"} },
+    slate:  { light:{accent:"#3D4A5C", accentInk:"#FFFFFF", accent2:"#C9502E", accent2Ink:"#FFFFFF"}, dark:{accent:"#9FB3C8", accentInk:"#12202E", accent2:"#F0895F", accent2Ink:"#3A1206"} }
+  };
+  function applyAccentPreset(key){
+    var p = ACCENT_PRESETS[key] || ACCENT_PRESETS.green;
+    var css =
+      ':root{ --accent:'+p.light.accent+'; --accent-ink:'+p.light.accentInk+'; --accent-2:'+p.light.accent2+'; --accent-2-ink:'+p.light.accent2Ink+'; }\n' +
+      '@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --accent:'+p.dark.accent+'; --accent-ink:'+p.dark.accentInk+'; --accent-2:'+p.dark.accent2+'; --accent-2-ink:'+p.dark.accent2Ink+'; } }\n' +
+      ':root[data-theme="dark"]{ --accent:'+p.dark.accent+'; --accent-ink:'+p.dark.accentInk+'; --accent-2:'+p.dark.accent2+'; --accent-2-ink:'+p.dark.accent2Ink+'; }\n' +
+      ':root[data-theme="light"]{ --accent:'+p.light.accent+'; --accent-ink:'+p.light.accentInk+'; --accent-2:'+p.light.accent2+'; --accent-2-ink:'+p.light.accent2Ink+'; }';
+    var styleEl = document.getElementById("accentOverrideStyle");
+    if(!styleEl){
+      styleEl = document.createElement("style");
+      styleEl.id = "accentOverrideStyle";
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+  }
+
+  wireSeg("textSizeSeg", applyTextSize, "textSize");
+  wireSeg("contrastSeg", applyContrast, "contrast");
+  wireSeg("themeSeg", applyTheme, "theme");
+  wireSeg("accentSeg", applyAccentPreset, "accentColor");
+
+  function restorePrefUI(segId, val){
+    var seg = document.getElementById(segId);
+    seg.querySelectorAll("button").forEach(function(b){
+      b.setAttribute("aria-pressed", (b.getAttribute("data-val") === val).toString());
+    });
+  }
+  restorePrefUI("textSizeSeg", state.prefs.textSize);
+  restorePrefUI("contrastSeg", state.prefs.contrast);
+  restorePrefUI("themeSeg", state.prefs.theme);
+  restorePrefUI("accentSeg", state.prefs.accentColor);
+  applyTextSize(state.prefs.textSize);
+  applyContrast(state.prefs.contrast);
+  applyTheme(state.prefs.theme);
+  applyAccentPreset(state.prefs.accentColor);
+
+  // ---------- Voice input ----------
+  var micBtn = document.getElementById("micBtn");
+  var micHint = document.getElementById("micHint");
+  var listenBanner = document.getElementById("listenBanner");
+  var listenText = document.getElementById("listenText");
+  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognizing = false;
+  var recognition = null;
+
+  if(!SpeechRec){
+    micBtn.disabled = true;
+    micBtn.style.opacity = "0.4";
+    micHint.textContent = "Voice input isn't supported in this browser (try Chrome, Edge, or Safari) — just type your items above for now.";
+  } else {
+    recognition = new SpeechRec();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    var finalBuffer = "";
+
+    recognition.onresult = function(event){
+      var interim = "";
+      for(var i = event.resultIndex; i < event.results.length; i++){
+        var transcript = event.results[i][0].transcript;
+        if(event.results[i].isFinal){
+          finalBuffer += transcript + ", ";
+        } else {
+          interim += transcript;
+        }
+      }
+      listenText.textContent = "Heard: " + (finalBuffer + interim || "…");
+    };
+    recognition.onerror = function(e){
+      if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+        listenText.textContent = "Voice input is blocked in this preview — it'll work in Chrome, Edge, or Safari once Oh Stuffing is live on its own site. Just type for now.";
+      } else if(e.error === "no-speech"){
+        listenText.textContent = "Didn't hear anything — try again, or type it in.";
+      } else {
+        listenText.textContent = "Didn't catch that — try again, or type it in.";
+      }
+    };
+    recognition.onend = function(){
+      recognizing = false;
+      micBtn.setAttribute("data-listening","false");
+      micBtn.setAttribute("aria-pressed","false");
+      listenBanner.hidden = true;
+      if(finalBuffer.trim()){
+        addItems(finalBuffer);
+        finalBuffer = "";
+      }
+    };
+
+    micBtn.addEventListener("click", function(){
+      if(recognizing){
+        recognition.stop();
+        return;
+      }
+      finalBuffer = "";
+      listenText.textContent = "Listening…";
+      listenBanner.hidden = false;
+      micBtn.setAttribute("data-listening","true");
+      micBtn.setAttribute("aria-pressed","true");
+      recognizing = true;
+      try{ recognition.start(); }
+      catch(e){ recognizing = false; listenBanner.hidden = true; }
+    });
+  }
+
+  // ---------- Pantry & fridge photo recognition (uses the artifact's Claude-vision capability) ----------
+  var sampleAPI = null;
+  var sampleImagesOk = false;
+  var pantryUnavailableEl = document.getElementById("pantryUnavailable");
+  var pantryScanAreaEl = document.getElementById("pantryScanArea");
+  var pantryDialog = document.getElementById("pantryDialog");
+  var pantryPhotoInput = document.getElementById("pantryPhotoInput");
+  var fridgePhotoInput = document.getElementById("fridgePhotoInput");
+  var scanPantryBtn = document.getElementById("scanPantryBtn");
+
+  function wireCameraTile(input, previewImg, retakeBtn, label){
+    input.addEventListener("change", function(){
+      var file = input.files[0];
+      if(!file){ return; }
+      var url = URL.createObjectURL(file);
+      previewImg.src = url;
+      previewImg.hidden = false;
+      label.hidden = true;
+      retakeBtn.hidden = false;
+    });
+    retakeBtn.addEventListener("click", function(){
+      input.value = "";
+      previewImg.hidden = true;
+      previewImg.removeAttribute("src");
+      label.hidden = false;
+      retakeBtn.hidden = true;
+    });
+  }
+  wireCameraTile(pantryPhotoInput, document.getElementById("pantryPreview"), document.getElementById("pantryRetake"), document.getElementById("pantryTileLabel"));
+  wireCameraTile(fridgePhotoInput, document.getElementById("fridgePreview"), document.getElementById("fridgeRetake"), document.getElementById("fridgeTileLabel"));
+  var pantryStatus = document.getElementById("pantryStatus");
+  var pantryResultsEl = document.getElementById("pantryResults");
+  var pantryResultList = document.getElementById("pantryResultList");
+  var pantryAddMissed = document.getElementById("pantryAddMissed");
+  var pantryChipsEl = document.getElementById("pantryChips");
+  var pantryMatchesEl = document.getElementById("pantryMatches");
+  var pendingScanItems = []; // [{text, checked}] awaiting confirmation before saving
+
+  function syncPantryAvailability(){
+    var available = !!(sampleAPI && sampleImagesOk);
+    pantryUnavailableEl.hidden = available;
+    pantryScanAreaEl.hidden = !available;
+  }
+  syncPantryAvailability(); // default: hidden/unavailable until proven otherwise
+
+  (function initSample(){
+    if(!window.claude || typeof window.claude.use !== "function") return;
+    window.claude.use("sample").then(function(s){
+      sampleAPI = s;
+      if(!s){ syncPantryAvailability(); return; }
+      s.limits().then(function(l){
+        sampleImagesOk = !!(l && l.images);
+        syncPantryAvailability();
+      }).catch(function(){ syncPantryAvailability(); });
+    }).catch(function(){ syncPantryAvailability(); });
+  })();
+
+  function sampleErrorMessage(code){
+    if(code === "not_granted") return "Photo lookup needs your permission — try again and allow it when asked.";
+    if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
+    if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
+    if(code === "images_unavailable") return "Photos aren't supported in this view.";
+    return "Couldn't look at that photo just now — try again.";
+  }
+
+  function renderScanResults(items){
+    pendingScanItems = items.filter(Boolean).map(function(t){ return { text: String(t).trim(), checked: true }; });
+    drawScanResultList();
+    pantryResultsEl.hidden = pendingScanItems.length === 0;
+    if(pendingScanItems.length === 0){
+      pantryStatus.textContent = "Didn't spot anything recognizable — try a clearer or closer photo.";
+    }
+  }
+  function drawScanResultList(){
+    pantryResultList.innerHTML = "";
+    pendingScanItems.forEach(function(entry, idx){
+      var li = document.createElement("li");
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = entry.checked;
+      cb.style.width = "20px"; cb.style.height = "20px"; cb.style.flex = "none";
+      cb.addEventListener("change", function(){ entry.checked = cb.checked; });
+      var label = document.createElement("span");
+      label.textContent = entry.text;
+      label.style.flex = "1";
+      li.appendChild(cb);
+      li.appendChild(label);
+      pantryResultList.appendChild(li);
+    });
+  }
+
+  scanPantryBtn.addEventListener("click", function(){
+    if(!sampleAPI){ pantryStatus.textContent = "Photo lookup isn't available right now."; return; }
+    var files = [];
+    if(pantryPhotoInput.files[0]) files.push(pantryPhotoInput.files[0]);
+    if(fridgePhotoInput.files[0]) files.push(fridgePhotoInput.files[0]);
+    if(!files.length){ pantryStatus.textContent = "Add at least one photo first."; return; }
+    pantryStatus.textContent = "Looking at your photo…";
+    scanPantryBtn.disabled = true;
+    pantryResultsEl.hidden = true;
+    sampleAPI.json(
+      "These are photo(s) of someone's home pantry and/or fridge, taken to help plan grocery shopping. " +
+      "Identify every distinguishable food or grocery item you can actually see. " +
+      "Reply with ONLY a JSON array of short, lowercase, everyday grocery item names, like [\"milk\",\"ketchup\",\"apples\"] " +
+      "— no duplicates, no brand names unless that's the clearest way to name it, nothing you can't actually see.",
+      { images: files, modelTier: "quick", cache: false }
+    ).then(function(items){
+      pantryStatus.textContent = "";
+      renderScanResults(Array.isArray(items) ? items : []);
+    }).catch(function(e){
+      pantryStatus.textContent = sampleErrorMessage(e && e.code);
+    }).finally(function(){
+      scanPantryBtn.disabled = false;
+    });
+  });
+
+  pantryAddMissed.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); document.getElementById("pantryAddMissedBtn").click(); }
+  });
+  document.getElementById("pantryAddMissedBtn").addEventListener("click", function(){
+    var raw = pantryAddMissed.value.trim();
+    if(!raw) return;
+    splitEntry(raw).forEach(function(t){ pendingScanItems.push({ text: t, checked: true }); });
+    pantryAddMissed.value = "";
+    pantryResultsEl.hidden = false;
+    drawScanResultList();
+  });
+
+  document.getElementById("savePantryBtn").addEventListener("click", function(){
+    var today = todayStr();
+    pendingScanItems.forEach(function(entry){
+      if(!entry.checked) return;
+      state.pantryItems[entry.text.toLowerCase()] = { addedDate: today };
+    });
+    saveState();
+    pendingScanItems = [];
+    pantryResultsEl.hidden = true;
+    document.getElementById("pantryRetake").click();
+    document.getElementById("fridgeRetake").click();
+    pantryStatus.textContent = "Saved.";
+    renderPantryChips();
+  });
+
+  function renderPantryChips(){
+    var keys = Object.keys(state.pantryItems);
+    if(!keys.length){
+      pantryChipsEl.textContent = "Nothing saved yet — scan a photo above.";
+      return;
+    }
+    pantryChipsEl.innerHTML = "";
+    keys.sort().forEach(function(key){
+      var chip = document.createElement("span");
+      chip.className = "chip-btn";
+      chip.style.marginRight = "6px";
+      chip.style.marginBottom = "6px";
+      chip.style.display = "inline-block";
+      chip.textContent = key + " ✕";
+      chip.title = "Remove from stock";
+      chip.addEventListener("click", function(){
+        delete state.pantryItems[key];
+        saveState();
+        renderPantryChips();
+      });
+      pantryChipsEl.appendChild(chip);
+    });
+  }
+
+  document.getElementById("clearPantryBtn").addEventListener("click", function(){
+    if(!Object.keys(state.pantryItems).length) return;
+    if(confirm("Clear everything saved in What's My Stock?")){
+      state.pantryItems = {};
+      saveState();
+      renderPantryChips();
+      pantryMatchesEl.innerHTML = "";
+    }
+  });
+
+  document.getElementById("checkAgainstListBtn").addEventListener("click", function(){
+    var pantryKeys = Object.keys(state.pantryItems);
+    var matches = state.items.filter(function(it){
+      if(it.done) return false;
+      var key = it.text.trim().toLowerCase();
+      return pantryKeys.some(function(p){ return p === key || p.indexOf(key) !== -1 || key.indexOf(p) !== -1; });
+    });
+    pantryMatchesEl.innerHTML = "";
+    if(!matches.length){
+      pantryMatchesEl.innerHTML = '<div class="hint">Nothing on your current list matches what\'s saved in What\'s My Stock.</div>';
+      return;
+    }
+    var heading = document.createElement("div");
+    heading.className = "hint";
+    heading.style.marginBottom = "6px";
+    heading.textContent = "Looks like you may already have these:";
+    pantryMatchesEl.appendChild(heading);
+    var ul = document.createElement("ul");
+    ul.className = "meal-list";
+    ul.style.borderTop = "none";
+    matches.forEach(function(it){
+      var li = document.createElement("li");
+      var body = document.createElement("div");
+      body.style.flex = "1";
+      body.textContent = it.text;
+      var btn = document.createElement("button");
+      btn.className = "meal-del";
+      btn.type = "button";
+      btn.textContent = "✅";
+      btn.title = "I have it — check it off my list";
+      btn.addEventListener("click", function(){
+        it.done = true;
+        saveState(); render();
+        document.getElementById("checkAgainstListBtn").click();
+      });
+      li.appendChild(body);
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+    pantryMatchesEl.appendChild(ul);
+  });
+
+  document.getElementById("pantryBtn").addEventListener("click", function(){
+    syncPantryAvailability();
+    renderPantryChips();
+    pantryMatchesEl.innerHTML = "";
+    pantryDialog.showModal();
+  });
+  document.getElementById("closePantry").addEventListener("click", function(){ pantryDialog.close(); });
+
+  // ---------- Recipe vault (uses the same Claude-vision/reasoning capability as the pantry scan) ----------
+  var recipeDialog = document.getElementById("recipeDialog");
+  var recipeDetailDialog = document.getElementById("recipeDetailDialog");
+  var recipeForm = document.getElementById("recipeForm");
+  var recipeTitle = document.getElementById("recipeTitle");
+  var recipeServings = document.getElementById("recipeServings");
+  var recipeText = document.getElementById("recipeText");
+  var recipeList = document.getElementById("recipeList");
+  var recipeEmpty = document.getElementById("recipeEmpty");
+  var recipeUnavailableNote = document.getElementById("recipeUnavailableNote");
+  var recipePhotoInput = document.getElementById("recipePhotoInput");
+  var recipeScanPhotoBtn = document.getElementById("recipeScanPhotoBtn");
+  var recipeScanStatus = document.getElementById("recipeScanStatus");
+  var currentRecipe = null;
+
+  wireCameraTile(recipePhotoInput, document.getElementById("recipePhotoPreview"), document.getElementById("recipePhotoRetake"), document.getElementById("recipePhotoLabel"));
+  recipePhotoInput.addEventListener("change", function(){
+    recipeScanPhotoBtn.hidden = !recipePhotoInput.files[0];
+    recipeScanStatus.textContent = "";
+  });
+
+  document.getElementById("recipeVaultBtn").addEventListener("click", function(){
+    recipeUnavailableNote.hidden = !!sampleAPI;
+    renderRecipeList();
+    recipeDialog.showModal();
+  });
+  document.getElementById("closeRecipeVault").addEventListener("click", function(){ recipeDialog.close(); });
+
+  recipeScanPhotoBtn.addEventListener("click", function(){
+    var file = recipePhotoInput.files[0];
+    if(!file || !sampleAPI) return;
+    recipeScanStatus.textContent = "Reading the photo…";
+    recipeScanPhotoBtn.disabled = true;
+    sampleAPI.json(
+      "This is a photo of a recipe — a card, a cookbook page, or a handwritten note. Transcribe it faithfully. " +
+      "Reply with ONLY a JSON object shaped like {\"title\": string, \"servings\": number, \"text\": string}, " +
+      "where text contains the full ingredient list and instructions as plain text with line breaks as \\n. " +
+      "If servings isn't stated, make a reasonable guess.",
+      { images: [file], modelTier: "default", cache: false }
+    ).then(function(data){
+      if(data && data.title) recipeTitle.value = data.title;
+      if(data && data.servings) recipeServings.value = data.servings;
+      if(data && data.text) recipeText.value = data.text;
+      recipeScanStatus.textContent = "Read it — review and edit below, then save.";
+    }).catch(function(e){
+      recipeScanStatus.textContent = sampleErrorMessage(e && e.code);
+    }).finally(function(){
+      recipeScanPhotoBtn.disabled = false;
+    });
+  });
+
+  recipeForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var title = recipeTitle.value.trim();
+    var text = recipeText.value.trim();
+    if(!title || !text) return;
+    var servings = parseInt(recipeServings.value, 10) || 4;
+    state.recipes.push({
+      id: "r"+Date.now()+Math.random().toString(16).slice(2),
+      title: title, servings: servings, text: text
+    });
+    saveState();
+    recipeTitle.value = "";
+    recipeText.value = "";
+    recipeServings.value = "4";
+    document.getElementById("recipePhotoRetake").click();
+    recipeScanPhotoBtn.hidden = true;
+    recipeScanStatus.textContent = "";
+    renderRecipeList();
+  });
+
+  function renderRecipeList(){
+    recipeList.innerHTML = "";
+    recipeEmpty.hidden = state.recipes.length > 0;
+    state.recipes.forEach(function(r){
+      var li = document.createElement("li");
+      var body = document.createElement("div");
+      body.style.flex = "1";
+      body.style.cursor = "pointer";
+      body.innerHTML = '<div class="meal-name">' + r.title + '</div><div class="meal-ing">Serves ' + r.servings + '</div>';
+      body.addEventListener("click", function(){
+        recipeDialog.close();
+        openRecipeDetail(r);
+      });
+      var del = document.createElement("button");
+      del.className = "meal-del";
+      del.type = "button";
+      del.textContent = "🗑️";
+      del.setAttribute("aria-label", "Delete " + r.title);
+      del.addEventListener("click", function(){
+        state.recipes = state.recipes.filter(function(x){ return x.id !== r.id; });
+        saveState();
+        renderRecipeList();
+      });
+      li.appendChild(body);
+      li.appendChild(del);
+      recipeList.appendChild(li);
+    });
+  }
+
+  function openRecipeDetail(r){
+    currentRecipe = r;
+    document.getElementById("recipeDetailTitle").textContent = r.title;
+    document.getElementById("recipeDetailMeta").textContent = "Serves " + r.servings + " as written";
+    document.getElementById("recipeDetailText").textContent = r.text;
+    document.getElementById("scaleServingsInput").value = r.servings;
+    document.getElementById("recipeActionStatus").textContent = !sampleAPI ? "Scaling and diet swaps need this app open directly in Claude." : "";
+    document.getElementById("recipeResultBox").hidden = true;
+    recipeDetailDialog.showModal();
+  }
+
+  function runRecipeSample(resultLabel, prompt){
+    if(!sampleAPI){
+      document.getElementById("recipeActionStatus").textContent = "This needs the app open directly in Claude.";
+      return;
+    }
+    var statusEl = document.getElementById("recipeActionStatus");
+    var scaleBtn = document.getElementById("scaleBtn");
+    var adaptBtn = document.getElementById("adaptBtn");
+    statusEl.textContent = "Thinking…";
+    document.getElementById("recipeResultBox").hidden = true;
+    scaleBtn.disabled = true; adaptBtn.disabled = true;
+    sampleAPI(prompt, { modelTier: "default", cache: false }).then(function(res){
+      statusEl.textContent = "";
+      document.getElementById("recipeResultLabel").textContent = resultLabel;
+      document.getElementById("recipeResultText").textContent = res.text;
+      document.getElementById("recipeResultBox").hidden = false;
+    }).catch(function(e){
+      statusEl.textContent = sampleErrorMessage(e && e.code);
+    }).finally(function(){
+      scaleBtn.disabled = false; adaptBtn.disabled = false;
+    });
+  }
+
+  document.getElementById("scaleBtn").addEventListener("click", function(){
+    var newServings = parseInt(document.getElementById("scaleServingsInput").value, 10);
+    if(!newServings || newServings < 1 || !currentRecipe) return;
+    var prompt = "Here is a recipe written for " + currentRecipe.servings + " servings:\n\n" + currentRecipe.text +
+      "\n\nRewrite it scaled to serve exactly " + newServings + " servings. Adjust every ingredient quantity proportionally, " +
+      "rounding to sensible kitchen measurements, and keep the instructions and format close to the original. " +
+      "Reply with just the rewritten recipe, no extra commentary.";
+    runRecipeSample("Scaled to " + newServings + " servings", prompt);
+  });
+
+  document.getElementById("adaptBtn").addEventListener("click", function(){
+    if(!currentRecipe) return;
+    var diet = document.getElementById("dietSelect").value;
+    var prompt = "Here is a recipe:\n\n" + currentRecipe.text +
+      "\n\nRewrite it to be " + diet + "-friendly. Substitute or remove any ingredients that don't fit, adjust instructions if the substitutions need it, " +
+      "and add a short line at the end starting with 'Changes:' summarizing what you swapped. Reply with just the rewritten recipe and that line, no other commentary.";
+    runRecipeSample(diet.charAt(0).toUpperCase() + diet.slice(1) + " version", prompt);
+  });
+
+  document.getElementById("addRecipeToListBtn").addEventListener("click", function(){
+    var statusEl = document.getElementById("recipeActionStatus");
+    if(!sampleAPI || !currentRecipe){ statusEl.textContent = "This needs the app open directly in Claude."; return; }
+    statusEl.textContent = "Pulling out the ingredients…";
+    sampleAPI.json(
+      "Extract ONLY the ingredient list from this recipe, one ingredient per array entry, written the way you'd jot it on a shopping list " +
+      "(quantity plus item, e.g. \"2 cups flour\"). Reply with ONLY a JSON array of strings.\n\n" + currentRecipe.text,
+      { modelTier: "quick", cache: false }
+    ).then(function(list){
+      if(!Array.isArray(list) || !list.length){
+        statusEl.textContent = "Couldn't find a clear ingredient list in this recipe.";
+        return;
+      }
+      addItems(list.join(", "), currentRecipe.title);
+      statusEl.textContent = "Added " + list.length + " ingredient" + (list.length === 1 ? "" : "s") + " to your list.";
+    }).catch(function(e){
+      statusEl.textContent = sampleErrorMessage(e && e.code);
+    });
+  });
+
+  document.getElementById("deleteRecipeBtn").addEventListener("click", function(){
+    if(!currentRecipe) return;
+    if(confirm('Delete "' + currentRecipe.title + '"? This can\'t be undone.')){
+      state.recipes = state.recipes.filter(function(x){ return x.id !== currentRecipe.id; });
+      saveState();
+      currentRecipe = null;
+      recipeDetailDialog.close();
+      renderRecipeList();
+      recipeDialog.showModal();
+    }
+  });
+
+  document.getElementById("closeRecipeDetail").addEventListener("click", function(){
+    recipeDetailDialog.close();
+    renderRecipeList();
+    recipeDialog.showModal();
+  });
+
+  // ---------- Holidays & events ----------
+  var eventDialog = document.getElementById("eventDialog");
+  var eventForm = document.getElementById("eventForm");
+  var eventNameInput = document.getElementById("eventName");
+  var eventDateInput = document.getElementById("eventDate");
+  var eventItemsInput = document.getElementById("eventItems");
+  var eventListArea = document.getElementById("eventListArea");
+  var eventEmpty = document.getElementById("eventEmpty");
+
+  document.getElementById("eventBtn").addEventListener("click", function(){
+    renderEventList();
+    eventDialog.showModal();
+  });
+  document.getElementById("closeEvent").addEventListener("click", function(){ eventDialog.close(); });
+
+  var eventSuggestAgainBtn = document.getElementById("eventSuggestAgain");
+  var eventSuggestHint = document.getElementById("eventSuggestHint");
+  var eventLastAutoFillText = "";
+
+  function showEventSuggestion(list){
+    eventItemsInput.value = list.join(", ");
+    eventLastAutoFillText = eventItemsInput.value;
+    eventSuggestHint.hidden = false;
+    eventSuggestHint.textContent = "Guessed for \"" + eventNameInput.value.trim() + "\" — edit anything above.";
+    eventSuggestAgainBtn.hidden = false;
+  }
+  eventNameInput.addEventListener("input", function(){
+    var untouched = eventItemsInput.value.trim() === "" || eventItemsInput.value === eventLastAutoFillText;
+    if(!untouched) return;
+    var suggestion = findEventSuggestion(eventNameInput.value);
+    if(suggestion){
+      showEventSuggestion(suggestion);
+    } else {
+      eventSuggestHint.hidden = true;
+      eventSuggestAgainBtn.hidden = true;
+      if(eventItemsInput.value === eventLastAutoFillText){
+        eventItemsInput.value = "";
+        eventLastAutoFillText = "";
+      }
+    }
+  });
+  eventSuggestAgainBtn.addEventListener("click", function(){
+    var suggestion = findEventSuggestion(eventNameInput.value);
+    if(suggestion) showEventSuggestion(suggestion);
+  });
+  eventItemsInput.addEventListener("input", function(){
+    if(eventItemsInput.value !== eventLastAutoFillText) eventSuggestHint.hidden = true;
+  });
+
+  eventForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = eventNameInput.value.trim();
+    var date = eventDateInput.value;
+    var raw = eventItemsInput.value.trim();
+    if(!name || !date || !raw) return;
+    var items = splitEntry(raw).map(function(text){
+      var dept = classify(text);
+      return { text: text, dept: dept, earliestBuyDate: earliestBuyDate(dept, date), addedToList: false };
+    });
+    state.events.push({
+      id: "e"+Date.now()+Math.random().toString(16).slice(2),
+      name: name, date: date, items: items
+    });
+    // remember what the user ended up with, so next time this event auto-fills too
+    state.learnedEvents[name.toLowerCase()] = splitEntry(raw);
+    saveState();
+    eventNameInput.value = "";
+    eventDateInput.value = "";
+    eventItemsInput.value = "";
+    eventLastAutoFillText = "";
+    eventSuggestHint.hidden = true;
+    eventSuggestAgainBtn.hidden = true;
+    renderEventList();
+  });
+
+  function renderEventList(){
+    eventListArea.innerHTML = "";
+    var sorted = state.events.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    eventEmpty.hidden = sorted.length > 0;
+    var today = todayStr();
+    sorted.forEach(function(ev){
+      var daysAway = daysBetween(today, ev.date);
+      var card = document.createElement("div");
+      card.className = "event-card";
+
+      var head = document.createElement("div");
+      head.className = "event-head";
+      var nameEl = document.createElement("div");
+      nameEl.className = "event-name";
+      nameEl.textContent = "🎉 " + ev.name;
+      var countEl = document.createElement("div");
+      countEl.className = "event-countdown";
+      countEl.textContent = formatDate(ev.date) + (daysAway >= 0 ? " · " + daysAway + " day" + (daysAway===1?"":"s") + " away" : " · passed");
+      var delBtn = document.createElement("button");
+      delBtn.className = "move-btn";
+      delBtn.type = "button";
+      delBtn.textContent = "✕";
+      delBtn.title = "Delete this event";
+      delBtn.addEventListener("click", function(){
+        if(confirm('Delete "' + ev.name + '"?')){
+          state.events = state.events.filter(function(x){ return x.id !== ev.id; });
+          saveState();
+          renderEventList();
+        }
+      });
+      var rightWrap = document.createElement("div");
+      rightWrap.style.display = "flex";
+      rightWrap.style.alignItems = "center";
+      rightWrap.style.gap = "6px";
+      rightWrap.appendChild(countEl);
+      rightWrap.appendChild(delBtn);
+      head.appendChild(nameEl);
+      head.appendChild(rightWrap);
+      card.appendChild(head);
+
+      var ready = ev.items.filter(function(it){ return !it.addedToList && it.earliestBuyDate <= today; });
+      var waiting = ev.items.filter(function(it){ return !it.addedToList && it.earliestBuyDate > today; });
+      var added = ev.items.filter(function(it){ return it.addedToList; });
+
+      if(ready.length){
+        var readyLabel = document.createElement("div");
+        readyLabel.className = "event-section-label";
+        readyLabel.textContent = "Ready to buy now";
+        card.appendChild(readyLabel);
+        var readyList = document.createElement("div");
+        readyList.className = "event-chip-list";
+        ready.forEach(function(it){
+          var chip = document.createElement("span");
+          chip.className = "event-chip ready";
+          chip.textContent = it.text;
+          readyList.appendChild(chip);
+        });
+        card.appendChild(readyList);
+        var addBtn = document.createElement("button");
+        addBtn.className = "chip-btn";
+        addBtn.type = "button";
+        addBtn.style.marginTop = "8px";
+        addBtn.textContent = "🛒 Add these " + ready.length + " to my list";
+        addBtn.addEventListener("click", function(){
+          addItems(ready.map(function(it){ return it.text; }).join(", "), ev.name);
+          ready.forEach(function(it){ it.addedToList = true; });
+          saveState();
+          renderEventList();
+        });
+        card.appendChild(addBtn);
+      }
+
+      if(waiting.length){
+        var waitLabel = document.createElement("div");
+        waitLabel.className = "event-section-label";
+        waitLabel.textContent = "Buy later";
+        card.appendChild(waitLabel);
+        var waitList = document.createElement("div");
+        waitList.className = "event-chip-list";
+        waiting.slice().sort(function(a,b){ return a.earliestBuyDate < b.earliestBuyDate ? -1 : 1; }).forEach(function(it){
+          var chip = document.createElement("span");
+          chip.className = "event-chip";
+          chip.textContent = it.text + " — from " + formatDate(it.earliestBuyDate);
+          waitList.appendChild(chip);
+        });
+        card.appendChild(waitList);
+      }
+
+      if(added.length){
+        var addedLabel = document.createElement("div");
+        addedLabel.className = "event-section-label";
+        addedLabel.textContent = "Already on your list";
+        card.appendChild(addedLabel);
+        var addedList = document.createElement("div");
+        addedList.className = "event-chip-list";
+        added.forEach(function(it){
+          var chip = document.createElement("span");
+          chip.className = "event-chip added";
+          chip.textContent = it.text;
+          addedList.appendChild(chip);
+        });
+        card.appendChild(addedList);
+      }
+
+      eventListArea.appendChild(card);
+    });
+  }
+
+  // ---------- Compare stores: manual-price multi-stop optimizer ----------
+  var storeCompareDialog = document.getElementById("storeCompareDialog");
+  var storeForm = document.getElementById("storeForm");
+  var storeNameInput = document.getElementById("storeNameInput");
+  var storeMembershipCheck = document.getElementById("storeMembershipCheck");
+  var myStoresChips = document.getElementById("myStoresChips");
+  var priceEntrySection = document.getElementById("priceEntrySection");
+  var priceEntryEmpty = document.getElementById("priceEntryEmpty");
+  var priceTable = document.getElementById("priceTable");
+  var planResults = document.getElementById("planResults");
+
+  document.getElementById("storeCompareBtn").addEventListener("click", function(){
+    renderStoreCompareDialog();
+    storeCompareDialog.showModal();
+  });
+  document.getElementById("closeStoreCompare").addEventListener("click", function(){ storeCompareDialog.close(); });
+
+  storeForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = storeNameInput.value.trim();
+    if(!name) return;
+    state.myStores.push({
+      id: "st"+Date.now()+Math.random().toString(16).slice(2),
+      name: name, membership: storeMembershipCheck.checked
+    });
+    saveState();
+    storeNameInput.value = "";
+    storeMembershipCheck.checked = false;
+    renderStoreCompareDialog();
+  });
+
+  function renderStoreCompareDialog(){
+    // stores
+    myStoresChips.innerHTML = "";
+    if(!state.myStores.length){
+      myStoresChips.textContent = "No stores added yet.";
+    } else {
+      state.myStores.forEach(function(s){
+        var chip = document.createElement("span");
+        chip.className = "store-chip";
+        chip.innerHTML = '<span>' + s.name + '</span>' + (s.membership ? '<span class="membership-tag">membership</span>' : '');
+        var del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "✕";
+        del.addEventListener("click", function(){
+          state.myStores = state.myStores.filter(function(x){ return x.id !== s.id; });
+          saveState();
+          renderStoreCompareDialog();
+        });
+        chip.appendChild(del);
+        myStoresChips.appendChild(chip);
+      });
+    }
+
+    // price entry table
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    var canCompare = state.myStores.length > 0 && unchecked.length > 0;
+    priceEntrySection.hidden = !canCompare;
+    priceEntryEmpty.hidden = canCompare;
+    planResults.hidden = true;
+
+    if(!canCompare) return;
+
+    priceTable.innerHTML = "";
+    var thead = document.createElement("tr");
+    thead.appendChild(document.createElement("th"));
+    state.myStores.forEach(function(s){
+      var th = document.createElement("th");
+      th.textContent = s.name;
+      thead.appendChild(th);
+    });
+    priceTable.appendChild(thead);
+
+    unchecked.forEach(function(it){
+      var key = it.text.trim().toLowerCase();
+      var tr = document.createElement("tr");
+      var nameTd = document.createElement("td");
+      nameTd.textContent = it.text;
+      tr.appendChild(nameTd);
+      state.myStores.forEach(function(s){
+        var td = document.createElement("td");
+        var input = document.createElement("input");
+        input.type = "number";
+        input.step = "0.01";
+        input.min = "0";
+        input.placeholder = "—";
+        var existing = state.priceEntries[key] && state.priceEntries[key][s.id];
+        if(existing !== undefined && existing !== null) input.value = existing;
+        input.addEventListener("change", function(){
+          if(!state.priceEntries[key]) state.priceEntries[key] = {};
+          if(input.value === ""){
+            delete state.priceEntries[key][s.id];
+          } else {
+            state.priceEntries[key][s.id] = parseFloat(input.value);
+          }
+          saveState();
+        });
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+      priceTable.appendChild(tr);
+    });
+  }
+
+  function combinations(arr, k){
+    var result = [];
+    function helper(start, combo){
+      if(combo.length === k){ result.push(combo.slice()); return; }
+      for(var i = start; i < arr.length; i++){
+        combo.push(arr[i]);
+        helper(i + 1, combo);
+        combo.pop();
+      }
+    }
+    helper(0, []);
+    return result;
+  }
+
+  function evaluateCombo(comboStoreIds, itemKeys, prices){
+    // Only counts items actually priced at a store IN this combo — a store you don't visit
+    // can't fill your cart, so an uncovered item stays uncovered rather than being
+    // papered over with a price from a store outside the trip.
+    var total = 0, covered = 0;
+    var assignment = {};
+    itemKeys.forEach(function(key){
+      var entries = prices[key] || {};
+      var comboEntries = comboStoreIds
+        .map(function(id){ return { id: id, price: entries[id] }; })
+        .filter(function(e){ return e.price !== undefined && e.price !== null && !isNaN(e.price); });
+      if(comboEntries.length){
+        var best = comboEntries.reduce(function(a,b){ return b.price < a.price ? b : a; });
+        total += best.price;
+        covered++;
+        assignment[key] = { storeId: best.id, price: best.price };
+      }
+    });
+    return { total: total, covered: covered, assignment: assignment };
+  }
+
+  function bestPlanForStops(storeIds, itemKeys, prices, k){
+    // Best = covers the most priced items first (a trip that skips items isn't really cheaper,
+    // it's just incomplete); ties broken by lowest total among the covered items.
+    var combos = combinations(storeIds, Math.min(k, storeIds.length));
+    var best = null;
+    combos.forEach(function(combo){
+      var r = evaluateCombo(combo, itemKeys, prices);
+      if(!best || r.covered > best.covered || (r.covered === best.covered && r.total < best.total)){
+        best = { stores: combo, total: r.total, covered: r.covered, assignment: r.assignment };
+      }
+    });
+    return best;
+  }
+
+  document.getElementById("findPlanBtn").addEventListener("click", function(){
+    var storeIds = state.myStores.map(function(s){ return s.id; });
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    var itemKeys = unchecked.map(function(it){ return it.text.trim().toLowerCase(); });
+    var pricedKeys = itemKeys.filter(function(k){ return state.priceEntries[k] && Object.keys(state.priceEntries[k]).length; });
+
+    if(!pricedKeys.length){
+      planResults.hidden = false;
+      planResults.innerHTML = '<div class="hint">Enter at least a few prices above first.</div>';
+      return;
+    }
+
+    var maxStops = storeIds.length;
+    var plans = [];
+    for(var k = 1; k <= maxStops; k++){
+      plans.push({ k: k, plan: bestPlanForStops(storeIds, pricedKeys, state.priceEntries, k) });
+    }
+    // "recommended" = the plan that first reaches full coverage at the lowest cost
+    var fullyCovered = plans.filter(function(p){ return p.plan.covered === pricedKeys.length; });
+    var recommended = (fullyCovered.length ? fullyCovered : plans).reduce(function(a,b){
+      return b.plan.total < a.plan.total ? b : a;
+    });
+
+    planResults.hidden = false;
+    planResults.innerHTML = "";
+
+    var heading = document.createElement("div");
+    heading.className = "event-section-label";
+    heading.style.marginTop = "0";
+    heading.textContent = "Cost by number of stops";
+    planResults.appendChild(heading);
+
+    plans.forEach(function(p, idx){
+      var row = document.createElement("div");
+      row.className = "plan-row" + (p.k === recommended.k ? " best" : "");
+      var left = document.createElement("div");
+      var coverageNote = p.plan.covered < pricedKeys.length
+        ? ' <span class="plan-note">(' + p.plan.covered + '/' + pricedKeys.length + ' priced items covered)</span>'
+        : "";
+      left.innerHTML = '<span class="plan-stops">' + p.k + " stop" + (p.k===1?"":"s") + '</span>' +
+        (p.k===1?"":' <span class="plan-note">(' + p.plan.stores.map(function(id){ return state.myStores.find(function(s){return s.id===id;}).name; }).join(" + ") + ')</span>') +
+        coverageNote;
+      var right = document.createElement("div");
+      right.className = "plan-total";
+      right.textContent = "$" + p.plan.total.toFixed(2);
+      if(idx > 0){
+        var prev = plans[idx-1].plan;
+        var moreCovered = p.plan.covered - prev.covered;
+        var savedVsPrev = prev.total - p.plan.total;
+        if(moreCovered > 0){
+          right.innerHTML += '<div class="plan-note">+' + moreCovered + ' more item' + (moreCovered===1?"":"s") + ' covered' + (savedVsPrev > 0 ? ', $' + savedVsPrev.toFixed(2) + ' cheaper too' : '') + '</div>';
+        } else if(savedVsPrev < 1.5 && savedVsPrev >= 0){
+          right.innerHTML += '<div class="plan-note">only $' + savedVsPrev.toFixed(2) + ' cheaper than ' + (p.k-1) + ' stop' + (p.k-1===1?"":"s") + ' — maybe not worth the extra trip</div>';
+        }
+      }
+      row.appendChild(left);
+      row.appendChild(right);
+      planResults.appendChild(row);
+    });
+
+    var pickWrap = document.createElement("div");
+    pickWrap.style.marginTop = "14px";
+    pickWrap.innerHTML =
+      '<label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Show me the plan for how many stops?</label>' +
+      '<div class="waste-form-row"><input type="number" id="pickStops" min="1" max="' + maxStops + '" value="' + recommended.k + '" style="width:80px;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);"><button type="button" class="chip-btn" id="showPlanDetailBtn">Show plan</button></div>';
+    planResults.appendChild(pickWrap);
+
+    var detailArea = document.createElement("div");
+    detailArea.id = "planDetailArea";
+    planResults.appendChild(detailArea);
+
+    function showDetail(k){
+      var chosen = plans.find(function(p){ return p.k === k; });
+      if(!chosen) return;
+      detailArea.innerHTML = "";
+      chosen.plan.stores.forEach(function(storeId){
+        var store = state.myStores.find(function(s){ return s.id === storeId; });
+        var box = document.createElement("div");
+        box.className = "plan-detail-store";
+        var itemsHere = Object.keys(chosen.plan.assignment).filter(function(key){
+          return chosen.plan.assignment[key].storeId === storeId;
+        });
+        box.innerHTML = "<h4>" + store.name + (store.membership ? ' <span class="membership-tag">membership</span>' : "") + "</h4>" +
+          (itemsHere.length ? itemsHere.map(function(key){
+            var a = chosen.plan.assignment[key];
+            var itemObj = unchecked.find(function(it){ return it.text.trim().toLowerCase() === key; });
+            return '<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;">' +
+              '<span>' + (itemObj ? itemObj.text : key) + '</span><span>$' + a.price.toFixed(2) + '</span></div>';
+          }).join("") : '<div class="hint">Nothing assigned here.</div>');
+        detailArea.appendChild(box);
+      });
+    }
+    showDetail(parseInt(document.getElementById("pickStops").value, 10));
+    document.getElementById("showPlanDetailBtn").addEventListener("click", function(){
+      var k = parseInt(document.getElementById("pickStops").value, 10);
+      if(k >= 1 && k <= maxStops) showDetail(k);
+    });
+  });
+
+  // ---------- Check a flyer (photo or pasted text, matched against the current list) ----------
+  var flyerDialog = document.getElementById("flyerDialog");
+  var flyerUnavailable = document.getElementById("flyerUnavailable");
+  var flyerScanArea = document.getElementById("flyerScanArea");
+  var flyerStoreName = document.getElementById("flyerStoreName");
+  var flyerPhotoInput1 = document.getElementById("flyerPhotoInput1");
+  var flyerPhotoInput2 = document.getElementById("flyerPhotoInput2");
+  var flyerPastedText = document.getElementById("flyerPastedText");
+  var checkFlyerBtn = document.getElementById("checkFlyerBtn");
+  var flyerStatus = document.getElementById("flyerStatus");
+  var flyerResults = document.getElementById("flyerResults");
+  var flyerResultList = document.getElementById("flyerResultList");
+
+  wireCameraTile(flyerPhotoInput1, document.getElementById("flyerPreview1"), document.getElementById("flyerRetake1"), document.getElementById("flyerTileLabel1"));
+  wireCameraTile(flyerPhotoInput2, document.getElementById("flyerPreview2"), document.getElementById("flyerRetake2"), document.getElementById("flyerTileLabel2"));
+
+  document.getElementById("flyerBtn").addEventListener("click", function(){
+    flyerUnavailable.hidden = !!sampleAPI;
+    flyerScanArea.hidden = !sampleAPI;
+    flyerResults.hidden = true;
+    flyerStatus.textContent = "";
+    flyerDialog.showModal();
+  });
+  document.getElementById("closeFlyer").addEventListener("click", function(){ flyerDialog.close(); });
+
+  checkFlyerBtn.addEventListener("click", function(){
+    if(!sampleAPI){ flyerStatus.textContent = "This needs the app open directly in Claude."; return; }
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    if(!unchecked.length){ flyerStatus.textContent = "Your list is empty — add items first."; return; }
+
+    var files = [];
+    if(flyerPhotoInput1.files[0]) files.push(flyerPhotoInput1.files[0]);
+    if(flyerPhotoInput2.files[0]) files.push(flyerPhotoInput2.files[0]);
+    var pastedText = flyerPastedText.value.trim();
+    if(!files.length && !pastedText){ flyerStatus.textContent = "Add a photo or paste some ad text first."; return; }
+
+    var storeName = flyerStoreName.value.trim() || "this store";
+    var listText = unchecked.map(function(it){ return it.text; }).join(", ");
+    var prompt = "Here is my current shopping list: " + listText + ".\n\n" +
+      (files.length ? "The attached photo(s) show a real weekly ad/flyer for " + storeName + "." : "") +
+      (pastedText ? (files.length ? " Also, here" : "Here") + " is text pasted from " + storeName + "'s online ad:\n\n" + pastedText : "") +
+      "\n\nCheck ONLY for items from my list above that are actually on sale according to this material. " +
+      "Reply with ONLY a JSON array of objects shaped like {\"item\": string, \"saleText\": string}, where \"item\" is copied EXACTLY as it appears in my list, " +
+      "and \"saleText\" is a short price/deal description (e.g. \"$2.99/dozen\"). Skip anything from my list that isn't mentioned. " +
+      "If nothing matches, reply with an empty JSON array.";
+
+    flyerStatus.textContent = "Checking…";
+    checkFlyerBtn.disabled = true;
+    flyerResults.hidden = true;
+
+    var opts = { modelTier: "default", cache: false };
+    if(files.length) opts.images = files;
+
+    sampleAPI.json(prompt, opts).then(function(matches){
+      flyerStatus.textContent = "";
+      if(!Array.isArray(matches) || !matches.length){
+        flyerStatus.textContent = "Nothing on your list seems to be on sale there right now.";
+        return;
+      }
+      flyerResultList.innerHTML = "";
+      matches.forEach(function(m){
+        var matchedItem = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item||"").trim().toLowerCase(); });
+        var li = document.createElement("li");
+        var body = document.createElement("div");
+        body.style.flex = "1";
+        body.innerHTML = '<div class="meal-name">' + (matchedItem ? matchedItem.text : m.item) + '</div><div class="meal-ing">' + (m.saleText || "") + ' at ' + storeName + '</div>';
+        li.appendChild(body);
+        if(matchedItem){
+          var noteBtn = document.createElement("button");
+          noteBtn.className = "chip-btn";
+          noteBtn.type = "button";
+          noteBtn.textContent = "📌 Note on my list";
+          noteBtn.addEventListener("click", function(){
+            matchedItem.saleNote = (m.saleText || "on sale") + " at " + storeName;
+            saveState();
+            render();
+            noteBtn.textContent = "✅ Noted";
+            noteBtn.disabled = true;
+          });
+          li.appendChild(noteBtn);
+        }
+        flyerResultList.appendChild(li);
+      });
+      flyerResults.hidden = false;
+    }).catch(function(e){
+      flyerStatus.textContent = sampleErrorMessage(e && e.code);
+    }).finally(function(){
+      checkFlyerBtn.disabled = false;
+    });
+  });
+
+  addRegularsThatAreDue();
+  render();
+})();
+</script>
