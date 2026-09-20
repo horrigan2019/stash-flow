@@ -21,6 +21,12 @@ Or open `index.html` directly in Chrome / Edge / Safari.
 - Shopping list sorted by aisle
 - Voice add (in a real browser / live site)
 - Meal planning, events, pantry, recipes, flyer check helpers
-- Settings (text size, contrast, theme, accent color)
+- Settings (text size, contrast, theme, accent color, optional Anthropic API key)
 
-Photo / AI features that previously needed Claude’s built-in tools will show a “not available” note until we wire a later AI option — everything else works offline on your device.
+## Photo / AI features (live site)
+
+Pantry scan, recipe photo scan, flyer check, and recipe scaling/diet swaps work on GitHub Pages / ohstuffing.com when you paste your own **Anthropic API key** in Settings (⚙️).
+
+- Get a key at [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* subscription is **not** an API key.
+- The key is stored only in this browser (localStorage). That’s fine for personal/demo use; don’t paste a shared or work key.
+- Without a key, the camera and file pickers still work so you can take/pick photos; AI identification shows a clear “add your key” message.

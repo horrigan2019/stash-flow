@@ -452,6 +452,16 @@
       </div>
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
+    <div class="field-row">
+      <label for="anthropicApiKeyInput">Photo &amp; AI helper (optional)</label>
+      <input type="password" id="anthropicApiKeyInput" placeholder="Paste Anthropic API key (sk-ant-…)" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;font-family:inherit;">
+      <div class="hint" style="margin-top:6px;">Needed on the live website for pantry photos, recipe scan, flyer check, and recipe scaling. Get a key at <strong>console.anthropic.com</strong> — a Claude Pro <em>chat</em> subscription is <strong>not</strong> an API key (API usage is billed separately). The key is stored only on this device. Browser-stored keys are for personal/demo use; don’t paste a shared or work key here.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        <button type="button" class="chip-btn" id="saveApiKeyBtn">Save key</button>
+        <button type="button" class="chip-btn" id="clearApiKeyBtn">Clear key</button>
+      </div>
+      <div class="hint" id="apiKeyStatus" style="margin-top:6px;"></div>
+    </div>
     <button class="dialog-close" id="closeSettings" type="button">Done</button>
   </div>
 </dialog>
@@ -559,7 +569,7 @@
 <dialog id="pantryDialog">
   <div class="dialog-inner">
     <h2>What's My Stock</h2>
-    <div id="pantryUnavailable" class="hint" hidden>Photo recognition isn't available in this view right now — it needs this app open directly in Claude, with photo access allowed.</div>
+    <div id="pantryUnavailable" class="hint" hidden>You can still take or pick photos below. To identify what’s in them, add your Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
 
     <div id="pantryScanArea">
       <div class="hint" style="margin-bottom:10px;">Snap your pantry and/or fridge — we'll spot what's there so you can skip buying it again.</div>
@@ -613,7 +623,7 @@
 <dialog id="recipeDialog">
   <div class="dialog-inner">
     <h2>Recipe vault</h2>
-    <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works here — scaling, diet swaps, and scanning a photo need this app open directly in Claude.</div>
+    <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works anytime. Photo scan, scaling, and diet swaps need an Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
     <form class="meal-form" id="recipeForm">
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe name</label>
@@ -756,7 +766,7 @@
 <dialog id="flyerDialog">
   <div class="dialog-inner">
     <h2>Check A Flyer</h2>
-    <div id="flyerUnavailable" class="hint" hidden>This needs the app open directly in Claude, with photo access allowed.</div>
+    <div id="flyerUnavailable" class="hint" hidden>You can still take photos or paste ad text below. To match them to your list, add your Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
     <div id="flyerScanArea">
       <div class="hint" style="margin-bottom:10px;">Snap a photo of a real weekly ad or flyer — from the store's app, website, email, or the paper one — and we'll check it against what's still on your list.</div>
       <div>
@@ -1829,8 +1839,54 @@
 
   // ---------- Settings dialog ----------
   var settingsDialog = document.getElementById("settingsDialog");
-  document.getElementById("settingsBtn").addEventListener("click", function(){ settingsDialog.showModal(); });
+  var API_KEY_LS = "ostuffing.anthropicApiKey";
+  var anthropicApiKeyInput = document.getElementById("anthropicApiKeyInput");
+  var apiKeyStatus = document.getElementById("apiKeyStatus");
+
+  function getAnthropicApiKey(){
+    try{ return (localStorage.getItem(API_KEY_LS) || "").trim(); }catch(e){ return ""; }
+  }
+  function setAnthropicApiKey(key){
+    try{
+      if(key) localStorage.setItem(API_KEY_LS, key);
+      else localStorage.removeItem(API_KEY_LS);
+    }catch(e){}
+  }
+  function refreshApiKeyStatus(){
+    var k = getAnthropicApiKey();
+    if(k){
+      var tail = k.length > 4 ? k.slice(-4) : "••••";
+      apiKeyStatus.textContent = "Key saved on this device (ends …" + tail + "). Photo & AI helpers can run on the live site.";
+      anthropicApiKeyInput.placeholder = "•••••••••••••••••••• (saved — paste a new key to replace)";
+    } else {
+      apiKeyStatus.textContent = "No API key saved yet — camera still works; AI identification needs a key.";
+      anthropicApiKeyInput.placeholder = "Paste Anthropic API key (sk-ant-…)";
+    }
+  }
+  document.getElementById("settingsBtn").addEventListener("click", function(){
+    anthropicApiKeyInput.value = "";
+    refreshApiKeyStatus();
+    settingsDialog.showModal();
+  });
   document.getElementById("closeSettings").addEventListener("click", function(){ settingsDialog.close(); });
+  document.getElementById("saveApiKeyBtn").addEventListener("click", function(){
+    var key = anthropicApiKeyInput.value.trim();
+    if(!key){
+      apiKeyStatus.textContent = "Paste a key first, or tap Clear key to remove the saved one.";
+      return;
+    }
+    setAnthropicApiKey(key);
+    anthropicApiKeyInput.value = "";
+    refreshApiKeyStatus();
+    if(typeof syncPantryAvailability === "function") syncPantryAvailability();
+  });
+  document.getElementById("clearApiKeyBtn").addEventListener("click", function(){
+    setAnthropicApiKey("");
+    anthropicApiKeyInput.value = "";
+    refreshApiKeyStatus();
+    if(typeof syncPantryAvailability === "function") syncPantryAvailability();
+  });
+  refreshApiKeyStatus();
 
   function wireSeg(segId, applyFn, prefKey){
     var seg = document.getElementById(segId);
@@ -1965,7 +2021,7 @@
     });
   }
 
-  // ---------- Pantry & fridge photo recognition (uses the artifact's Claude-vision capability) ----------
+  // ---------- Pantry & fridge photo recognition (Claude sample inside Claude, or Anthropic API key on the live site) ----------
   var sampleAPI = null;
   var sampleImagesOk = false;
   var pantryUnavailableEl = document.getElementById("pantryUnavailable");
@@ -2003,12 +2059,15 @@
   var pantryMatchesEl = document.getElementById("pantryMatches");
   var pendingScanItems = []; // [{text, checked}] awaiting confirmation before saving
 
+  function hasTextAI(){ return !!(sampleAPI || getAnthropicApiKey()); }
+  function hasVisionAI(){ return !!((sampleAPI && sampleImagesOk) || getAnthropicApiKey()); }
+
   function syncPantryAvailability(){
-    var available = !!(sampleAPI && sampleImagesOk);
-    pantryUnavailableEl.hidden = available;
-    pantryScanAreaEl.hidden = !available;
+    // Camera UI always stays available on the live site; banner only when AI isn't configured
+    pantryScanAreaEl.hidden = false;
+    pantryUnavailableEl.hidden = hasVisionAI();
   }
-  syncPantryAvailability(); // default: hidden/unavailable until proven otherwise
+  syncPantryAvailability();
 
   (function initSample(){
     if(!window.claude || typeof window.claude.use !== "function") return;
@@ -2027,7 +2086,143 @@
     if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
+    if(code === "no_api_key") return "Add your Anthropic API key in Settings (⚙️) first. A Claude Pro chat subscription is not an API key.";
+    if(code === "auth") return "That API key was rejected — check it in Settings, or create a new one at console.anthropic.com.";
+    if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
+  }
+  function needApiKeyMessage(){
+    return "Add your Anthropic API key in Settings (⚙️) to use this. A Claude Pro chat subscription is not an API key — get one at console.anthropic.com.";
+  }
+
+  function fileToAnthropicImage(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        try{
+          var max = 1568;
+          var w = img.width, h = img.height;
+          if(w > max || h > max){
+            if(w > h){ h = Math.round(h * max / w); w = max; }
+            else { w = Math.round(w * max / h); h = max; }
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          resolve({ media_type: "image/jpeg", data: dataUrl.split(",")[1] });
+        }catch(err){
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        var reader = new FileReader();
+        reader.onload = function(){
+          var dataUrl = String(reader.result || "");
+          var parts = dataUrl.split(",");
+          if(parts.length < 2){ reject(new Error("Could not read image")); return; }
+          var media = (file.type && file.type.indexOf("image/") === 0) ? file.type : "image/jpeg";
+          resolve({ media_type: media, data: parts[1] });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  }
+
+  function parseJsonFromText(text){
+    var t = String(text || "").trim();
+    var fenced = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if(fenced) t = fenced[1].trim();
+    return JSON.parse(t);
+  }
+
+  function anthropicMessages(prompt, opts){
+    opts = opts || {};
+    var apiKey = getAnthropicApiKey();
+    if(!apiKey){
+      var err = new Error("no_api_key");
+      err.code = "no_api_key";
+      return Promise.reject(err);
+    }
+    var model = opts.modelTier === "quick" ? "claude-haiku-4-5" : "claude-sonnet-4-5";
+    var buildContent = opts.images && opts.images.length
+      ? Promise.all(opts.images.map(fileToAnthropicImage)).then(function(imgs){
+          var parts = imgs.map(function(img){
+            return { type: "image", source: { type: "base64", media_type: img.media_type, data: img.data } };
+          });
+          parts.push({ type: "text", text: prompt });
+          return parts;
+        })
+      : Promise.resolve([{ type: "text", text: prompt }]);
+
+    return buildContent.then(function(content){
+      return fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: model,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: content }]
+        })
+      }).then(function(res){
+        return res.json().then(function(data){
+          if(!res.ok){
+            var msg = (data && data.error && data.error.message) || ("API error " + res.status);
+            var e = new Error(msg);
+            if(res.status === 401 || res.status === 403) e.code = "auth";
+            else if(res.status === 429) e.code = "rate_limited";
+            else e.code = "api_error";
+            throw e;
+          }
+          var text = "";
+          (data.content || []).forEach(function(block){
+            if(block.type === "text") text += block.text;
+          });
+          return { text: text };
+        }, function(){
+          var e = new Error("Bad response from API");
+          e.code = "api_error";
+          throw e;
+        });
+      });
+    });
+  }
+
+  function aiText(prompt, opts){
+    opts = opts || {};
+    if(sampleAPI){
+      return sampleAPI(prompt, { modelTier: opts.modelTier || "default", cache: false });
+    }
+    return anthropicMessages(prompt, opts);
+  }
+
+  function aiJson(prompt, opts){
+    opts = opts || {};
+    if(sampleAPI){
+      var sampleOpts = { modelTier: opts.modelTier || "default", cache: false };
+      if(opts.images) sampleOpts.images = opts.images;
+      return sampleAPI.json(prompt, sampleOpts);
+    }
+    var jsonPrompt = prompt + "\n\nRespond with ONLY valid JSON. No markdown fences, no commentary.";
+    return anthropicMessages(jsonPrompt, opts).then(function(res){
+      try{ return parseJsonFromText(res.text); }
+      catch(e){
+        var err = new Error("Could not parse AI response");
+        err.code = "api_error";
+        throw err;
+      }
+    });
   }
 
   function renderScanResults(items){
@@ -2057,7 +2252,7 @@
   }
 
   scanPantryBtn.addEventListener("click", function(){
-    if(!sampleAPI){ pantryStatus.textContent = "Photo lookup isn't available right now."; return; }
+    if(!hasVisionAI()){ pantryStatus.textContent = needApiKeyMessage(); return; }
     var files = [];
     if(pantryPhotoInput.files[0]) files.push(pantryPhotoInput.files[0]);
     if(fridgePhotoInput.files[0]) files.push(fridgePhotoInput.files[0]);
@@ -2065,12 +2260,12 @@
     pantryStatus.textContent = "Looking at your photo…";
     scanPantryBtn.disabled = true;
     pantryResultsEl.hidden = true;
-    sampleAPI.json(
+    aiJson(
       "These are photo(s) of someone's home pantry and/or fridge, taken to help plan grocery shopping. " +
       "Identify every distinguishable food or grocery item you can actually see. " +
       "Reply with ONLY a JSON array of short, lowercase, everyday grocery item names, like [\"milk\",\"ketchup\",\"apples\"] " +
       "— no duplicates, no brand names unless that's the clearest way to name it, nothing you can't actually see.",
-      { images: files, modelTier: "quick", cache: false }
+      { images: files, modelTier: "quick" }
     ).then(function(items){
       pantryStatus.textContent = "";
       renderScanResults(Array.isArray(items) ? items : []);
@@ -2192,7 +2387,7 @@
   });
   document.getElementById("closePantry").addEventListener("click", function(){ pantryDialog.close(); });
 
-  // ---------- Recipe vault (uses the same Claude-vision/reasoning capability as the pantry scan) ----------
+  // ---------- Recipe vault (same AI path as pantry: Claude sample or Anthropic API key) ----------
   var recipeDialog = document.getElementById("recipeDialog");
   var recipeDetailDialog = document.getElementById("recipeDetailDialog");
   var recipeForm = document.getElementById("recipeForm");
@@ -2214,7 +2409,7 @@
   });
 
   document.getElementById("recipeVaultBtn").addEventListener("click", function(){
-    recipeUnavailableNote.hidden = !!sampleAPI;
+    recipeUnavailableNote.hidden = hasTextAI();
     renderRecipeList();
     recipeDialog.showModal();
   });
@@ -2222,15 +2417,16 @@
 
   recipeScanPhotoBtn.addEventListener("click", function(){
     var file = recipePhotoInput.files[0];
-    if(!file || !sampleAPI) return;
+    if(!file) return;
+    if(!hasVisionAI()){ recipeScanStatus.textContent = needApiKeyMessage(); return; }
     recipeScanStatus.textContent = "Reading the photo…";
     recipeScanPhotoBtn.disabled = true;
-    sampleAPI.json(
+    aiJson(
       "This is a photo of a recipe — a card, a cookbook page, or a handwritten note. Transcribe it faithfully. " +
       "Reply with ONLY a JSON object shaped like {\"title\": string, \"servings\": number, \"text\": string}, " +
       "where text contains the full ingredient list and instructions as plain text with line breaks as \\n. " +
       "If servings isn't stated, make a reasonable guess.",
-      { images: [file], modelTier: "default", cache: false }
+      { images: [file], modelTier: "default" }
     ).then(function(data){
       if(data && data.title) recipeTitle.value = data.title;
       if(data && data.servings) recipeServings.value = data.servings;
@@ -2298,14 +2494,14 @@
     document.getElementById("recipeDetailMeta").textContent = "Serves " + r.servings + " as written";
     document.getElementById("recipeDetailText").textContent = r.text;
     document.getElementById("scaleServingsInput").value = r.servings;
-    document.getElementById("recipeActionStatus").textContent = !sampleAPI ? "Scaling and diet swaps need this app open directly in Claude." : "";
+    document.getElementById("recipeActionStatus").textContent = !hasTextAI() ? needApiKeyMessage() : "";
     document.getElementById("recipeResultBox").hidden = true;
     recipeDetailDialog.showModal();
   }
 
   function runRecipeSample(resultLabel, prompt){
-    if(!sampleAPI){
-      document.getElementById("recipeActionStatus").textContent = "This needs the app open directly in Claude.";
+    if(!hasTextAI()){
+      document.getElementById("recipeActionStatus").textContent = needApiKeyMessage();
       return;
     }
     var statusEl = document.getElementById("recipeActionStatus");
@@ -2314,7 +2510,7 @@
     statusEl.textContent = "Thinking…";
     document.getElementById("recipeResultBox").hidden = true;
     scaleBtn.disabled = true; adaptBtn.disabled = true;
-    sampleAPI(prompt, { modelTier: "default", cache: false }).then(function(res){
+    aiText(prompt, { modelTier: "default" }).then(function(res){
       statusEl.textContent = "";
       document.getElementById("recipeResultLabel").textContent = resultLabel;
       document.getElementById("recipeResultText").textContent = res.text;
@@ -2347,12 +2543,13 @@
 
   document.getElementById("addRecipeToListBtn").addEventListener("click", function(){
     var statusEl = document.getElementById("recipeActionStatus");
-    if(!sampleAPI || !currentRecipe){ statusEl.textContent = "This needs the app open directly in Claude."; return; }
+    if(!currentRecipe){ return; }
+    if(!hasTextAI()){ statusEl.textContent = needApiKeyMessage(); return; }
     statusEl.textContent = "Pulling out the ingredients…";
-    sampleAPI.json(
+    aiJson(
       "Extract ONLY the ingredient list from this recipe, one ingredient per array entry, written the way you'd jot it on a shopping list " +
       "(quantity plus item, e.g. \"2 cups flour\"). Reply with ONLY a JSON array of strings.\n\n" + currentRecipe.text,
-      { modelTier: "quick", cache: false }
+      { modelTier: "quick" }
     ).then(function(list){
       if(!Array.isArray(list) || !list.length){
         statusEl.textContent = "Couldn't find a clear ingredient list in this recipe.";
@@ -2835,8 +3032,8 @@
   wireCameraTile(flyerPhotoInput2, document.getElementById("flyerPreview2"), document.getElementById("flyerRetake2"), document.getElementById("flyerTileLabel2"));
 
   document.getElementById("flyerBtn").addEventListener("click", function(){
-    flyerUnavailable.hidden = !!sampleAPI;
-    flyerScanArea.hidden = !sampleAPI;
+    flyerUnavailable.hidden = hasVisionAI() || hasTextAI();
+    flyerScanArea.hidden = false;
     flyerResults.hidden = true;
     flyerStatus.textContent = "";
     flyerDialog.showModal();
@@ -2844,14 +3041,15 @@
   document.getElementById("closeFlyer").addEventListener("click", function(){ flyerDialog.close(); });
 
   checkFlyerBtn.addEventListener("click", function(){
-    if(!sampleAPI){ flyerStatus.textContent = "This needs the app open directly in Claude."; return; }
-    var unchecked = state.items.filter(function(it){ return !it.done; });
-    if(!unchecked.length){ flyerStatus.textContent = "Your list is empty — add items first."; return; }
-
     var files = [];
     if(flyerPhotoInput1.files[0]) files.push(flyerPhotoInput1.files[0]);
     if(flyerPhotoInput2.files[0]) files.push(flyerPhotoInput2.files[0]);
     var pastedText = flyerPastedText.value.trim();
+    if(files.length && !hasVisionAI()){ flyerStatus.textContent = needApiKeyMessage(); return; }
+    if(!files.length && !hasTextAI()){ flyerStatus.textContent = needApiKeyMessage(); return; }
+
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    if(!unchecked.length){ flyerStatus.textContent = "Your list is empty — add items first."; return; }
     if(!files.length && !pastedText){ flyerStatus.textContent = "Add a photo or paste some ad text first."; return; }
 
     var storeName = flyerStoreName.value.trim() || "this store";
@@ -2868,10 +3066,10 @@
     checkFlyerBtn.disabled = true;
     flyerResults.hidden = true;
 
-    var opts = { modelTier: "default", cache: false };
+    var opts = { modelTier: "default" };
     if(files.length) opts.images = files;
 
-    sampleAPI.json(prompt, opts).then(function(matches){
+    aiJson(prompt, opts).then(function(matches){
       flyerStatus.textContent = "";
       if(!Array.isArray(matches) || !matches.length){
         flyerStatus.textContent = "Nothing on your list seems to be on sale there right now.";
