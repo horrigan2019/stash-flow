@@ -455,7 +455,7 @@
     <div class="field-row">
       <label for="anthropicApiKeyInput">Photo &amp; AI helper (optional)</label>
       <input type="password" id="anthropicApiKeyInput" placeholder="Paste Anthropic API key (sk-ant-…)" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;font-family:inherit;">
-      <div class="hint" style="margin-top:6px;">Needed on the live website for pantry photos, recipe scan, flyer check, and recipe scaling. Get a key at <strong>console.anthropic.com</strong> — a Claude Pro <em>chat</em> subscription is <strong>not</strong> an API key (API usage is billed separately). The key is stored only on this device. Browser-stored keys are for personal/demo use; don’t paste a shared or work key here.</div>
+      <div class="hint" style="margin-top:6px;">Needed on the live website for pantry photos, “what can I make” meal ideas, recipe scan, flyer check, and recipe scaling. Get a key at <strong>console.anthropic.com</strong> — a Claude Pro <em>chat</em> subscription is <strong>not</strong> an API key (API usage is billed separately). The key is stored only on this device. Browser-stored keys are for personal/demo use; don’t paste a shared or work key here.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
         <button type="button" class="chip-btn" id="saveApiKeyBtn">Save key</button>
         <button type="button" class="chip-btn" id="clearApiKeyBtn">Clear key</button>
@@ -606,17 +606,32 @@
         <button type="button" id="pantryAddMissedBtn" class="move-btn" style="width:auto;padding:0 12px;">+ Add</button>
       </div>
       <button class="dialog-close" id="savePantryBtn" type="button" style="margin-top:10px;">✅ Save to my stock</button>
+      <button class="chip-btn" id="suggestMealsFromScanBtn" type="button" style="margin-top:10px;width:100%;">🍳 What can I make?</button>
+      <div class="hint" id="suggestMealsFromScanHint" style="margin-top:6px;"></div>
     </div>
 
     <div class="produce-lookup">
       <h3>🧺 What's already in your stock</h3>
       <div id="pantryChips" class="hint"></div>
+      <button class="chip-btn" id="suggestMealsFromStockBtn" type="button" style="margin-top:10px;">🍳 Suggest meals from this</button>
       <button class="chip-btn" id="checkAgainstListBtn" type="button" style="margin-top:10px;">Check my current list against this</button>
       <button class="chip-btn" id="clearPantryBtn" type="button" style="margin-top:10px;">Clear stock</button>
+      <div class="hint" id="suggestMealsFromStockHint" style="margin-top:6px;"></div>
       <div id="pantryMatches" style="margin-top:10px;"></div>
     </div>
 
     <button class="dialog-close" id="closePantry" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="mealSuggestDialog">
+  <div class="dialog-inner">
+    <h2>What can I make?</h2>
+    <div class="hint" id="mealSuggestIntro" style="margin-bottom:10px;">Easy dinners from what you already have — plus a few “upgrade what you’ve got” ideas.</div>
+    <div class="hint" id="mealSuggestStatus" style="margin-bottom:10px;"></div>
+    <ul class="meal-list" id="mealSuggestList" style="border-top:none;"></ul>
+    <div class="meal-empty" id="mealSuggestEmpty" hidden>No ideas yet.</div>
+    <button class="dialog-close" id="closeMealSuggest" type="button" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Back to stock</button>
   </div>
 </dialog>
 
@@ -1134,9 +1149,12 @@
     prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" }
   };
   // migrate: ensure every current department id is present in saved order
+  if(!state.order || !Array.isArray(state.order)) state.order = DEPARTMENTS.map(function(d){ return d.id; });
   DEPARTMENTS.forEach(function(d){
     if(state.order.indexOf(d.id) === -1) state.order.push(d.id);
   });
+  if(!state.learned) state.learned = {};
+  if(!state.items) state.items = [];
   if(!state.prefs) state.prefs = { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" };
   if(!state.prefs.accentColor) state.prefs.accentColor = "green";
   if(!state.regulars) state.regulars = {};
@@ -2383,9 +2401,289 @@
     syncPantryAvailability();
     renderPantryChips();
     pantryMatchesEl.innerHTML = "";
+    document.getElementById("suggestMealsFromScanHint").textContent = "";
+    document.getElementById("suggestMealsFromStockHint").textContent = "";
     pantryDialog.showModal();
   });
   document.getElementById("closePantry").addEventListener("click", function(){ pantryDialog.close(); });
+
+  // ---------- Meal ideas from pantry / fridge stock ----------
+  var mealSuggestDialog = document.getElementById("mealSuggestDialog");
+  var mealSuggestList = document.getElementById("mealSuggestList");
+  var mealSuggestStatus = document.getElementById("mealSuggestStatus");
+  var mealSuggestEmpty = document.getElementById("mealSuggestEmpty");
+  var mealSuggestIntro = document.getElementById("mealSuggestIntro");
+  var lastMealIdeas = [];
+  var lastMealIdeaHave = [];
+
+  function gatherHaveItems(preferScan){
+    var seen = {};
+    var out = [];
+    function pushName(name){
+      var n = String(name || "").trim().toLowerCase();
+      if(!n || seen[n]) return;
+      seen[n] = true;
+      out.push(n);
+    }
+    if(preferScan && pendingScanItems.length){
+      pendingScanItems.forEach(function(entry){
+        if(entry.checked) pushName(entry.text);
+      });
+    }
+    Object.keys(state.pantryItems || {}).forEach(pushName);
+    return out;
+  }
+
+  function stripQtyForMatch(s){
+    return String(s || "").toLowerCase()
+      .replace(/^[\d./\s½¼¾⅓⅔⅛⅜⅝⅞-]+/, "")
+      .replace(/\b(cups?|tbsps?|tsps?|tablespoons?|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|cans?|packages?|cloves?|slices?|pieces?|pinch|dash|to taste)\b/g, "")
+      .replace(/[^a-z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function haveMatchesNeed(haveList, needItem){
+    var needKey = stripQtyForMatch(needItem);
+    if(!needKey) return true;
+    return haveList.some(function(h){
+      var hk = stripQtyForMatch(h);
+      return hk === needKey || hk.indexOf(needKey) !== -1 || needKey.indexOf(hk) !== -1;
+    });
+  }
+
+  function alreadyOnList(text){
+    var key = String(text || "").trim().toLowerCase();
+    return state.items.some(function(it){
+      return !it.done && it.text.trim().toLowerCase() === key;
+    });
+  }
+
+  function missingIngredients(idea, haveList){
+    var need = Array.isArray(idea.need) ? idea.need : [];
+    return need.filter(function(n){
+      if(haveMatchesNeed(haveList, n)) return false;
+      if(alreadyOnList(n)) return false;
+      return true;
+    });
+  }
+
+  function ideaToRecipeText(idea){
+    var lines = [];
+    lines.push("Ingredients you likely have:");
+    (idea.uses || []).forEach(function(u){ lines.push("- " + u); });
+    if(idea.need && idea.need.length){
+      lines.push("");
+      lines.push("Add if you need:");
+      idea.need.forEach(function(n){ lines.push("- " + n); });
+    }
+    if(idea.steps && idea.steps.length){
+      lines.push("");
+      lines.push("Steps:");
+      idea.steps.forEach(function(s, i){ lines.push((i + 1) + ". " + s); });
+    }
+    if(idea.upgradeNote){
+      lines.push("");
+      lines.push("Upgrade tip: " + idea.upgradeNote);
+    }
+    return lines.join("\n");
+  }
+
+  function renderMealIdeas(ideas, haveList){
+    lastMealIdeas = ideas || [];
+    lastMealIdeaHave = haveList || [];
+    mealSuggestList.innerHTML = "";
+    mealSuggestEmpty.hidden = lastMealIdeas.length > 0;
+    if(!lastMealIdeas.length){
+      mealSuggestEmpty.textContent = "Couldn't come up with ideas from that list — try scanning again or adding a few more items.";
+      return;
+    }
+    mealSuggestEmpty.textContent = "No ideas yet.";
+    lastMealIdeas.forEach(function(idea, idx){
+      var li = document.createElement("li");
+      li.style.flexDirection = "column";
+      li.style.alignItems = "stretch";
+      li.style.gap = "8px";
+
+      var top = document.createElement("div");
+      var nameEl = document.createElement("div");
+      nameEl.className = "meal-name";
+      nameEl.textContent = idea.name || ("Idea " + (idx + 1));
+      var kindEl = document.createElement("div");
+      kindEl.className = "meal-ing";
+      var isUpgrade = String(idea.kind || "").toLowerCase() === "upgrade";
+      kindEl.textContent = isUpgrade
+        ? ("Upgrade: " + (idea.upgradeNote || "Stretch what you’ve got into a fuller dinner."))
+        : "Easy from what you have";
+      top.appendChild(nameEl);
+      top.appendChild(kindEl);
+
+      var usesEl = document.createElement("div");
+      usesEl.className = "meal-ing";
+      usesEl.textContent = "Uses: " + ((idea.uses && idea.uses.length) ? idea.uses.join(", ") : "—");
+
+      var needEl = document.createElement("div");
+      needEl.className = "meal-ing";
+      var missing = missingIngredients(idea, haveList);
+      if(idea.need && idea.need.length){
+        needEl.textContent = missing.length
+          ? ("Still need: " + missing.join(", "))
+          : ("Extras called for: " + idea.need.join(", ") + " (you’ve got them or they’re already on your list)");
+      } else {
+        needEl.textContent = "No extra grocery run needed.";
+      }
+
+      var stepsEl = document.createElement("div");
+      stepsEl.className = "hint";
+      stepsEl.style.marginTop = "2px";
+      if(idea.steps && idea.steps.length){
+        stepsEl.textContent = idea.steps.map(function(s, i){ return (i + 1) + ". " + s; }).join(" ");
+      }
+
+      var actions = document.createElement("div");
+      actions.style.display = "flex";
+      actions.style.flexWrap = "wrap";
+      actions.style.gap = "8px";
+      actions.style.marginTop = "4px";
+
+      var addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "chip-btn";
+      addBtn.textContent = missing.length ? ("🛒 Add " + missing.length + " missing to list") : "✅ Nothing missing";
+      addBtn.disabled = missing.length === 0;
+      addBtn.addEventListener("click", function(){
+        var stillMissing = missingIngredients(idea, lastMealIdeaHave);
+        if(!stillMissing.length){
+          mealSuggestStatus.textContent = "Nothing missing for \"" + idea.name + "\".";
+          return;
+        }
+        addItems(stillMissing.join(", "), idea.name);
+        mealSuggestStatus.textContent = "Added " + stillMissing.length + " missing item" + (stillMissing.length === 1 ? "" : "s") + " for \"" + idea.name + "\".";
+        renderMealIdeas(lastMealIdeas, lastMealIdeaHave);
+      });
+
+      var saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.className = "chip-btn";
+      saveBtn.textContent = "📖 Save to vault";
+      saveBtn.addEventListener("click", function(){
+        var title = String(idea.name || "Pantry meal").trim();
+        var text = ideaToRecipeText(idea);
+        var exists = state.recipes.some(function(r){
+          return r.title.toLowerCase() === title.toLowerCase() && r.text === text;
+        });
+        if(exists){
+          mealSuggestStatus.textContent = "\"" + title + "\" is already in your recipe vault.";
+          return;
+        }
+        state.recipes.push({
+          id: "r"+Date.now()+Math.random().toString(16).slice(2),
+          title: title,
+          servings: 2,
+          text: text
+        });
+        saveState();
+        mealSuggestStatus.textContent = "Saved \"" + title + "\" to your recipe vault.";
+      });
+
+      actions.appendChild(addBtn);
+      actions.appendChild(saveBtn);
+
+      li.appendChild(top);
+      li.appendChild(usesEl);
+      li.appendChild(needEl);
+      if(idea.steps && idea.steps.length) li.appendChild(stepsEl);
+      li.appendChild(actions);
+      mealSuggestList.appendChild(li);
+    });
+  }
+
+  function requestMealIdeas(haveList, statusEl){
+    statusEl = statusEl || mealSuggestStatus;
+    if(!haveList.length){
+      statusEl.textContent = "Scan a pantry or fridge photo first — or save a few items to your stock — then try again.";
+      return;
+    }
+    if(!hasTextAI()){
+      statusEl.textContent = needApiKeyMessage();
+      return;
+    }
+    mealSuggestStatus.textContent = "Cooking up ideas…";
+    mealSuggestEmpty.hidden = true;
+    mealSuggestList.innerHTML = "";
+    mealSuggestIntro.textContent = "Based on: " + haveList.slice(0, 24).join(", ") + (haveList.length > 24 ? "…" : "");
+    pantryDialog.close();
+    mealSuggestDialog.showModal();
+
+    var prompt =
+      "You are helping a busy home cook. They have these foods on hand:\n" +
+      JSON.stringify(haveList) +
+      "\n\nSuggest 4 to 6 easy meal ideas that mostly use those items plus common pantry staples " +
+      "(salt, pepper, oil, butter, flour, rice, pasta, garlic, onion, spices they might already have).\n" +
+      "Include at least 2 \"upgrade\" ideas that turn something plain into a satisfying dinner " +
+      "(examples: can of soup → fuller meal with toast/egg/veg; leftover rice → fried rice or burrito bowl; " +
+      "pasta + jar sauce → baked pasta; beans + tortillas → quick tacos).\n" +
+      "Keep ingredient lists short and steps simple (3–5 steps).\n" +
+      "Reply with ONLY a JSON object shaped like:\n" +
+      "{\"ideas\":[{\"name\":string,\"kind\":\"from_stock\"|\"upgrade\",\"uses\":[string],\"need\":[string],\"steps\":[string],\"upgradeNote\":string}]}\n" +
+      "uses = items from their list that this meal uses. need = extra items they may still need to buy " +
+      "(omit staples they almost certainly have; keep need short). upgradeNote is required when kind is upgrade, else empty string.";
+
+    aiJson(prompt, { modelTier: "default" }).then(function(data){
+      var ideas = (data && Array.isArray(data.ideas)) ? data.ideas : (Array.isArray(data) ? data : []);
+      ideas = ideas.filter(function(idea){ return idea && idea.name; }).map(function(idea){
+        return {
+          name: String(idea.name || "").trim(),
+          kind: String(idea.kind || "from_stock").toLowerCase() === "upgrade" ? "upgrade" : "from_stock",
+          uses: Array.isArray(idea.uses) ? idea.uses.map(String) : [],
+          need: Array.isArray(idea.need) ? idea.need.map(String) : [],
+          steps: Array.isArray(idea.steps) ? idea.steps.map(String) : [],
+          upgradeNote: String(idea.upgradeNote || "").trim()
+        };
+      });
+      mealSuggestStatus.textContent = ideas.length
+        ? ("Here are " + ideas.length + " ideas — add only what’s missing, or save one to your vault.")
+        : "";
+      renderMealIdeas(ideas, haveList);
+    }).catch(function(e){
+      mealSuggestStatus.textContent = sampleErrorMessage(e && e.code);
+      mealSuggestEmpty.hidden = false;
+      mealSuggestEmpty.textContent = "Couldn't get meal ideas just now.";
+      mealSuggestList.innerHTML = "";
+    });
+  }
+
+  document.getElementById("suggestMealsFromScanBtn").addEventListener("click", function(){
+    var hint = document.getElementById("suggestMealsFromScanHint");
+    var have = gatherHaveItems(true);
+    if(!pendingScanItems.length && !Object.keys(state.pantryItems || {}).length){
+      hint.textContent = "Spot some items first (or save stock), then ask what you can make.";
+      return;
+    }
+    if(!pendingScanItems.filter(function(e){ return e.checked; }).length && !Object.keys(state.pantryItems || {}).length){
+      hint.textContent = "Check at least one spotted item, or save something to your stock first.";
+      return;
+    }
+    hint.textContent = "";
+    requestMealIdeas(have, hint);
+  });
+
+  document.getElementById("suggestMealsFromStockBtn").addEventListener("click", function(){
+    var hint = document.getElementById("suggestMealsFromStockHint");
+    var have = gatherHaveItems(false);
+    if(!have.length){
+      hint.textContent = "Nothing in stock yet — scan a photo above and save it first.";
+      return;
+    }
+    hint.textContent = "";
+    requestMealIdeas(have, hint);
+  });
+
+  document.getElementById("closeMealSuggest").addEventListener("click", function(){
+    mealSuggestDialog.close();
+    renderPantryChips();
+    pantryDialog.showModal();
+  });
 
   // ---------- Recipe vault (same AI path as pantry: Claude sample or Anthropic API key) ----------
   var recipeDialog = document.getElementById("recipeDialog");

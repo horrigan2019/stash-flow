@@ -21,11 +21,12 @@ Or open `index.html` directly in Chrome / Edge / Safari.
 - Shopping list sorted by aisle
 - Voice add (in a real browser / live site)
 - Meal planning, events, pantry, recipes, flyer check helpers
+- **What can I make?** — after a pantry/fridge scan (or from saved stock), get easy meal ideas and “upgrade what you have” dinners
 - Settings (text size, contrast, theme, accent color, optional Anthropic API key)
 
 ## Photo / AI features (live site)
 
-Pantry scan, recipe photo scan, flyer check, and recipe scaling/diet swaps work on GitHub Pages / ohstuffing.com when you paste your own **Anthropic API key** in Settings (⚙️).
+Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe scaling/diet swaps work on GitHub Pages / ohstuffing.com when you paste your own **Anthropic API key** in Settings (⚙️).
 
 - Get a key at [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* subscription is **not** an API key.
 - The key is stored only in this browser (localStorage). That’s fine for personal/demo use; don’t paste a shared or work key.
