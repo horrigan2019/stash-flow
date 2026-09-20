@@ -1,29 +1,42 @@
 # Oh Stuffing!
 
-**Product app:** single-file UI in [`oh-stuffing/index.html`](./oh-stuffing/index.html) (also served from [`public/index.html`](./public/index.html)).
+Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, and flyer check.
 
-**AI photo features** call a small Next.js proxy at `/api/vision` so the browser does not hit Anthropic CORS. Paste your Anthropic API key in Settings (⚙️) — same personal-key UX as before.
+## Deploy (like Fiona)
 
-## Run locally (Cursor preview)
+**Push to GitHub → Vercel auto-deploys.**
+
+Same flow as Fiona: the **whole** app lives on GitHub (`package.json`, `src/`, `public/`, API routes). Vercel imports that project and updates the live site when you push.
+
+1. Push this full repo to [horrigan2019/stash-flow](https://github.com/horrigan2019/stash-flow) (`main`)
+2. In [Vercel](https://vercel.com): Import **stash-flow** (or refresh if already connected)
+3. Framework: **Next.js** · Build: `next build` · no env vars required for personal use
+4. Open the `*.vercel.app` URL → Settings (⚙️) → paste your Anthropic API key → try **What's My Stock** / **What can I make?**
+5. Optional later: Domains → add **ohstuffing.com**
+
+If GitHub only has one old `index.html`, Vercel cannot run Photo & AI helper. Push this complete Next.js project first.
+
+Your Anthropic key stays in the app Settings after deploy — never paste it into chat.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
 ```
 
 Open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
-## Deploy on Vercel (like Fiona)
+## What’s in this repo
 
-**Important:** Vercel needs this **whole** Next.js project on GitHub (`package.json`, `src/`, `public/`, etc.). If the GitHub repo only has one `index.html`, push the full Cursor project first — then deploy.
+| Piece | Role |
+| --- | --- |
+| `public/index.html` | The Oh Stuffing UI (API key Settings, Photo & AI, What can I make?) |
+| `src/app/api/vision` | Next.js proxy so the browser can call Anthropic without CORS |
+| `package.json` / `vercel.json` | Normal Vercel Next.js app (like Fiona’s full-project deploy) |
 
-1. Open [vercel.com](https://vercel.com) → **Add New Project** → Import **stash-flow**
-2. Framework: **Next.js** (leave Build Command `next build`)
-3. Env vars: **none required** if you paste your API key in the app Settings. Optional: `ANTHROPIC_API_KEY` for a shared server key.
-4. Click **Deploy**. Open the `*.vercel.app` URL, put your key in Settings, try **What's My Stock**.
-5. Later: in Vercel → Project → Domains, add **ohstuffing.com** (same idea as Fiona).
+## Photo / AI
 
-GitHub Pages cannot run `/api/vision`. Use Vercel for the live site with AI photo features.
+Paste an Anthropic API key in Settings (⚙️). Get one at [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* plan is not an API key. The key stays on the device. Live site uses `/api/vision`.
 
-## Older React scaffold
-
-The `src/components/*` grocery prototype is unused by the shipped UI. Keep it; `/` is rewritten to the HTML app.
+GitHub Pages can host HTML only; use **Vercel** for Photo & AI helper.

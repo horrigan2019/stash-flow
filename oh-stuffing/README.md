@@ -43,6 +43,8 @@ Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe s
 
 ## Live site
 
-**Best path:** deploy the whole repo to **Vercel** (HTML + API route), same idea as Fiona.
+**Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys.
 
-GitHub Pages can host the HTML only — upload this `index.html` to clear the old Claude-only message. For reliable photo AI, use Vercel.
+Do not upload only this `index.html` to GitHub — that is what made Oh Stuffing feel broken compared to Fiona. Vercel needs `package.json`, `src/app/api/vision`, and `public/` so Photo & AI helper works.
+
+GitHub Pages can host HTML only. For Photo & AI, use Vercel.
