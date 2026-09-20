@@ -1,27 +1,14 @@
 # Oh Stuffing!
 
-Mobile-first grocery and event budget app. Walk the store in aisle order, check items into your cart, and keep the Weekly Stash offline-ready on device.
+**The working app is in [`oh-stuffing/`](./oh-stuffing/)** — open that folder’s `index.html`.
 
-## Stack
-
-- Next.js (App Router) + React
-- Tailwind CSS
-- Lucide React icons
-- LocalStorage persistence (no backend required)
-
-## Run locally
+This is a complete single-file grocery app (lists by aisle, meals, events, pantry, recipes, settings). It saves on your device today; no backend required.
 
 ```bash
-npm install
-npm run dev
+cd oh-stuffing
+npx --yes serve -l 3847
 ```
 
 Open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
-## What’s in this slice
-
-- **Weekly Stash** (default tab) — brand header, voice intake mic (demo), aisle walk-flow cards, checkboxes that move items into **Stuffed in Cart**
-- **Feast Runway** — placeholder for event menus / guest budgets
-- **Pantry & Settings** — offline note + reset sample list
-
-Frozen stays locked at the bottom of the aisle list so cold items stay last on the walk.
+> The older Next.js prototype under `src/` was an early scaffold and is not needed to use the app.
