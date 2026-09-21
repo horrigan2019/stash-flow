@@ -9,12 +9,14 @@ It already saves your lists, meals, pantry, recipes, and settings on the device 
 From the **repo root** (not this folder):
 
 ```bash
+# optional for Photo AI locally:
+# export ANTHROPIC_API_KEY=sk-ant-...
 npm run dev
 ```
 
 Then open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
-That starts Next.js, which serves this HTML app and `/api/vision` (Anthropic proxy — avoids browser CORS).
+That starts Next.js, which serves this HTML app and `/api/vision` (Anthropic proxy — uses server `ANTHROPIC_API_KEY`, avoids browser CORS).
 
 Static-only (no proxy):
 
@@ -30,20 +32,19 @@ Or open `index.html` directly in Chrome / Edge / Safari.
 - Voice add (in a real browser / live site)
 - Meal planning, events, pantry, recipes, flyer check helpers
 - **What can I make?** — after a pantry/fridge scan (or from saved stock), get easy meal ideas and “upgrade what you have” dinners
-- Settings (text size, contrast, theme, accent color, optional Anthropic API key)
+- Settings (text size, contrast, theme, accent color)
 
 ## Photo / AI features
 
-Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe scaling/diet swaps work when you paste your own **Anthropic API key** in Settings (⚙️).
+Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe scaling/diet swaps work when the **site owner** sets `ANTHROPIC_API_KEY` on Vercel (Environment Variables → Production → Redeploy). **Customers never need an API key.**
 
-- Get a key at [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* subscription is **not** an API key.
-- The key is stored only in this browser (localStorage). Fine for personal/demo use; don’t paste a shared or work key.
-- Calls go through `/api/vision` when hosted on Next/Vercel (recommended). No need to open the app inside Claude.
-- Without a key, the camera still works; AI identification asks you to add a key.
+- Owner key: [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* subscription is **not** an API key.
+- Calls go through `/api/vision` when hosted on Next/Vercel (recommended).
+- If AI isn’t configured on the server, the app says Photo AI is temporarily unavailable — it does **not** ask shoppers for a key.
 
 ## Live site
 
-**Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys.
+**Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys → add `ANTHROPIC_API_KEY` in Vercel env → Redeploy.
 
 Do not upload only this `index.html` to GitHub — that is what made Oh Stuffing feel broken compared to Fiona. Vercel needs `package.json`, `src/app/api/vision`, and `public/` so Photo & AI helper works.
 

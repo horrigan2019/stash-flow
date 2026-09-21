@@ -9,24 +9,26 @@ type AnthropicErrorBody = {
 
 /**
  * CORS-safe proxy to Anthropic Messages API.
- * Client sends the user's Settings API key in `x-api-key` (personal/demo UX).
- * Optional fallback: server env ANTHROPIC_API_KEY when no header is provided.
+ * Product path (like Fiona): set ANTHROPIC_API_KEY as a Vercel env var.
+ * Optional: send x-api-key for local/dev when the server env is not set.
+ * End users never need (or see) an API key.
  */
 export async function POST(request: Request) {
-  const headerKey = (request.headers.get("x-api-key") || "").trim();
   const envKey = (process.env.ANTHROPIC_API_KEY || "").trim();
-  const apiKey = headerKey || envKey;
+  const headerKey = (request.headers.get("x-api-key") || "").trim();
+  // Prefer server env; header is a local/dev fallback only when env is unset.
+  const apiKey = envKey || headerKey;
 
   if (!apiKey) {
     return NextResponse.json(
       {
         error: {
-          type: "authentication_error",
+          type: "configuration_error",
           message:
-            "Missing API key. Paste one in Settings, or set ANTHROPIC_API_KEY on the server.",
+            "AI isn't configured yet. Set ANTHROPIC_API_KEY in Vercel Environment Variables and redeploy.",
         },
       },
-      { status: 401 }
+      { status: 503 }
     );
   }
 

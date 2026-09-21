@@ -452,16 +452,7 @@
       </div>
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
-    <div class="field-row">
-      <label for="anthropicApiKeyInput">Photo &amp; AI helper (optional)</label>
-      <input type="password" id="anthropicApiKeyInput" placeholder="Paste Anthropic API key (sk-ant-…)" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;font-family:inherit;">
-      <div class="hint" style="margin-top:6px;">Needed on the live website for pantry photos, “what can I make” meal ideas, recipe scan, flyer check, and recipe scaling. Get a key at <strong>console.anthropic.com</strong> — a Claude Pro <em>chat</em> subscription is <strong>not</strong> an API key (API usage is billed separately). The key is stored only on this device. Browser-stored keys are for personal/demo use; don’t paste a shared or work key here.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-        <button type="button" class="chip-btn" id="saveApiKeyBtn">Save key</button>
-        <button type="button" class="chip-btn" id="clearApiKeyBtn">Clear key</button>
-      </div>
-      <div class="hint" id="apiKeyStatus" style="margin-top:6px;"></div>
-    </div>
+    <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo AI (pantry scan, meal ideas, recipe scan, flyer check) runs on the server — you never need an API key in this app. The site owner sets <code>ANTHROPIC_API_KEY</code> in Vercel.</div>
     <button class="dialog-close" id="closeSettings" type="button">Done</button>
   </div>
 </dialog>
@@ -569,7 +560,7 @@
 <dialog id="pantryDialog">
   <div class="dialog-inner">
     <h2>What's My Stock</h2>
-    <div id="pantryUnavailable" class="hint" hidden>You can still take or pick photos below. To identify what’s in them, add your Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
+    <div id="pantryUnavailable" class="hint" hidden>You can still take or pick photos below. Photo AI is temporarily unavailable — try again later.</div>
 
     <div id="pantryScanArea">
       <div class="hint" style="margin-bottom:10px;">Snap your pantry and/or fridge — we'll spot what's there so you can skip buying it again.</div>
@@ -638,7 +629,7 @@
 <dialog id="recipeDialog">
   <div class="dialog-inner">
     <h2>Recipe vault</h2>
-    <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works anytime. Photo scan, scaling, and diet swaps need an Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
+    <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works anytime. Photo scan, scaling, and diet swaps are temporarily unavailable — try again later.</div>
     <form class="meal-form" id="recipeForm">
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe name</label>
@@ -781,7 +772,7 @@
 <dialog id="flyerDialog">
   <div class="dialog-inner">
     <h2>Check A Flyer</h2>
-    <div id="flyerUnavailable" class="hint" hidden>You can still take photos or paste ad text below. To match them to your list, add your Anthropic API key in Settings (⚙️). A Claude Pro chat plan is not an API key.</div>
+    <div id="flyerUnavailable" class="hint" hidden>You can still take photos or paste ad text below. Flyer matching is temporarily unavailable — try again later.</div>
     <div id="flyerScanArea">
       <div class="hint" style="margin-bottom:10px;">Snap a photo of a real weekly ad or flyer — from the store's app, website, email, or the paper one — and we'll check it against what's still on your list.</div>
       <div>
@@ -1857,54 +1848,10 @@
 
   // ---------- Settings dialog ----------
   var settingsDialog = document.getElementById("settingsDialog");
-  var API_KEY_LS = "ostuffing.anthropicApiKey";
-  var anthropicApiKeyInput = document.getElementById("anthropicApiKeyInput");
-  var apiKeyStatus = document.getElementById("apiKeyStatus");
-
-  function getAnthropicApiKey(){
-    try{ return (localStorage.getItem(API_KEY_LS) || "").trim(); }catch(e){ return ""; }
-  }
-  function setAnthropicApiKey(key){
-    try{
-      if(key) localStorage.setItem(API_KEY_LS, key);
-      else localStorage.removeItem(API_KEY_LS);
-    }catch(e){}
-  }
-  function refreshApiKeyStatus(){
-    var k = getAnthropicApiKey();
-    if(k){
-      var tail = k.length > 4 ? k.slice(-4) : "••••";
-      apiKeyStatus.textContent = "Key saved on this device (ends …" + tail + "). Photo & AI helpers can run on the live site.";
-      anthropicApiKeyInput.placeholder = "•••••••••••••••••••• (saved — paste a new key to replace)";
-    } else {
-      apiKeyStatus.textContent = "No API key saved yet — camera still works; AI identification needs a key.";
-      anthropicApiKeyInput.placeholder = "Paste Anthropic API key (sk-ant-…)";
-    }
-  }
   document.getElementById("settingsBtn").addEventListener("click", function(){
-    anthropicApiKeyInput.value = "";
-    refreshApiKeyStatus();
     settingsDialog.showModal();
   });
   document.getElementById("closeSettings").addEventListener("click", function(){ settingsDialog.close(); });
-  document.getElementById("saveApiKeyBtn").addEventListener("click", function(){
-    var key = anthropicApiKeyInput.value.trim();
-    if(!key){
-      apiKeyStatus.textContent = "Paste a key first, or tap Clear key to remove the saved one.";
-      return;
-    }
-    setAnthropicApiKey(key);
-    anthropicApiKeyInput.value = "";
-    refreshApiKeyStatus();
-    if(typeof syncPantryAvailability === "function") syncPantryAvailability();
-  });
-  document.getElementById("clearApiKeyBtn").addEventListener("click", function(){
-    setAnthropicApiKey("");
-    anthropicApiKeyInput.value = "";
-    refreshApiKeyStatus();
-    if(typeof syncPantryAvailability === "function") syncPantryAvailability();
-  });
-  refreshApiKeyStatus();
 
   function wireSeg(segId, applyFn, prefKey){
     var seg = document.getElementById(segId);
@@ -2039,7 +1986,7 @@
     });
   }
 
-  // ---------- Pantry & fridge photo recognition (Claude sample inside Claude, or Anthropic API key on the live site) ----------
+  // ---------- Pantry & fridge photo recognition (Claude sample, or server ANTHROPIC_API_KEY via /api/vision) ----------
   var sampleAPI = null;
   var sampleImagesOk = false;
   var pantryUnavailableEl = document.getElementById("pantryUnavailable");
@@ -2077,11 +2024,13 @@
   var pantryMatchesEl = document.getElementById("pantryMatches");
   var pendingScanItems = []; // [{text, checked}] awaiting confirmation before saving
 
-  function hasTextAI(){ return !!(sampleAPI || getAnthropicApiKey()); }
-  function hasVisionAI(){ return !!((sampleAPI && sampleImagesOk) || getAnthropicApiKey()); }
+  // Live site uses server ANTHROPIC_API_KEY — customers never paste a key.
+  // Inside Claude sample: text always; vision only when sample images are allowed.
+  function hasTextAI(){ return true; }
+  function hasVisionAI(){ return sampleAPI ? sampleImagesOk : true; }
 
   function syncPantryAvailability(){
-    // Camera UI always stays available on the live site; banner only when AI isn't configured
+    // Camera UI always stays available; banner only inside Claude when photos aren't allowed
     pantryScanAreaEl.hidden = false;
     pantryUnavailableEl.hidden = hasVisionAI();
   }
@@ -2104,13 +2053,12 @@
     if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
-    if(code === "no_api_key") return "Add your Anthropic API key in Settings (⚙️) first. A Claude Pro chat subscription is not an API key.";
-    if(code === "auth") return "That API key was rejected — check it in Settings, or create a new one at console.anthropic.com.";
+    if(code === "no_api_key" || code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
     if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
   }
   function needApiKeyMessage(){
-    return "Add your Anthropic API key in Settings (⚙️) to use this. A Claude Pro chat subscription is not an API key — get one at console.anthropic.com.";
+    return "Photo AI is temporarily unavailable — try again later.";
   }
 
   function fileToAnthropicImage(file){
@@ -2162,12 +2110,6 @@
 
   function anthropicMessages(prompt, opts){
     opts = opts || {};
-    var apiKey = getAnthropicApiKey();
-    if(!apiKey){
-      var err = new Error("no_api_key");
-      err.code = "no_api_key";
-      return Promise.reject(err);
-    }
     var model = opts.modelTier === "quick" ? "claude-haiku-4-5" : "claude-sonnet-4-5";
     var buildContent = opts.images && opts.images.length
       ? Promise.all(opts.images.map(fileToAnthropicImage)).then(function(imgs){
@@ -2182,9 +2124,11 @@
     function parseAnthropicResponse(res){
       return res.json().then(function(data){
         if(!res.ok){
+          var errType = data && data.error && data.error.type;
           var msg = (data && data.error && data.error.message) || ("API error " + res.status);
           var e = new Error(msg);
-          if(res.status === 401 || res.status === 403) e.code = "auth";
+          if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
+          else if(res.status === 401 || res.status === 403) e.code = "unavailable";
           else if(res.status === 429) e.code = "rate_limited";
           else e.code = "api_error";
           throw e;
@@ -2201,8 +2145,7 @@
       });
     }
 
-    // Prefer same-origin Next.js proxy (/api/vision) to avoid browser CORS blocks.
-    // Fall back to direct Anthropic only on static hosts (e.g. GitHub Pages) when the proxy is missing.
+    // Same-origin Next.js proxy uses server ANTHROPIC_API_KEY (customers never send a key).
     return buildContent.then(function(content){
       var payload = JSON.stringify({
         model: model,
@@ -2211,36 +2154,19 @@
       });
       return fetch("/api/vision", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey
-        },
+        headers: { "content-type": "application/json" },
         body: payload
       }).then(function(res){
         if(res.status === 404 || res.status === 405){
-          return fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-              "anthropic-dangerous-direct-browser-access": "true"
-            },
-            body: payload
-          }).then(parseAnthropicResponse);
+          var e = new Error("Photo AI is temporarily unavailable");
+          e.code = "unavailable";
+          throw e;
         }
         return parseAnthropicResponse(res);
       }, function(){
-        return fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-          },
-          body: payload
-        }).then(parseAnthropicResponse);
+        var e = new Error("Photo AI is temporarily unavailable");
+        e.code = "unavailable";
+        throw e;
       });
     });
   }
