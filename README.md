@@ -1,6 +1,8 @@
 # Oh Stuffing!
 
-Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, flyer check, leftover countdown. **Paid accounts** ($7.99/mo or $49/yr) via email signup + Stripe Checkout.
+Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, flyer check, leftover countdown.
+
+**Freemium:** core list tools are free; **Photo & AI** (What's My Stock pantry camera + AI meal ideas) is **$7.99/mo or $49/yr** via email signup + Stripe Checkout.
 
 ## Deploy (like Fiona)
 
@@ -12,7 +14,7 @@ Same flow as Fiona: the **whole** app lives on GitHub (`package.json`, `src/`, `
 2. In [Vercel](https://vercel.com): Import **stash-flow** (or refresh if already connected)
 3. Framework: **Next.js** · Build: `next build`
 4. Add environment variables (names below) → **Save** → **Deployments** → ⋮ on the latest → **Redeploy**
-5. Open the `*.vercel.app` URL → sign up → subscribe → try **What's My Stock** / meal planning
+5. Open the `*.vercel.app` URL → use the free list/meal/countdown tools → tap **What's My Stock** to see the upgrade path → sign up → subscribe for Photo & AI
 6. Optional later: Domains → add **ohstuffing.com**
 
 **Never paste secret keys into chat** — only into Vercel Environment Variables.
@@ -27,7 +29,7 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 
 | Name | Notes |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Server-only Anthropic key for `/api/vision` |
+| `ANTHROPIC_API_KEY` | Server-only Anthropic key for `/api/vision` (subscribers only) |
 
 ### Required for paid signup (production)
 
@@ -48,7 +50,7 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Only if you later add Stripe.js on the client (Checkout uses server redirects today) |
 | `NEXT_PUBLIC_APP_URL` | Canonical site URL (e.g. `https://www.ohstuffing.com`) for Checkout success/cancel links |
 
-**Local / missing Stripe or Redis:** the app still boots. Auth uses an in-memory store; choosing a plan **mock-unlocks** without charging a card.
+**Local / missing Stripe or Redis:** the app still boots. Auth uses an in-memory store; choosing a plan **mock-unlocks Photo & AI** without charging a card. Free features work without an account.
 
 ---
 
@@ -95,20 +97,19 @@ npm run dev
 
 Open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
-### How to test paid flow locally (mock)
+### How to test freemium locally (mock)
 
-1. Open the site → you should see the **Oh Stuffing!** signup / pricing gate
-2. **Sign up** with any email + password (8+ chars)
-3. Tap **Monthly** or **Yearly** → mock unlock (no Stripe keys needed)
-4. Core features (list, Meal Planning, Countdown, What's My Stock, etc.) work
-5. Settings → **Clear mock unlock** or **Log out** to re-test the gate
+1. Open the site → **no paywall** — grocery list, Meal Planning, Countdown, Recipe vault, Share, Send to store work immediately
+2. Tap **What's My Stock** → upgrade overlay (free vs Photo & AI). Tap **Continue with free** to return
+3. Settings → **Upgrade Photo & AI** → **Sign up** → **Monthly** or **Yearly** → mock unlock (no Stripe keys needed)
+4. What's My Stock / Photo AI work; Settings → **Clear mock Photo & AI unlock** to re-test
 
 ### How to test with real Stripe (test mode)
 
 1. Set test-mode Stripe + Upstash env vars, restart `npm run dev`
 2. Use Stripe CLI: `stripe listen --forward-to localhost:3847/api/stripe/webhook`
 3. Put the CLI webhook secret in `STRIPE_WEBHOOK_SECRET`
-4. Sign up → Checkout with card `4242 4242 4242 4242` → return to app subscribed
+4. Sign up → Checkout with card `4242 4242 4242 4242` → return to app with Photo & AI unlocked
 5. **Manage** opens Customer Portal
 
 ---
@@ -120,23 +121,23 @@ Oh Stuffing! can live on your home screen like an app (no App Store). After the 
 - **iPhone (Safari):** open [ohstuffing.com](https://www.ohstuffing.com) → tap **Share** → **Add to Home Screen** → Add.
 - **Android (Chrome):** open the site → tap the browser menu **⋮** → **Install app** or **Add to Home screen**. Or open **Settings** (gear) in the app and tap **Install app** when that button appears.
 
-Then open the home-screen icon for a full-screen Oh Stuffing! experience. Photo / AI still needs a network connection.
+Then open the home-screen icon for a full-screen Oh Stuffing! experience. Photo / AI still needs a network connection and a subscription.
 
 ## What’s in this repo
 
 | Piece | Role |
 | --- | --- |
-| `public/index.html` | The Oh Stuffing UI (Photo & AI, What can I make?, paid gate) |
+| `public/index.html` | The Oh Stuffing UI (free core + Photo & AI upgrade) |
 | `public/manifest.webmanifest` + `public/icons/` | Home-screen name, colors, and icons |
 | `public/sw.js` | Light offline shell cache (does not touch `/api/*`) |
-| `src/app/api/vision` | Next.js proxy — uses server `ANTHROPIC_API_KEY` |
+| `src/app/api/vision` | Next.js proxy — `ANTHROPIC_API_KEY`; requires signed-in subscriber |
 | `src/app/api/auth/*` | Email signup / login / logout / session |
 | `src/app/api/stripe/*` | Checkout, Customer Portal, webhook, mock cancel |
 | `package.json` / `vercel.json` | Normal Vercel Next.js app (like Fiona’s full-project deploy) |
 
-## Photo / AI
+## Photo / AI (paid)
 
-Photo scan, meal ideas, recipe helpers, and flyer check use the **server** key (`ANTHROPIC_API_KEY` on Vercel). End users never see or paste an API key. Live site calls `/api/vision`.
+Photo scan, meal ideas from stock photos, recipe helpers that call Anthropic, and flyer check use the **server** key (`ANTHROPIC_API_KEY` on Vercel). `/api/vision` returns **401** if not signed in and **402** if not subscribed. End users never see or paste an API key.
 
 A Claude Pro *chat* plan is not an API key — create one at [console.anthropic.com](https://console.anthropic.com) for the site owner only.
 

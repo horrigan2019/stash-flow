@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { isSubscribed } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -9,11 +11,37 @@ type AnthropicErrorBody = {
 
 /**
  * CORS-safe proxy to Anthropic Messages API.
+ * Paid feature: requires an authenticated, subscribed user.
  * Product path (like Fiona): set ANTHROPIC_API_KEY as a Vercel env var.
  * Optional: send x-api-key for local/dev when the server env is not set.
  * End users never need (or see) an API key.
  */
 export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json(
+      {
+        error: {
+          type: "auth_required",
+          message: "Sign in to use Photo & AI features.",
+        },
+      },
+      { status: 401 }
+    );
+  }
+  if (!isSubscribed(user)) {
+    return NextResponse.json(
+      {
+        error: {
+          type: "subscription_required",
+          message:
+            "Photo pantry scans and AI recommendations need an Oh Stuffing subscription ($7.99/mo or $49/yr).",
+        },
+      },
+      { status: 402 }
+    );
+  }
+
   const envKey = (process.env.ANTHROPIC_API_KEY || "").trim();
   const headerKey = (request.headers.get("x-api-key") || "").trim();
   // Prefer server env; header is a local/dev fallback only when env is unset.

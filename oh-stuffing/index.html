@@ -483,17 +483,16 @@
 <div id="accessGate" class="access-gate" role="dialog" aria-modal="true" aria-labelledby="accessBrand" hidden>
   <div class="access-inner">
     <div class="access-brand" id="accessBrand">Oh Stuffing!</div>
-    <p class="access-tag">Your grocery list sorted by aisle, meals planned from what's already in the fridge, and leftovers that don't quietly go bad — all in one place.</p>
+    <p class="access-tag">Free grocery list, meal planning, and leftover countdown — plus optional Photo &amp; AI for pantry scans and meal ideas from what's already in your kitchen.</p>
 
     <div class="access-panel" id="previewPanel">
-      <h2>What you unlock</h2>
+      <h2>Free vs Photo &amp; AI</h2>
       <ul class="access-features">
-        <li>Customize your grocery list by aisle — type once, it sorts itself</li>
-        <li>Meal planning that adds ingredients straight to your list</li>
-        <li>Leftover &amp; open-food countdown so you know when to toss or use</li>
-        <li>What's My Stock pantry photos, recipes, flyers, and holiday plans</li>
+        <li><strong>Free:</strong> grocery list by aisle, meal planning, leftover &amp; open-food countdown, recipe vault, share list, send to store</li>
+        <li><strong>Paid ($7.99/mo or $49/yr):</strong> What's My Stock pantry photos and AI meal ideas from your fridge &amp; pantry</li>
       </ul>
-      <p>Free preview ends here. Sign up and subscribe to use the full app on your phone or computer.</p>
+      <p>Core Oh Stuffing stays free. Subscribe only when you want photo pantry scans and AI recommendations.</p>
+      <button type="button" class="primary" id="continueFreeBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:4px;">Continue with free</button>
     </div>
 
     <div class="access-panel" id="authPanel">
@@ -516,13 +515,13 @@
     </div>
 
     <div class="access-panel" id="pricingPanel" hidden>
-      <h2>Choose your plan</h2>
-      <p id="pricingIntro">You're signed in. Pick monthly or yearly — cancel anytime from Manage subscription.</p>
+      <h2>Unlock Photo &amp; AI</h2>
+      <p id="pricingIntro">You're signed in. Pick a plan for What's My Stock pantry photos and AI meal ideas — cancel anytime from Manage subscription.</p>
       <div class="plan-row">
         <button type="button" class="plan-btn" id="planMonthly" data-plan="monthly">
           <strong>Monthly</strong>
           <span class="plan-price">$7.99<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / month</span></span>
-          <span>Flexible — stay only as long as it helps at the store</span>
+          <span>Photo pantry + AI recommendations — cancel anytime</span>
         </button>
         <button type="button" class="plan-btn" id="planYearly" data-plan="yearly">
           <strong>Yearly</strong>
@@ -531,7 +530,8 @@
         </button>
       </div>
       <p class="auth-msg" id="checkoutMsg" aria-live="polite"></p>
-      <p class="hint" id="mockPayHint" hidden style="margin-top:8px;">Local mock mode: Stripe keys aren't set, so choosing a plan unlocks the app without charging a card.</p>
+      <p class="hint" id="mockPayHint" hidden style="margin-top:8px;">Local mock mode: Stripe keys aren't set, so choosing a plan unlocks Photo &amp; AI without charging a card.</p>
+      <button type="button" class="primary" id="continueFreeFromPricingBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:10px;">Keep using free features</button>
     </div>
 
     <div class="access-panel" id="accountOnGate" hidden>
@@ -628,12 +628,12 @@
     <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo AI (pantry scan, meal ideas, recipe scan, flyer check) runs on the server — you never need an API key in this app. The site owner sets <code>ANTHROPIC_API_KEY</code> in Vercel.</div>
     <div class="field-row" id="accountSettingsRow">
       <label>Account</label>
-      <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Sign up to save your subscription on this device.</div>
+      <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Free features work without an account. Sign up to unlock Photo &amp; AI ($7.99/mo or $49/yr).</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
         <button class="chip-btn" id="settingsManageBtn" type="button" hidden>Manage subscription</button>
-        <button class="chip-btn" id="settingsMockCancelBtn" type="button" hidden>Clear mock unlock</button>
+        <button class="chip-btn" id="settingsMockCancelBtn" type="button" hidden>Clear mock Photo &amp; AI unlock</button>
         <button class="chip-btn" id="settingsLogoutBtn" type="button" hidden>Log out</button>
-        <button class="chip-btn" id="settingsOpenGateBtn" type="button">Sign up / Log in</button>
+        <button class="chip-btn" id="settingsOpenGateBtn" type="button">Upgrade Photo &amp; AI</button>
       </div>
     </div>
     <div class="field-row" id="installAppRow">
@@ -1056,8 +1056,15 @@
   function applyAccessUI(){
     var gate = document.getElementById("accessGate");
     var subscribed = !!accessSession.subscribed;
-    document.body.classList.toggle("gated", !subscribed);
-    if(gate) gate.hidden = subscribed;
+    // Freemium: never lock the whole app. Gate is an upgrade overlay only.
+    if(subscribed){
+      if(gate) gate.hidden = true;
+      document.body.classList.remove("gated");
+    } else if(gate && !gate.hidden){
+      document.body.classList.add("gated");
+    } else {
+      document.body.classList.remove("gated");
+    }
 
     var authPanel = document.getElementById("authPanel");
     var pricingPanel = document.getElementById("pricingPanel");
@@ -1075,11 +1082,15 @@
 
     var chip = document.getElementById("accountChip");
     var chipEmail = document.getElementById("accountChipEmail");
-    if(chip) chip.hidden = !(accessSession.authenticated && accessSession.subscribed);
+    if(chip) chip.hidden = !accessSession.authenticated;
     if(chipEmail) chipEmail.textContent = accessSession.email || "";
     var manageSubBtnEl = document.getElementById("manageSubBtn");
     if(manageSubBtnEl){
-      manageSubBtnEl.textContent = accessSession.mockPayments ? "Account" : "Manage";
+      if(accessSession.subscribed){
+        manageSubBtnEl.textContent = accessSession.mockPayments ? "Account" : "Manage";
+      } else {
+        manageSubBtnEl.textContent = "Upgrade";
+      }
     }
 
     var hint = document.getElementById("accountSettingsHint");
@@ -1089,31 +1100,43 @@
     var openGate = document.getElementById("settingsOpenGateBtn");
     if(hint){
       if(accessSession.subscribed){
-        hint.textContent = (accessSession.email || "Signed in") + " · " +
+        hint.textContent = (accessSession.email || "Signed in") + " · Photo & AI unlocked · " +
           (accessSession.plan === "yearly" ? "Yearly plan" : accessSession.plan === "monthly" ? "Monthly plan" : "Active") +
           (accessSession.mockPayments ? " (mock payments)" : "");
       } else if(accessSession.authenticated){
-        hint.textContent = (accessSession.email || "Signed in") + " — choose a plan to unlock the full app.";
+        hint.textContent = (accessSession.email || "Signed in") + " — free features are open. Choose a plan for Photo & AI.";
       } else {
-        hint.textContent = "Sign up to save your subscription on this device.";
+        hint.textContent = "Free features work without an account. Sign up to unlock Photo & AI ($7.99/mo or $49/yr).";
       }
     }
     if(manageBtn) manageBtn.hidden = !(accessSession.subscribed && !accessSession.mockPayments);
     if(mockCancel) mockCancel.hidden = !(accessSession.subscribed && accessSession.mockPayments);
     if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
-    if(openGate) openGate.hidden = accessSession.subscribed;
+    if(openGate){
+      openGate.hidden = accessSession.subscribed;
+      openGate.textContent = accessSession.authenticated ? "Upgrade Photo & AI" : "Sign up / Upgrade Photo & AI";
+    }
+  }
+
+  function closeUpgradeGate(){
+    var gate = document.getElementById("accessGate");
+    if(gate) gate.hidden = true;
+    document.body.classList.remove("gated");
+    setMsg(document.getElementById("authMsg"), "", null);
+    setMsg(document.getElementById("checkoutMsg"), "", null);
+  }
+
+  function openUpgradeGate(actionLabel){
+    var gate = document.getElementById("accessGate");
+    if(gate) gate.hidden = false;
+    applyAccessUI();
+    setMsg(document.getElementById("authMsg"),
+      (actionLabel || "Photo & AI") + " needs an Oh Stuffing subscription ($7.99/mo or $49/yr). Free features stay open anytime.", "error");
   }
 
   function requireAccess(actionLabel){
     if(accessSession.subscribed) return true;
-    applyAccessUI();
-    var gate = document.getElementById("accessGate");
-    if(gate){
-      gate.hidden = false;
-      document.body.classList.add("gated");
-      setMsg(document.getElementById("authMsg"),
-        (actionLabel || "That feature") + " needs an Oh Stuffing subscription.", "error");
-    }
+    openUpgradeGate(actionLabel);
     return false;
   }
 
@@ -1168,7 +1191,7 @@
       if(data.mock && data.session){
         accessSession = data.session;
         applyAccessUI();
-        setMsg(msg, "You're in! Mock unlock (no card charged).", "ok");
+        setMsg(msg, "Photo & AI unlocked! Mock mode (no card charged).", "ok");
         return;
       }
       if(data.url){
@@ -1250,7 +1273,7 @@
           if(!res.ok) throw new Error(data.error || "Something went wrong.");
           accessSession = data.session || accessSession;
           applyAccessUI();
-          setMsg(msg, accessSession.subscribed ? "Welcome back!" : "Account ready — pick a plan below.", "ok");
+          setMsg(msg, accessSession.subscribed ? "Welcome back — Photo & AI unlocked!" : "Account ready — pick a plan for Photo & AI, or continue free.", "ok");
           if(document.getElementById("authPassword")) document.getElementById("authPassword").value = "";
         } catch(err){
           setMsg(msg, err && err.message ? err.message : "Could not sign in.", "error");
@@ -1263,18 +1286,21 @@
     if(planMonthly) planMonthly.addEventListener("click", function(){ startCheckout("monthly"); });
     if(planYearly) planYearly.addEventListener("click", function(){ startCheckout("yearly"); });
     if(gateLogout) gateLogout.addEventListener("click", doLogout);
-    if(manageSubBtn) manageSubBtn.addEventListener("click", openPortal);
+    if(manageSubBtn) manageSubBtn.addEventListener("click", function(){
+      if(accessSession.subscribed) openPortal();
+      else openUpgradeGate("Photo & AI");
+    });
     if(settingsManageBtn) settingsManageBtn.addEventListener("click", openPortal);
     if(settingsLogoutBtn) settingsLogoutBtn.addEventListener("click", doLogout);
+    var continueFreeBtn = document.getElementById("continueFreeBtn");
+    var continueFreeFromPricingBtn = document.getElementById("continueFreeFromPricingBtn");
+    if(continueFreeBtn) continueFreeBtn.addEventListener("click", closeUpgradeGate);
+    if(continueFreeFromPricingBtn) continueFreeFromPricingBtn.addEventListener("click", closeUpgradeGate);
     if(settingsOpenGateBtn){
       settingsOpenGateBtn.addEventListener("click", function(){
         var dlg = document.getElementById("settingsDialog");
         if(dlg && dlg.open) dlg.close();
-        accessSession.subscribed = false;
-        applyAccessUI();
-        var gate = document.getElementById("accessGate");
-        if(gate) gate.hidden = false;
-        document.body.classList.add("gated");
+        openUpgradeGate("Photo & AI");
       });
     }
     if(settingsMockCancelBtn){
@@ -1291,25 +1317,30 @@
       });
     }
 
-    // Show gate while session loads
-    document.body.classList.add("gated");
+    // Freemium: app stays usable; session check is quiet (no full-screen lock).
+    document.body.classList.remove("gated");
     var gateEl = document.getElementById("accessGate");
-    if(gateEl) gateEl.hidden = false;
-    setMsg(document.getElementById("authMsg"), "Checking your account…", "loading");
+    if(gateEl) gateEl.hidden = true;
 
     refreshSession().then(function(session){
       setMsg(document.getElementById("authMsg"), "", null);
       var params = new URLSearchParams(window.location.search);
       if(params.get("checkout") === "success"){
-        setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
-          session.subscribed ? "Subscription active — welcome in!" : "Payment received. If the app is still locked, wait a few seconds and refresh (webhook may be catching up).",
-          session.subscribed ? "ok" : "loading");
-        if(!session.subscribed){
+        if(session.subscribed){
+          closeUpgradeGate();
+          setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
+            "Photo & AI unlocked — welcome!", "ok");
+        } else {
+          openUpgradeGate("Photo & AI");
+          setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
+            "Payment received. If Photo & AI is still locked, wait a few seconds and refresh (webhook may be catching up).",
+            "loading");
           setTimeout(function(){ refreshSession(); }, 2500);
         }
       } else if(params.get("checkout") === "cancel"){
+        openUpgradeGate("Photo & AI");
         setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
-          "Checkout canceled — you can pick a plan whenever you're ready.", "error");
+          "Checkout canceled — free features still work. You can subscribe whenever you're ready.", "error");
       }
       if(params.has("checkout") || params.has("unlocked")){
         try{
@@ -1319,42 +1350,22 @@
       }
     });
 
-    // Block core app actions until subscribed (body.gated also disables pointer-events).
-    var gatedIds = {
-      addForm: "Customizing your grocery list",
-      mealPlanBtn: "Meal planning",
-      wasteBtn: "Leftover & open-food countdown",
+    // Only Photo & AI entry points need a subscription (core list stays free).
+    var paidFeatureIds = {
       pantryBtn: "What's My Stock",
-      recipeVaultBtn: "Recipe vault",
-      eventBtn: "Holiday & event plans",
-      storeCompareBtn: "Store compare",
-      flyerBtn: "Flyer check",
-      sendStoreBtn: "Send to store",
-      shareBtn: "Sharing your list",
-      reorderToggle: "Smart Flow",
-      clearDone: "Clearing checked items",
-      startOverBtn: "Clearing your list",
-      micBtn: "Voice add"
+      flyerBtn: "Flyer photo check (AI)"
     };
     document.addEventListener("click", function(ev){
       if(accessSession.subscribed) return;
       var t = ev.target;
       if(!t || !t.closest) return;
-      for(var id in gatedIds){
+      for(var id in paidFeatureIds){
         if(t.closest("#" + id)){
           ev.preventDefault();
           ev.stopPropagation();
-          requireAccess(gatedIds[id]);
+          requireAccess(paidFeatureIds[id]);
           return;
         }
-      }
-    }, true);
-    document.addEventListener("submit", function(ev){
-      if(accessSession.subscribed) return;
-      if(ev.target && ev.target.id === "addForm"){
-        ev.preventDefault();
-        ev.stopPropagation();
-        requireAccess("Customizing your grocery list");
       }
     }, true);
   })();
@@ -2568,6 +2579,8 @@
     if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
+    if(code === "subscription_required") return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
+    if(code === "auth_required") return "Sign in to use Photo & AI — free list features still work without an account.";
     if(code === "no_api_key" || code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
     if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
@@ -2625,6 +2638,12 @@
 
   function anthropicMessages(prompt, opts){
     opts = opts || {};
+    if(!accessSession.subscribed){
+      requireAccess("Photo & AI");
+      var denied = new Error("Photo & AI needs a subscription");
+      denied.code = "subscription_required";
+      return Promise.reject(denied);
+    }
     var model = opts.modelTier === "quick" ? "claude-haiku-4-5" : "claude-sonnet-4-5";
     var buildContent = opts.images && opts.images.length
       ? Promise.all(opts.images.map(fileToAnthropicImage)).then(function(imgs){
@@ -2642,10 +2661,15 @@
           var errType = data && data.error && data.error.type;
           var msg = (data && data.error && data.error.message) || ("API error " + res.status);
           var e = new Error(msg);
-          if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
-          else if(res.status === 401 || res.status === 403) e.code = "unavailable";
+          if(res.status === 401 || errType === "auth_required") e.code = "auth_required";
+          else if(res.status === 402 || errType === "subscription_required") e.code = "subscription_required";
+          else if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
+          else if(res.status === 403) e.code = "unavailable";
           else if(res.status === 429) e.code = "rate_limited";
           else e.code = "api_error";
+          if(e.code === "subscription_required" || e.code === "auth_required"){
+            requireAccess("Photo & AI");
+          }
           throw e;
         }
         var text = "";
@@ -2661,6 +2685,7 @@
     }
 
     // Same-origin Next.js proxy uses server ANTHROPIC_API_KEY (customers never send a key).
+    // Session cookie required — Photo & AI is a paid feature enforced on the server.
     return buildContent.then(function(content){
       var payload = JSON.stringify({
         model: model,
@@ -2669,6 +2694,7 @@
       });
       return fetch("/api/vision", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: payload
       }).then(function(res){
