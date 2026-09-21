@@ -379,9 +379,168 @@
   .produce-tip-box{
     margin-top:8px; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:.9rem; min-height:20px;
   }
+
+  /* Paid access gate */
+  .access-gate{
+    position:fixed; inset:0; z-index:80; overflow:auto;
+    background:
+      radial-gradient(ellipse 90% 60% at 10% -10%, rgba(63,107,74,.18), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(224,112,58,.14), transparent 50%),
+      linear-gradient(165deg, #FBF7F0 0%, #F3ECDC 48%, #E8F0E9 100%);
+    color:var(--ink);
+    padding:24px 18px 40px;
+  }
+  .access-gate[hidden]{ display:none !important; }
+  .access-inner{ max-width:420px; margin:0 auto; }
+  .access-brand{
+    font-family:"Fraunces",Georgia,serif; font-size:2.15rem; font-weight:700;
+    letter-spacing:-.02em; margin:8px 0 6px; line-height:1.15;
+  }
+  .access-tag{ color:var(--muted); font-size:1.02rem; line-height:1.45; margin:0 0 22px; }
+  .access-panel{
+    background:rgba(255,255,255,.82); border:1.5px solid var(--border);
+    border-radius:18px; padding:18px 16px; margin-bottom:14px;
+    backdrop-filter:blur(6px);
+  }
+  .access-panel h2{
+    font-family:"Fraunces",Georgia,serif; font-size:1.2rem; margin:0 0 8px; font-weight:600;
+  }
+  .access-panel p{ margin:0 0 12px; color:var(--muted); font-size:.92rem; line-height:1.45; }
+  .access-features{ list-style:none; margin:0 0 14px; padding:0; }
+  .access-features li{
+    padding:8px 0 8px 28px; position:relative; font-size:.92rem; border-bottom:1px solid var(--border);
+  }
+  .access-features li:last-child{ border-bottom:none; }
+  .access-features li::before{
+    content:"✓"; position:absolute; left:4px; top:8px; color:var(--accent); font-weight:700;
+  }
+  .plan-row{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+  .plan-btn{
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    width:100%; text-align:left; cursor:pointer;
+    padding:14px 16px; border-radius:14px; border:2px solid var(--border);
+    background:var(--surface); color:var(--ink); font:inherit;
+  }
+  .plan-btn:hover, .plan-btn:focus-visible{ border-color:var(--accent); outline:none; }
+  .plan-btn strong{ font-size:1.05rem; }
+  .plan-btn span{ font-size:.85rem; color:var(--muted); }
+  .plan-btn .plan-price{ font-family:"Fraunces",Georgia,serif; font-size:1.35rem; color:var(--accent); font-weight:700; }
+  .auth-tabs{ display:flex; gap:8px; margin-bottom:12px; }
+  .auth-tabs button{
+    flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface-2); color:var(--ink); font:inherit; font-weight:600; cursor:pointer;
+  }
+  .auth-tabs button[aria-selected="true"]{
+    background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+  }
+  .auth-form{ display:flex; flex-direction:column; gap:10px; }
+  .auth-form label{ font-size:.82rem; color:var(--muted); }
+  .auth-form input{
+    width:100%; padding:12px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:1rem; box-sizing:border-box;
+  }
+  .auth-form .primary, .access-panel .primary{
+    width:100%; padding:13px 16px; border:none; border-radius:12px;
+    background:var(--accent); color:var(--accent-ink); font:inherit; font-weight:700;
+    font-size:1rem; cursor:pointer;
+  }
+  .auth-form .primary:disabled, .plan-btn:disabled, .access-panel .primary:disabled{
+    opacity:.55; cursor:not-allowed;
+  }
+  .auth-msg{ min-height:1.2em; font-size:.88rem; margin:4px 0 0; }
+  .auth-msg[data-kind="error"]{ color:var(--danger); }
+  .auth-msg[data-kind="ok"]{ color:var(--accent); }
+  .auth-msg[data-kind="loading"]{ color:var(--muted); }
+  .account-chip{
+    display:inline-flex; align-items:center; gap:6px; margin-top:8px;
+    padding:6px 10px; border-radius:999px; border:1.5px solid var(--border);
+    background:var(--surface); font-size:.82rem; color:var(--muted);
+  }
+  .account-chip button{
+    border:none; background:transparent; color:var(--accent); font:inherit; font-weight:700; cursor:pointer; padding:0;
+  }
+  body.gated .wrap, body.gated .footer-actions{ filter:blur(2px); pointer-events:none; user-select:none; }
+  @media (prefers-color-scheme: dark){
+    .access-gate:not([data-force-light]){
+      background:
+        radial-gradient(ellipse 90% 60% at 10% -10%, rgba(111,168,125,.2), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 0%, rgba(240,139,87,.12), transparent 50%),
+        linear-gradient(165deg, #1B1812 0%, #242019 50%, #1E2A20 100%);
+    }
+    .access-panel{ background:rgba(36,32,25,.9); }
+  }
+  :root[data-theme="dark"] .access-gate{
+    background:
+      radial-gradient(ellipse 90% 60% at 10% -10%, rgba(111,168,125,.2), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(240,139,87,.12), transparent 50%),
+      linear-gradient(165deg, #1B1812 0%, #242019 50%, #1E2A20 100%);
+  }
+  :root[data-theme="dark"] .access-panel{ background:rgba(36,32,25,.9); }
 </style>
 </head>
 <body>
+
+<div id="accessGate" class="access-gate" role="dialog" aria-modal="true" aria-labelledby="accessBrand" hidden>
+  <div class="access-inner">
+    <div class="access-brand" id="accessBrand">Oh Stuffing!</div>
+    <p class="access-tag">Your grocery list sorted by aisle, meals planned from what's already in the fridge, and leftovers that don't quietly go bad — all in one place.</p>
+
+    <div class="access-panel" id="previewPanel">
+      <h2>What you unlock</h2>
+      <ul class="access-features">
+        <li>Customize your grocery list by aisle — type once, it sorts itself</li>
+        <li>Meal planning that adds ingredients straight to your list</li>
+        <li>Leftover &amp; open-food countdown so you know when to toss or use</li>
+        <li>What's My Stock pantry photos, recipes, flyers, and holiday plans</li>
+      </ul>
+      <p>Free preview ends here. Sign up and subscribe to use the full app on your phone or computer.</p>
+    </div>
+
+    <div class="access-panel" id="authPanel">
+      <div class="auth-tabs" role="tablist">
+        <button type="button" id="tabSignup" role="tab" aria-selected="true">Sign up</button>
+        <button type="button" id="tabLogin" role="tab" aria-selected="false">Log in</button>
+      </div>
+      <form class="auth-form" id="authForm">
+        <div>
+          <label for="authEmail">Email</label>
+          <input id="authEmail" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div>
+          <label for="authPassword">Password</label>
+          <input id="authPassword" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+        </div>
+        <button class="primary" type="submit" id="authSubmit">Create account</button>
+        <p class="auth-msg" id="authMsg" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="access-panel" id="pricingPanel" hidden>
+      <h2>Choose your plan</h2>
+      <p id="pricingIntro">You're signed in. Pick monthly or yearly — cancel anytime from Manage subscription.</p>
+      <div class="plan-row">
+        <button type="button" class="plan-btn" id="planMonthly" data-plan="monthly">
+          <strong>Monthly</strong>
+          <span class="plan-price">$7.99<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / month</span></span>
+          <span>Flexible — stay only as long as it helps at the store</span>
+        </button>
+        <button type="button" class="plan-btn" id="planYearly" data-plan="yearly">
+          <strong>Yearly</strong>
+          <span class="plan-price">$49<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / year</span></span>
+          <span>Best value — about two months free vs monthly</span>
+        </button>
+      </div>
+      <p class="auth-msg" id="checkoutMsg" aria-live="polite"></p>
+      <p class="hint" id="mockPayHint" hidden style="margin-top:8px;">Local mock mode: Stripe keys aren't set, so choosing a plan unlocks the app without charging a card.</p>
+    </div>
+
+    <div class="access-panel" id="accountOnGate" hidden>
+      <h2>Account</h2>
+      <p id="gateAccountEmail" style="margin-bottom:10px;"></p>
+      <button type="button" class="primary" id="gateLogoutBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Log out</button>
+    </div>
+  </div>
+</div>
 
 <div class="wrap">
   <header class="top">
@@ -389,6 +548,10 @@
       <div>
         <h1>Oh Stuffing</h1>
         <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
+        <div class="account-chip" id="accountChip" hidden>
+          <span id="accountChipEmail"></span>
+          <button type="button" id="manageSubBtn">Manage</button>
+        </div>
       </div>
       <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
     </div>
@@ -463,6 +626,16 @@
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
     <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo AI (pantry scan, meal ideas, recipe scan, flyer check) runs on the server — you never need an API key in this app. The site owner sets <code>ANTHROPIC_API_KEY</code> in Vercel.</div>
+    <div class="field-row" id="accountSettingsRow">
+      <label>Account</label>
+      <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Sign up to save your subscription on this device.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        <button class="chip-btn" id="settingsManageBtn" type="button" hidden>Manage subscription</button>
+        <button class="chip-btn" id="settingsMockCancelBtn" type="button" hidden>Clear mock unlock</button>
+        <button class="chip-btn" id="settingsLogoutBtn" type="button" hidden>Log out</button>
+        <button class="chip-btn" id="settingsOpenGateBtn" type="button">Sign up / Log in</button>
+      </div>
+    </div>
     <div class="field-row" id="installAppRow">
       <label>Phone home screen</label>
       <div class="hint" id="installHint" style="margin-top:4px;">
@@ -861,6 +1034,326 @@
 <script>
 (function(){
   "use strict";
+
+  // ---------- Paid access (email auth + Stripe / mock) ----------
+  var accessSession = {
+    authenticated: false,
+    email: null,
+    subscribed: false,
+    plan: null,
+    mockPayments: true,
+    storeBackend: "memory"
+  };
+  var authMode = "signup"; // signup | login
+
+  function setMsg(el, text, kind){
+    if(!el) return;
+    el.textContent = text || "";
+    if(kind) el.setAttribute("data-kind", kind);
+    else el.removeAttribute("data-kind");
+  }
+
+  function applyAccessUI(){
+    var gate = document.getElementById("accessGate");
+    var subscribed = !!accessSession.subscribed;
+    document.body.classList.toggle("gated", !subscribed);
+    if(gate) gate.hidden = subscribed;
+
+    var authPanel = document.getElementById("authPanel");
+    var pricingPanel = document.getElementById("pricingPanel");
+    var accountOnGate = document.getElementById("accountOnGate");
+    var mockHint = document.getElementById("mockPayHint");
+    if(authPanel) authPanel.hidden = accessSession.authenticated;
+    if(pricingPanel) pricingPanel.hidden = !(accessSession.authenticated && !accessSession.subscribed);
+    if(accountOnGate) accountOnGate.hidden = !accessSession.authenticated;
+    if(mockHint) mockHint.hidden = !(accessSession.mockPayments && accessSession.authenticated && !accessSession.subscribed);
+
+    var gateEmail = document.getElementById("gateAccountEmail");
+    if(gateEmail && accessSession.email){
+      gateEmail.textContent = accessSession.email + (accessSession.plan ? " · " + accessSession.plan : "");
+    }
+
+    var chip = document.getElementById("accountChip");
+    var chipEmail = document.getElementById("accountChipEmail");
+    if(chip) chip.hidden = !(accessSession.authenticated && accessSession.subscribed);
+    if(chipEmail) chipEmail.textContent = accessSession.email || "";
+
+    var hint = document.getElementById("accountSettingsHint");
+    var manageBtn = document.getElementById("settingsManageBtn");
+    var mockCancel = document.getElementById("settingsMockCancelBtn");
+    var logoutBtn = document.getElementById("settingsLogoutBtn");
+    var openGate = document.getElementById("settingsOpenGateBtn");
+    if(hint){
+      if(accessSession.subscribed){
+        hint.textContent = (accessSession.email || "Signed in") + " · " +
+          (accessSession.plan === "yearly" ? "Yearly plan" : accessSession.plan === "monthly" ? "Monthly plan" : "Active") +
+          (accessSession.mockPayments ? " (mock payments)" : "");
+      } else if(accessSession.authenticated){
+        hint.textContent = (accessSession.email || "Signed in") + " — choose a plan to unlock the full app.";
+      } else {
+        hint.textContent = "Sign up to save your subscription on this device.";
+      }
+    }
+    if(manageBtn) manageBtn.hidden = !(accessSession.subscribed && !accessSession.mockPayments);
+    if(mockCancel) mockCancel.hidden = !(accessSession.subscribed && accessSession.mockPayments);
+    if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
+    if(openGate) openGate.hidden = accessSession.subscribed;
+  }
+
+  function requireAccess(actionLabel){
+    if(accessSession.subscribed) return true;
+    applyAccessUI();
+    var gate = document.getElementById("accessGate");
+    if(gate){
+      gate.hidden = false;
+      document.body.classList.add("gated");
+      setMsg(document.getElementById("authMsg"),
+        (actionLabel || "That feature") + " needs an Oh Stuffing subscription.", "error");
+    }
+    return false;
+  }
+
+  async function refreshSession(){
+    try{
+      var res = await fetch("/api/auth/session", { credentials: "same-origin" });
+      if(!res.ok) throw new Error("Could not check sign-in status.");
+      accessSession = await res.json();
+      applyAccessUI();
+      return accessSession;
+    } catch(err){
+      accessSession = {
+        authenticated: false, email: null, subscribed: false, plan: null,
+        mockPayments: true, storeBackend: "memory"
+      };
+      applyAccessUI();
+      setMsg(document.getElementById("authMsg"),
+        err && err.message ? err.message : "Could not reach the server. Try again.", "error");
+      return accessSession;
+    }
+  }
+
+  function setAuthMode(mode){
+    authMode = mode;
+    var tabSignup = document.getElementById("tabSignup");
+    var tabLogin = document.getElementById("tabLogin");
+    var submit = document.getElementById("authSubmit");
+    var pw = document.getElementById("authPassword");
+    if(tabSignup) tabSignup.setAttribute("aria-selected", mode === "signup" ? "true" : "false");
+    if(tabLogin) tabLogin.setAttribute("aria-selected", mode === "login" ? "true" : "false");
+    if(submit) submit.textContent = mode === "signup" ? "Create account" : "Log in";
+    if(pw) pw.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+    setMsg(document.getElementById("authMsg"), "", null);
+  }
+
+  async function startCheckout(plan){
+    var msg = document.getElementById("checkoutMsg");
+    setMsg(msg, "Opening checkout…", "loading");
+    var buttons = document.querySelectorAll(".plan-btn");
+    buttons.forEach(function(b){ b.disabled = true; });
+    try{
+      var res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: plan })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){
+        throw new Error(data.error || "Checkout failed. Try again.");
+      }
+      if(data.mock && data.session){
+        accessSession = data.session;
+        applyAccessUI();
+        setMsg(msg, "You're in! Mock unlock (no card charged).", "ok");
+        return;
+      }
+      if(data.url){
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error("No checkout URL returned.");
+    } catch(err){
+      setMsg(msg, err && err.message ? err.message : "Checkout failed.", "error");
+    } finally {
+      buttons.forEach(function(b){ b.disabled = false; });
+    }
+  }
+
+  async function openPortal(){
+    try{
+      var res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        credentials: "same-origin"
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error(data.error || "Could not open billing.");
+      if(data.mock){
+        alert(data.message || "Mock mode — use Clear mock unlock in Settings.");
+        return;
+      }
+      if(data.url) window.location.href = data.url;
+    } catch(err){
+      alert(err && err.message ? err.message : "Could not open billing portal.");
+    }
+  }
+
+  async function doLogout(){
+    try{
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+    } catch(e){}
+    accessSession = {
+      authenticated: false, email: null, subscribed: false, plan: null,
+      mockPayments: accessSession.mockPayments, storeBackend: accessSession.storeBackend
+    };
+    applyAccessUI();
+    setMsg(document.getElementById("authMsg"), "Logged out.", "ok");
+  }
+
+  // Wire auth UI once DOM pieces exist
+  (function wireAccess(){
+    var tabSignup = document.getElementById("tabSignup");
+    var tabLogin = document.getElementById("tabLogin");
+    var authForm = document.getElementById("authForm");
+    var planMonthly = document.getElementById("planMonthly");
+    var planYearly = document.getElementById("planYearly");
+    var gateLogout = document.getElementById("gateLogoutBtn");
+    var manageSubBtn = document.getElementById("manageSubBtn");
+    var settingsManageBtn = document.getElementById("settingsManageBtn");
+    var settingsLogoutBtn = document.getElementById("settingsLogoutBtn");
+    var settingsOpenGateBtn = document.getElementById("settingsOpenGateBtn");
+    var settingsMockCancelBtn = document.getElementById("settingsMockCancelBtn");
+
+    if(tabSignup) tabSignup.addEventListener("click", function(){ setAuthMode("signup"); });
+    if(tabLogin) tabLogin.addEventListener("click", function(){ setAuthMode("login"); });
+
+    if(authForm){
+      authForm.addEventListener("submit", async function(e){
+        e.preventDefault();
+        var email = (document.getElementById("authEmail").value || "").trim();
+        var password = document.getElementById("authPassword").value || "";
+        var submit = document.getElementById("authSubmit");
+        var msg = document.getElementById("authMsg");
+        setMsg(msg, authMode === "signup" ? "Creating account…" : "Signing in…", "loading");
+        if(submit) submit.disabled = true;
+        try{
+          var res = await fetch(authMode === "signup" ? "/api/auth/signup" : "/api/auth/login", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: password })
+          });
+          var data = await res.json().catch(function(){ return {}; });
+          if(!res.ok) throw new Error(data.error || "Something went wrong.");
+          accessSession = data.session || accessSession;
+          applyAccessUI();
+          setMsg(msg, accessSession.subscribed ? "Welcome back!" : "Account ready — pick a plan below.", "ok");
+          if(document.getElementById("authPassword")) document.getElementById("authPassword").value = "";
+        } catch(err){
+          setMsg(msg, err && err.message ? err.message : "Could not sign in.", "error");
+        } finally {
+          if(submit) submit.disabled = false;
+        }
+      });
+    }
+
+    if(planMonthly) planMonthly.addEventListener("click", function(){ startCheckout("monthly"); });
+    if(planYearly) planYearly.addEventListener("click", function(){ startCheckout("yearly"); });
+    if(gateLogout) gateLogout.addEventListener("click", doLogout);
+    if(manageSubBtn) manageSubBtn.addEventListener("click", openPortal);
+    if(settingsManageBtn) settingsManageBtn.addEventListener("click", openPortal);
+    if(settingsLogoutBtn) settingsLogoutBtn.addEventListener("click", doLogout);
+    if(settingsOpenGateBtn){
+      settingsOpenGateBtn.addEventListener("click", function(){
+        var dlg = document.getElementById("settingsDialog");
+        if(dlg && dlg.open) dlg.close();
+        accessSession.subscribed = false;
+        applyAccessUI();
+        var gate = document.getElementById("accessGate");
+        if(gate) gate.hidden = false;
+        document.body.classList.add("gated");
+      });
+    }
+    if(settingsMockCancelBtn){
+      settingsMockCancelBtn.addEventListener("click", async function(){
+        try{
+          var res = await fetch("/api/stripe/mock-cancel", { method: "POST", credentials: "same-origin" });
+          var data = await res.json().catch(function(){ return {}; });
+          if(!res.ok) throw new Error(data.error || "Could not clear mock unlock.");
+          accessSession = data.session || accessSession;
+          applyAccessUI();
+        } catch(err){
+          alert(err && err.message ? err.message : "Could not clear mock unlock.");
+        }
+      });
+    }
+
+    // Show gate while session loads
+    document.body.classList.add("gated");
+    var gateEl = document.getElementById("accessGate");
+    if(gateEl) gateEl.hidden = false;
+    setMsg(document.getElementById("authMsg"), "Checking your account…", "loading");
+
+    refreshSession().then(function(session){
+      setMsg(document.getElementById("authMsg"), "", null);
+      var params = new URLSearchParams(window.location.search);
+      if(params.get("checkout") === "success"){
+        setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
+          session.subscribed ? "Subscription active — welcome in!" : "Payment received. If the app is still locked, wait a few seconds and refresh (webhook may be catching up).",
+          session.subscribed ? "ok" : "loading");
+        if(!session.subscribed){
+          setTimeout(function(){ refreshSession(); }, 2500);
+        }
+      } else if(params.get("checkout") === "cancel"){
+        setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
+          "Checkout canceled — you can pick a plan whenever you're ready.", "error");
+      }
+      if(params.has("checkout") || params.has("unlocked")){
+        try{
+          var clean = window.location.pathname;
+          window.history.replaceState({}, "", clean);
+        } catch(e){}
+      }
+    });
+
+    // Block core app actions until subscribed (body.gated also disables pointer-events).
+    var gatedIds = {
+      addForm: "Customizing your grocery list",
+      mealPlanBtn: "Meal planning",
+      wasteBtn: "Leftover & open-food countdown",
+      pantryBtn: "What's My Stock",
+      recipeVaultBtn: "Recipe vault",
+      eventBtn: "Holiday & event plans",
+      storeCompareBtn: "Store compare",
+      flyerBtn: "Flyer check",
+      sendStoreBtn: "Send to store",
+      shareBtn: "Sharing your list",
+      reorderToggle: "Smart Flow",
+      clearDone: "Clearing checked items",
+      startOverBtn: "Clearing your list",
+      micBtn: "Voice add"
+    };
+    document.addEventListener("click", function(ev){
+      if(accessSession.subscribed) return;
+      var t = ev.target;
+      if(!t || !t.closest) return;
+      for(var id in gatedIds){
+        if(t.closest("#" + id)){
+          ev.preventDefault();
+          ev.stopPropagation();
+          requireAccess(gatedIds[id]);
+          return;
+        }
+      }
+    }, true);
+    document.addEventListener("submit", function(ev){
+      if(accessSession.subscribed) return;
+      if(ev.target && ev.target.id === "addForm"){
+        ev.preventDefault();
+        ev.stopPropagation();
+        requireAccess("Customizing your grocery list");
+      }
+    }, true);
+  })();
 
   // ---------- Department model (default order = a common big-box layout) ----------
   var DEPARTMENTS = [

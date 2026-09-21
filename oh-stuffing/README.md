@@ -2,7 +2,9 @@
 
 Your grocery & meal-planning app — ready to use in the browser.
 
-It already saves your lists, meals, pantry, recipes, and settings on the device (no account / no Supabase needed for this version).
+**Paid access:** email signup + Stripe ($7.99/mo or $49/yr). Core features (customize grocery, meal planning, leftover countdown, What's My Stock, etc.) unlock after an active subscription. See the root `README.md` for Vercel env vars and Stripe setup.
+
+Local lists/meals still save on the device; accounts are for paid access (no Supabase).
 
 ## Run it (with photo AI proxy)
 
@@ -16,7 +18,7 @@ npm run dev
 
 Then open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
-That starts Next.js, which serves this HTML app and `/api/vision` (Anthropic proxy — uses server `ANTHROPIC_API_KEY`, avoids browser CORS).
+That starts Next.js, which serves this HTML app and `/api/vision` (Anthropic proxy — uses server `ANTHROPIC_API_KEY`, avoids browser CORS). Without Stripe keys, signup + plan buttons **mock-unlock** the app for local testing.
 
 Static-only (no proxy):
 
@@ -32,7 +34,9 @@ Or open `index.html` directly in Chrome / Edge / Safari.
 - Voice add (in a real browser / live site)
 - Meal planning, events, pantry, recipes, flyer check helpers
 - **What can I make?** — after a pantry/fridge scan (or from saved stock), get easy meal ideas and “upgrade what you have” dinners
+- Leftover & open-food countdown
 - Settings (text size, contrast, theme, accent color)
+- Email signup / Stripe subscribe gate
 
 ## Photo / AI features
 
@@ -51,8 +55,8 @@ From the live HTTPS site:
 
 ## Live site
 
-**Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys → add `ANTHROPIC_API_KEY` in Vercel env → Redeploy.
+**Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys → add env vars from the root README (`ANTHROPIC_API_KEY`, Stripe, `AUTH_SECRET`, Upstash) → **Redeploy**.
 
-Do not upload only this `index.html` to GitHub — that is what made Oh Stuffing feel broken compared to Fiona. Vercel needs `package.json`, `src/app/api/vision`, and `public/` so Photo & AI helper works.
+Do not upload only this `index.html` to GitHub — that is what made Oh Stuffing feel broken compared to Fiona. Vercel needs `package.json`, `src/app/api/*`, and `public/` so Photo & AI helper and paid signup work.
 
-GitHub Pages can host HTML only. For Photo & AI, use Vercel.
+GitHub Pages can host HTML only. For Photo & AI and Stripe, use Vercel.
