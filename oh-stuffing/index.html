@@ -2,11 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="theme-color" content="#FBF7F0">
+<meta name="theme-color" content="#3F6B4A">
+<meta name="description" content="Grocery list by aisle, pantry photos, meal ideas, and flyer check — never backtrack for milk again.">
+<meta name="application-name" content="Oh Stuffing!">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Oh Stuffing!">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Oh Stuffing</title>
+<title>Oh Stuffing!</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   :root{
@@ -453,6 +463,14 @@
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
     <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo AI (pantry scan, meal ideas, recipe scan, flyer check) runs on the server — you never need an API key in this app. The site owner sets <code>ANTHROPIC_API_KEY</code> in Vercel.</div>
+    <div class="field-row" id="installAppRow">
+      <label>Phone home screen</label>
+      <div class="hint" id="installHint" style="margin-top:4px;">
+        <strong>iPhone (Safari):</strong> Share → Add to Home Screen.<br>
+        <strong>Android (Chrome):</strong> menu ⋮ → Install app / Add to Home screen.
+      </div>
+      <button class="chip-btn" id="installAppBtn" type="button" hidden style="margin-top:8px;">📲 Install app</button>
+    </div>
     <button class="dialog-close" id="closeSettings" type="button">Done</button>
   </div>
 </dialog>
@@ -3361,6 +3379,38 @@
 
   addRegularsThatAreDue();
   render();
+
+  // ---------- Install / Add to Home Screen (PWA) ----------
+  var deferredInstallPrompt = null;
+  var installAppBtn = document.getElementById("installAppBtn");
+  var installHint = document.getElementById("installHint");
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if(installAppBtn) installAppBtn.hidden = false;
+  });
+  window.addEventListener("appinstalled", function(){
+    deferredInstallPrompt = null;
+    if(installAppBtn) installAppBtn.hidden = true;
+    if(installHint) installHint.textContent = "Oh Stuffing! is installed on this device.";
+  });
+  if(installAppBtn){
+    installAppBtn.addEventListener("click", function(){
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.finally(function(){ deferredInstallPrompt = null; });
+    });
+  }
+  if(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches){
+    if(installAppBtn) installAppBtn.hidden = true;
+    if(installHint) installHint.textContent = "You're using the installed Oh Stuffing! app.";
+  }
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("/sw.js").catch(function(){ /* offline shell optional */ });
+    });
+  }
 })();
 </script>
 </body>

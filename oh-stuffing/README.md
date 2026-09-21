@@ -42,6 +42,13 @@ Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe s
 - Calls go through `/api/vision` when hosted on Next/Vercel (recommended).
 - If AI isn’t configured on the server, the app says Photo AI is temporarily unavailable — it does **not** ask shoppers for a key.
 
+## Install on your phone
+
+From the live HTTPS site:
+
+- **iPhone (Safari):** Share → **Add to Home Screen**
+- **Android (Chrome):** menu ⋮ → **Install app** / **Add to Home screen** (or Settings → Install app when shown)
+
 ## Live site
 
 **Deploy like Fiona:** push the **whole** repo to GitHub → Vercel auto-deploys → add `ANTHROPIC_API_KEY` in Vercel env → Redeploy.

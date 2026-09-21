@@ -35,11 +35,22 @@ npm run dev
 
 Open [http://127.0.0.1:3847](http://127.0.0.1:3847).
 
+## Install on your phone (PWA)
+
+Oh Stuffing! can live on your home screen like an app (no App Store). After the site is live on HTTPS:
+
+- **iPhone (Safari):** open [ohstuffing.com](https://www.ohstuffing.com) → tap **Share** → **Add to Home Screen** → Add.
+- **Android (Chrome):** open the site → tap the browser menu **⋮** → **Install app** or **Add to Home screen**. Or open **Settings** (gear) in the app and tap **Install app** when that button appears.
+
+Then open the home-screen icon for a full-screen Oh Stuffing! experience. Photo / AI still needs a network connection.
+
 ## What’s in this repo
 
 | Piece | Role |
 | --- | --- |
 | `public/index.html` | The Oh Stuffing UI (Photo & AI, What can I make?) |
+| `public/manifest.webmanifest` + `public/icons/` | Home-screen name, colors, and icons |
+| `public/sw.js` | Light offline shell cache (does not touch `/api/vision`) |
 | `src/app/api/vision` | Next.js proxy — uses server `ANTHROPIC_API_KEY` |
 | `package.json` / `vercel.json` | Normal Vercel Next.js app (like Fiona’s full-project deploy) |
 
