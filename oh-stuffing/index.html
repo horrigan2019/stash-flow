@@ -354,10 +354,14 @@
   .plan-detail-store h4{ font-size:.9rem; margin:0 0 4px; }
 
   .camera-row{ display:flex; gap:10px; margin-bottom:4px; }
+  .camera-grid{
+    display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-bottom:4px;
+  }
   .camera-tile{
     position:relative; flex:1; aspect-ratio:1/1; border-radius:14px;
     border:1.5px dashed var(--border); background:var(--surface-2); overflow:hidden;
   }
+  .camera-grid .camera-tile{ flex:none; }
   .camera-tile input[type=file]{
     position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;
   }
@@ -625,7 +629,7 @@
       </div>
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
-    <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo AI (pantry scan, meal ideas, recipe scan, flyer check) runs on the server — you never need an API key in this app. The site owner sets <code>ANTHROPIC_API_KEY</code> in Vercel.</div>
+    <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo &amp; AI (pantry scans and meal ideas) uses your Oh Stuffing subscription — you never paste an API key here. Free list features stay free.</div>
     <div class="field-row" id="accountSettingsRow">
       <label>Account</label>
       <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Free features work without an account. Sign up to unlock Photo &amp; AI ($7.99/mo or $49/yr).</div>
@@ -754,28 +758,9 @@
     <div id="pantryUnavailable" class="hint" hidden>You can still take or pick photos below. Photo AI is temporarily unavailable — try again later.</div>
 
     <div id="pantryScanArea">
-      <div class="hint" style="margin-bottom:10px;">Snap your pantry and/or fridge — we'll spot what's there so you can skip buying it again.</div>
-      <div class="camera-row">
-        <div class="camera-tile" id="pantryTile">
-          <input type="file" id="pantryPhotoInput" accept="image/*" capture="environment">
-          <label for="pantryPhotoInput" class="camera-tile-label" id="pantryTileLabel">
-            <span class="camera-tile-icon">📷</span>
-            <span>Take pantry photo</span>
-          </label>
-          <img class="camera-tile-preview" id="pantryPreview" hidden alt="Pantry photo preview">
-          <button type="button" class="camera-retake" id="pantryRetake" hidden aria-label="Retake pantry photo">✕</button>
-        </div>
-        <div class="camera-tile" id="fridgeTile">
-          <input type="file" id="fridgePhotoInput" accept="image/*" capture="environment">
-          <label for="fridgePhotoInput" class="camera-tile-label" id="fridgeTileLabel">
-            <span class="camera-tile-icon">📷</span>
-            <span>Take fridge photo</span>
-          </label>
-          <img class="camera-tile-preview" id="fridgePreview" hidden alt="Fridge photo preview">
-          <button type="button" class="camera-retake" id="fridgeRetake" hidden aria-label="Retake fridge photo">✕</button>
-        </div>
-      </div>
-      <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead.</div>
+      <div class="hint" style="margin-bottom:10px;">Add up to 6 photos of your fridge and pantry — they'll stay saved on this phone so you can reopen and reuse them. We'll spot what's there so you can skip buying it again.</div>
+      <div class="camera-grid" id="pantryPhotoGrid"></div>
+      <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead. Photos are kept on this device only.</div>
       <button class="dialog-close" id="scanPantryBtn" type="button">🔍 See what's there</button>
       <div class="hint" id="pantryStatus" style="margin-top:8px;"></div>
     </div>
@@ -787,7 +772,7 @@
         <input type="text" id="pantryAddMissed" placeholder="Add anything we missed, comma separated">
         <button type="button" id="pantryAddMissedBtn" class="move-btn" style="width:auto;padding:0 12px;">+ Add</button>
       </div>
-      <button class="dialog-close" id="savePantryBtn" type="button" style="margin-top:10px;">✅ Save to my stock</button>
+      <button class="dialog-close" id="savePantryBtn" type="button" style="margin-top:10px;">✅ Update my stock</button>
       <button class="chip-btn" id="suggestMealsFromScanBtn" type="button" style="margin-top:10px;width:100%;">🍳 What can I make?</button>
       <div class="hint" id="suggestMealsFromScanHint" style="margin-top:6px;"></div>
     </div>
@@ -1643,7 +1628,14 @@
     return null;
   }
   function saveState(){
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch(e){
+      // Photos can blow the localStorage quota — drop oldest snaps and retry.
+      if(state.pantryPhotos && state.pantryPhotos.length){
+        state.pantryPhotos = state.pantryPhotos.slice(1);
+        try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e2){}
+      }
+    }
   }
 
   var saved = loadState();
@@ -1658,6 +1650,7 @@
     tracked: [],       // {id, text, kind:'leftover'|'opened', addedDate, goodUntil}
     wasteStats: { eaten:0, tossed:0 },
     pantryItems: {},   // itemName(lowercase) -> { addedDate }
+    pantryPhotos: [],  // up to 6 {id, dataUrl} fridge/pantry snaps saved on-device
     recipes: [],       // {id, title, servings, text}
     events: [],        // {id, name, date, items:[{text, dept, earliestBuyDate, addedToList}]}
     learnedEvents: {}, // eventName(lowercase) -> [item,...], taught by the user's own edits
@@ -1681,6 +1674,10 @@
   if(!state.tracked) state.tracked = [];
   if(!state.wasteStats) state.wasteStats = { eaten:0, tossed:0 };
   if(!state.pantryItems) state.pantryItems = {};
+  if(!Array.isArray(state.pantryPhotos)) state.pantryPhotos = [];
+  state.pantryPhotos = state.pantryPhotos.filter(function(p){
+    return p && typeof p.dataUrl === "string" && p.dataUrl.indexOf("data:image/") === 0;
+  }).slice(0, 6);
   if(!state.recipes) state.recipes = [];
   if(!state.events) state.events = [];
   if(!state.learnedEvents) state.learnedEvents = {};
@@ -2518,9 +2515,9 @@
   var pantryUnavailableEl = document.getElementById("pantryUnavailable");
   var pantryScanAreaEl = document.getElementById("pantryScanArea");
   var pantryDialog = document.getElementById("pantryDialog");
-  var pantryPhotoInput = document.getElementById("pantryPhotoInput");
-  var fridgePhotoInput = document.getElementById("fridgePhotoInput");
+  var pantryPhotoGrid = document.getElementById("pantryPhotoGrid");
   var scanPantryBtn = document.getElementById("scanPantryBtn");
+  var MAX_PANTRY_PHOTOS = 6;
 
   function wireCameraTile(input, previewImg, retakeBtn, label){
     input.addEventListener("change", function(){
@@ -2540,8 +2537,135 @@
       retakeBtn.hidden = true;
     });
   }
-  wireCameraTile(pantryPhotoInput, document.getElementById("pantryPreview"), document.getElementById("pantryRetake"), document.getElementById("pantryTileLabel"));
-  wireCameraTile(fridgePhotoInput, document.getElementById("fridgePreview"), document.getElementById("fridgeRetake"), document.getElementById("fridgeTileLabel"));
+
+  function compressImageFile(file, maxSide, quality){
+    maxSide = maxSide || 960;
+    quality = quality == null ? 0.72 : quality;
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        try{
+          var w = img.width, h = img.height;
+          if(w > maxSide || h > maxSide){
+            if(w > h){ h = Math.round(h * maxSide / w); w = maxSide; }
+            else { w = Math.round(w * maxSide / h); h = maxSide; }
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        }catch(err){
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        var reader = new FileReader();
+        reader.onload = function(){ resolve(String(reader.result || "")); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  }
+
+  function dataUrlToFile(dataUrl, name){
+    var parts = String(dataUrl || "").split(",");
+    if(parts.length < 2) return null;
+    var meta = parts[0] || "";
+    var mimeMatch = meta.match(/data:([^;]+)/);
+    var mime = (mimeMatch && mimeMatch[1]) || "image/jpeg";
+    var bin = atob(parts[1]);
+    var len = bin.length;
+    var bytes = new Uint8Array(len);
+    for(var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    try{ return new File([bytes], name || "stock.jpg", { type: mime }); }
+    catch(e){ return new Blob([bytes], { type: mime }); }
+  }
+
+  function savePantryPhotosState(){
+    try{ saveState(); }
+    catch(e){
+      // localStorage can fill up with photos — drop the oldest and retry once
+      if(state.pantryPhotos.length > 1){
+        state.pantryPhotos = state.pantryPhotos.slice(1);
+        try{ saveState(); }catch(e2){}
+      }
+    }
+  }
+
+  function renderPantryPhotoGrid(){
+    if(!pantryPhotoGrid) return;
+    pantryPhotoGrid.innerHTML = "";
+    var photos = state.pantryPhotos || [];
+    for(var i = 0; i < MAX_PANTRY_PHOTOS; i++){
+      (function(slotIndex){
+        var tile = document.createElement("div");
+        tile.className = "camera-tile";
+        var photo = photos[slotIndex];
+        if(photo && photo.dataUrl){
+          var preview = document.createElement("img");
+          preview.className = "camera-tile-preview";
+          preview.alt = "Saved stock photo " + (slotIndex + 1);
+          preview.src = photo.dataUrl;
+          var retake = document.createElement("button");
+          retake.type = "button";
+          retake.className = "camera-retake";
+          retake.setAttribute("aria-label", "Remove photo " + (slotIndex + 1));
+          retake.textContent = "✕";
+          retake.addEventListener("click", function(){
+            state.pantryPhotos.splice(slotIndex, 1);
+            savePantryPhotosState();
+            renderPantryPhotoGrid();
+          });
+          tile.appendChild(preview);
+          tile.appendChild(retake);
+        } else {
+          var inputId = "pantryPhotoSlot" + slotIndex;
+          var input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          input.setAttribute("capture", "environment");
+          input.id = inputId;
+          var label = document.createElement("label");
+          label.className = "camera-tile-label";
+          label.setAttribute("for", inputId);
+          label.innerHTML = '<span class="camera-tile-icon">📷</span><span>Add photo</span>';
+          input.addEventListener("change", function(){
+            var file = input.files && input.files[0];
+            if(!file) return;
+            if((state.pantryPhotos || []).length >= MAX_PANTRY_PHOTOS){
+              pantryStatus.textContent = "You already have 6 photos — remove one to add another.";
+              return;
+            }
+            pantryStatus.textContent = "Saving photo…";
+            compressImageFile(file, 960, 0.72).then(function(dataUrl){
+              if(!dataUrl || dataUrl.indexOf("data:image/") !== 0){
+                pantryStatus.textContent = "Couldn't save that photo — try another.";
+                return;
+              }
+              state.pantryPhotos.push({
+                id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                dataUrl: dataUrl
+              });
+              savePantryPhotosState();
+              pantryStatus.textContent = "Photo saved on this phone — add more or tap See what's there.";
+              renderPantryPhotoGrid();
+            }).catch(function(){
+              pantryStatus.textContent = "Couldn't save that photo — try another.";
+            });
+          });
+          tile.appendChild(input);
+          tile.appendChild(label);
+        }
+        pantryPhotoGrid.appendChild(tile);
+      })(i);
+    }
+  }
+
   var pantryStatus = document.getElementById("pantryStatus");
   var pantryResultsEl = document.getElementById("pantryResults");
   var pantryResultList = document.getElementById("pantryResultList");
@@ -2561,6 +2685,7 @@
     pantryUnavailableEl.hidden = hasVisionAI();
   }
   syncPantryAvailability();
+  renderPantryPhotoGrid();
 
   (function initSample(){
     if(!window.claude || typeof window.claude.use !== "function") return;
@@ -2580,7 +2705,7 @@
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
     if(code === "subscription_required") return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
-    if(code === "auth_required") return "Sign in to use Photo & AI — free list features still work without an account.";
+    if(code === "auth_required") return "Sign in (or subscribe) to use Photo & AI — free list features still work without an account.";
     if(code === "no_api_key" || code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
     if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
@@ -2738,13 +2863,31 @@
     });
   }
 
+  function syncPendingScanToStock(opts){
+    opts = opts || {};
+    var today = todayStr();
+    var savedCount = 0;
+    pendingScanItems.forEach(function(entry){
+      if(!entry.checked) return;
+      state.pantryItems[entry.text.toLowerCase()] = { addedDate: today };
+      savedCount++;
+    });
+    saveState();
+    renderPantryChips();
+    return savedCount;
+  }
+
   function renderScanResults(items){
     pendingScanItems = items.filter(Boolean).map(function(t){ return { text: String(t).trim(), checked: true }; });
     drawScanResultList();
     pantryResultsEl.hidden = pendingScanItems.length === 0;
     if(pendingScanItems.length === 0){
       pantryStatus.textContent = "Didn't spot anything recognizable — try a clearer or closer photo.";
+      return;
     }
+    var savedCount = syncPendingScanToStock();
+    pantryStatus.textContent = "Saved " + savedCount + " item" + (savedCount === 1 ? "" : "s") +
+      " to your stock. Uncheck anything wrong, then Update my stock — or tap Suggest meals from this.";
   }
   function drawScanResultList(){
     pantryResultList.innerHTML = "";
@@ -2764,13 +2907,21 @@
     });
   }
 
+  function getPantryScanFiles(){
+    var files = [];
+    (state.pantryPhotos || []).forEach(function(photo, idx){
+      if(!photo || !photo.dataUrl) return;
+      var file = dataUrlToFile(photo.dataUrl, "stock-" + (idx + 1) + ".jpg");
+      if(file) files.push(file);
+    });
+    return files;
+  }
+
   scanPantryBtn.addEventListener("click", function(){
     if(!hasVisionAI()){ pantryStatus.textContent = needApiKeyMessage(); return; }
-    var files = [];
-    if(pantryPhotoInput.files[0]) files.push(pantryPhotoInput.files[0]);
-    if(fridgePhotoInput.files[0]) files.push(fridgePhotoInput.files[0]);
-    if(!files.length){ pantryStatus.textContent = "Add at least one photo first."; return; }
-    pantryStatus.textContent = "Looking at your photo…";
+    var files = getPantryScanFiles();
+    if(!files.length){ pantryStatus.textContent = "Add at least one photo first (up to 6)."; return; }
+    pantryStatus.textContent = "Looking at your photo" + (files.length > 1 ? "s" : "") + "…";
     scanPantryBtn.disabled = true;
     pantryResultsEl.hidden = true;
     aiJson(
@@ -2780,7 +2931,6 @@
       "— no duplicates, no brand names unless that's the clearest way to name it, nothing you can't actually see.",
       { images: files, modelTier: "quick" }
     ).then(function(items){
-      pantryStatus.textContent = "";
       renderScanResults(Array.isArray(items) ? items : []);
     }).catch(function(e){
       pantryStatus.textContent = sampleErrorMessage(e && e.code);
@@ -2802,24 +2952,18 @@
   });
 
   document.getElementById("savePantryBtn").addEventListener("click", function(){
-    var today = todayStr();
-    pendingScanItems.forEach(function(entry){
-      if(!entry.checked) return;
-      state.pantryItems[entry.text.toLowerCase()] = { addedDate: today };
-    });
-    saveState();
-    pendingScanItems = [];
-    pantryResultsEl.hidden = true;
-    document.getElementById("pantryRetake").click();
-    document.getElementById("fridgeRetake").click();
-    pantryStatus.textContent = "Saved.";
+    var savedCount = syncPendingScanToStock();
+    // Keep photos on-device for reuse — only refresh the chip list.
+    pantryStatus.textContent = savedCount
+      ? ("Updated stock (" + savedCount + " checked item" + (savedCount === 1 ? "" : "s") + "). Photos stay saved so you can reuse them.")
+      : "No checked items to save — check at least one, or add something we missed.";
     renderPantryChips();
   });
 
   function renderPantryChips(){
     var keys = Object.keys(state.pantryItems);
     if(!keys.length){
-      pantryChipsEl.textContent = "Nothing saved yet — scan a photo above.";
+      pantryChipsEl.textContent = "Nothing in stock yet — add photos above and tap See what's there (results save automatically).";
       return;
     }
     pantryChipsEl.innerHTML = "";
@@ -2841,12 +2985,19 @@
   }
 
   document.getElementById("clearPantryBtn").addEventListener("click", function(){
-    if(!Object.keys(state.pantryItems).length) return;
-    if(confirm("Clear everything saved in What's My Stock?")){
+    var hasItems = Object.keys(state.pantryItems).length > 0;
+    var hasPhotos = (state.pantryPhotos || []).length > 0;
+    if(!hasItems && !hasPhotos) return;
+    if(confirm("Clear saved stock items" + (hasPhotos ? " and saved photos" : "") + " in What's My Stock?")){
       state.pantryItems = {};
+      state.pantryPhotos = [];
+      pendingScanItems = [];
+      pantryResultsEl.hidden = true;
       saveState();
       renderPantryChips();
+      renderPantryPhotoGrid();
       pantryMatchesEl.innerHTML = "";
+      pantryStatus.textContent = "Cleared.";
     }
   });
 
@@ -2894,6 +3045,7 @@
 
   document.getElementById("pantryBtn").addEventListener("click", function(){
     syncPantryAvailability();
+    renderPantryPhotoGrid();
     renderPantryChips();
     pantryMatchesEl.innerHTML = "";
     document.getElementById("suggestMealsFromScanHint").textContent = "";
@@ -3162,13 +3314,13 @@
 
   document.getElementById("suggestMealsFromScanBtn").addEventListener("click", function(){
     var hint = document.getElementById("suggestMealsFromScanHint");
-    var have = gatherHaveItems(true);
-    if(!pendingScanItems.length && !Object.keys(state.pantryItems || {}).length){
-      hint.textContent = "Spot some items first (or save stock), then ask what you can make.";
-      return;
+    // Prefer the latest scan (checked items); fall back to saved stock.
+    if(pendingScanItems.length){
+      syncPendingScanToStock();
     }
-    if(!pendingScanItems.filter(function(e){ return e.checked; }).length && !Object.keys(state.pantryItems || {}).length){
-      hint.textContent = "Check at least one spotted item, or save something to your stock first.";
+    var have = gatherHaveItems(true);
+    if(!have.length){
+      hint.textContent = "Add photos above and tap See what's there first — spotted items save to your stock automatically.";
       return;
     }
     hint.textContent = "";
@@ -3177,9 +3329,13 @@
 
   document.getElementById("suggestMealsFromStockBtn").addEventListener("click", function(){
     var hint = document.getElementById("suggestMealsFromStockHint");
+    // Fold any open scan into stock so Suggest meals from this always has data after a scan.
+    if(pendingScanItems.length){
+      syncPendingScanToStock();
+    }
     var have = gatherHaveItems(false);
     if(!have.length){
-      hint.textContent = "Nothing in stock yet — scan a photo above and save it first.";
+      hint.textContent = "Nothing in stock yet — add photos above, tap See what's there (that saves automatically), then try again.";
       return;
     }
     hint.textContent = "";

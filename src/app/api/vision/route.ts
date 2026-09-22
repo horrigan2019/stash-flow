@@ -52,8 +52,7 @@ export async function POST(request: Request) {
       {
         error: {
           type: "configuration_error",
-          message:
-            "AI isn't configured yet. Set ANTHROPIC_API_KEY in Vercel Environment Variables and redeploy.",
+          message: "AI isn't configured on the server yet. Try again later.",
         },
       },
       { status: 503 }
