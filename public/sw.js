@@ -1,5 +1,5 @@
 /* Oh Stuffing — minimal offline shell cache. Never intercepts /api/* (vision stays network-only). */
-const CACHE = "oh-stuffing-shell-v5";
+const CACHE = "oh-stuffing-shell-v6";
 const SHELL = [
   "/",
   "/index.html",

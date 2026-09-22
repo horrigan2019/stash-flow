@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, toPublicSession } from "@/lib/auth";
+import { getSessionUser, setSessionCookie, toPublicSession } from "@/lib/auth";
 import { saveUser, storeBackend } from "@/lib/store";
 import { stripeConfigured } from "@/lib/stripe";
 
@@ -26,6 +26,7 @@ export async function POST() {
   user.plan = null;
   user.stripeSubscriptionId = undefined;
   await saveUser(user);
+  await setSessionCookie(user);
 
   return NextResponse.json({
     ok: true,

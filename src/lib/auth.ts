@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   getUserById,
   isSubscribed,
+  type SubscriptionStatus,
   type UserRecord,
 } from "@/lib/store";
 
@@ -13,6 +14,9 @@ export type SessionPayload = {
   userId: string;
   email: string;
   exp: number;
+  /** Snapshotted at cookie issue time — lets /api/vision auth across serverless isolates without shared KV. */
+  subscriptionStatus?: SubscriptionStatus;
+  plan?: "monthly" | "yearly" | null;
 };
 
 function authSecret(): string {
@@ -65,6 +69,8 @@ export function createSessionToken(user: UserRecord): string {
     userId: user.id,
     email: user.email,
     exp: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000,
+    subscriptionStatus: user.subscriptionStatus || "none",
+    plan: user.plan ?? null,
   };
   return sign(payload);
 }
@@ -102,7 +108,19 @@ export async function getSessionUser(): Promise<UserRecord | null> {
   const payload = unsign(token);
   if (!payload) return null;
   const user = await getUserById(payload.userId);
-  return user;
+  if (user) return user;
+
+  // Vercel runs API routes in separate serverless isolates. Without Upstash, the
+  // in-memory user Map is NOT shared — /api/auth/session may find the user while
+  // /api/vision cannot. Fall back to signed cookie claims so Photo & AI still works.
+  return {
+    id: payload.userId,
+    email: payload.email,
+    passwordHash: "",
+    createdAt: "",
+    subscriptionStatus: payload.subscriptionStatus || "none",
+    plan: payload.plan ?? null,
+  };
 }
 
 export type PublicSession = {

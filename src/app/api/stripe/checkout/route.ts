@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, toPublicSession } from "@/lib/auth";
+import { getSessionUser, setSessionCookie, toPublicSession } from "@/lib/auth";
 import { isSubscribed, saveUser, storeBackend } from "@/lib/store";
 import {
   appBaseUrl,
@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     user.plan = plan;
     user.stripeSubscriptionId = `mock_sub_${plan}_${user.id.slice(0, 8)}`;
     await saveUser(user);
+    // Refresh cookie claims so /api/vision (separate serverless isolate) sees the unlock.
+    await setSessionCookie(user);
     return NextResponse.json({
       ok: true,
       mock: true,

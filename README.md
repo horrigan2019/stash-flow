@@ -143,16 +143,23 @@ A Claude Pro *chat* plan is not an API key — create one at [console.anthropic.
 
 GitHub Pages can host HTML only; use **Vercel** for Photo & AI helper and paid signup.
 
-### Debra: “Photo AI isn’t set up” / scans fail while Settings says unlocked
+### Debra: “Photo AI is temporarily unavailable” / scans fail after updating the key
 
-Subscription unlock only means the **account** is allowed to call Photo & AI. The **server** still needs a working Anthropic key.
+**Most common live cause (checked on ohstuffing.com):** Production is running with `storeBackend: "memory"` — meaning **Upstash Redis is not set**. On Vercel, `/api/auth/session` and `/api/vision` are separate serverless functions, so a mock Upgrade can look unlocked in Settings while Photo AI still returns “session could not be loaded” / vague unavailable. Updating `ANTHROPIC_API_KEY` alone does **not** fix that.
 
-1. Open [Vercel](https://vercel.com) → project for **stash-flow** / ohstuffing.com  
-2. **Settings → Environment Variables**  
-3. Confirm **`ANTHROPIC_API_KEY`** exists for **Production** (value starts with `sk-ant-…`, from [console.anthropic.com](https://console.anthropic.com) → API keys — not a Claude chat login)  
-4. If missing, wrong, or only set for Preview: add/fix for **Production** → Save  
-5. **Deployments** → ⋮ on the latest Production deploy → **Redeploy** (env changes do not apply until redeploy)  
-6. On the phone: hard-refresh or reopen the site, then What’s My Stock → **See what’s there** again  
+**Do this in order:**
+
+1. Open [Vercel](https://vercel.com) → **stash-flow** → **Settings → Environment Variables** (Production)  
+2. Add **Upstash** (required for accounts across Photo AI):  
+   - `UPSTASH_REDIS_REST_URL`  
+   - `UPSTASH_REDIS_REST_TOKEN`  
+   Free Redis at [upstash.com](https://upstash.com) → copy REST URL + token  
+3. Confirm **`ANTHROPIC_API_KEY`** is also set for **Production** (`sk-ant-…` from [console.anthropic.com](https://console.anthropic.com) → API keys — not a Claude chat login). Preview-only does not count.  
+4. **Deployments** → ⋮ on latest Production → **Redeploy** (env changes need a redeploy)  
+5. On the phone: hard-refresh (or clear site data / reopen PWA), **log out → sign back in → Upgrade again**, then What’s My Stock → **See what’s there**  
+6. If it still fails: Vercel → **Logs** while you tap scan — look for `/api/vision` status (401/402/503). Anthropic console → usage/billing if you get past auth.
+
+Subscription unlock only means the **account** may call Photo & AI. The **server** still needs a working Anthropic key **and** shared account storage (Upstash) in production.
 
 App models used: `claude-haiku-4-5` (quick scans) and `claude-sonnet-4-5` (heavier helpers). Invalid test names like `claude-opus-5` are **not** used by the live app.
 

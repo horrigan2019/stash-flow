@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, readSessionToken } from "@/lib/auth";
-import { isSubscribed } from "@/lib/store";
+import { isSubscribed, storeBackend } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,12 +20,24 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     const hasCookie = Boolean(await readSessionToken());
+    const memoryBackend = storeBackend() === "memory";
+    // Cookie-present failures: avoid "Sign in" for a logged-in UI.
+    // When Upstash is missing, say so — that is the usual production cause.
+    if (hasCookie && memoryBackend) {
+      return NextResponse.json(
+        {
+          error: {
+            type: "configuration_error",
+            message:
+              "Photo AI can't load accounts on this server (no Upstash Redis). Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel → Production, then Redeploy. Or log out, sign back in, and Upgrade again so your session cookie carries the unlock.",
+          },
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       {
         error: {
-          // Keep type auth_required only when there is truly no session cookie.
-          // Cookie-present failures are treated as unavailable so a logged-in UI
-          // never gets told to "Sign in".
           type: hasCookie ? "unavailable" : "auth_required",
           message: hasCookie
             ? "Your account session could not be loaded. Try again, or log out and sign back in."
