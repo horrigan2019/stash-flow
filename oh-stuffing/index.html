@@ -443,6 +443,24 @@
     width:100%; padding:12px; border-radius:10px; border:1.5px solid var(--border);
     background:var(--surface); color:var(--ink); font-size:1rem; box-sizing:border-box;
   }
+  .password-field{ position:relative; }
+  .password-field input{ padding-right:44px; }
+  .password-toggle{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:36px; height:36px; padding:0; border:none; border-radius:8px;
+    background:transparent; color:var(--muted); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .password-toggle:hover, .password-toggle:focus-visible{
+    color:var(--ink); background:var(--surface-2); outline:none;
+  }
+  .password-toggle svg{
+    width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75;
+    stroke-linecap:round; stroke-linejoin:round;
+  }
+  .password-toggle .icon-hide{ display:none; }
+  .password-toggle[aria-pressed="true"] .icon-show{ display:none; }
+  .password-toggle[aria-pressed="true"] .icon-hide{ display:block; }
   .auth-form .primary, .access-panel .primary{
     width:100%; padding:13px 16px; border:none; border-radius:12px;
     background:var(--accent); color:var(--accent-ink); font:inherit; font-weight:700;
@@ -511,7 +529,13 @@
         </div>
         <div>
           <label for="authPassword">Password</label>
-          <input id="authPassword" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+          <div class="password-field">
+            <input id="authPassword" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+            <button type="button" class="password-toggle" id="authPasswordToggle" aria-label="Show password" aria-pressed="false" aria-controls="authPassword">
+              <svg class="icon-show" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12s4-7.5 10.5-7.5S22.5 12 22.5 12s-4 7.5-10.5 7.5S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3.25"/></svg>
+              <svg class="icon-hide" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a3.25 3.25 0 0 0 4.6 4.6"/><path d="M9.9 5.1A10.8 10.8 0 0 1 12 4.5c6.5 0 10.5 7.5 10.5 7.5a18.4 18.4 0 0 1-4.2 4.8"/><path d="M6.1 6.1A18.3 18.3 0 0 0 1.5 12S5.5 19.5 12 19.5c1.3 0 2.5-.3 3.6-.7"/></svg>
+            </button>
+          </div>
         </div>
         <button class="primary" type="submit" id="authSubmit">Create account</button>
         <p class="auth-msg" id="authMsg" aria-live="polite"></p>
@@ -1153,16 +1177,25 @@
     }
   }
 
+  function setPasswordVisibility(input, toggle, visible){
+    if(!input || !toggle) return;
+    input.type = visible ? "text" : "password";
+    toggle.setAttribute("aria-pressed", visible ? "true" : "false");
+    toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+  }
+
   function setAuthMode(mode){
     authMode = mode;
     var tabSignup = document.getElementById("tabSignup");
     var tabLogin = document.getElementById("tabLogin");
     var submit = document.getElementById("authSubmit");
     var pw = document.getElementById("authPassword");
+    var pwToggle = document.getElementById("authPasswordToggle");
     if(tabSignup) tabSignup.setAttribute("aria-selected", mode === "signup" ? "true" : "false");
     if(tabLogin) tabLogin.setAttribute("aria-selected", mode === "login" ? "true" : "false");
     if(submit) submit.textContent = mode === "signup" ? "Create account" : "Log in";
     if(pw) pw.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+    setPasswordVisibility(pw, pwToggle, false);
     setMsg(document.getElementById("authMsg"), "", null);
   }
 
@@ -1297,6 +1330,15 @@
     if(tabSignup) tabSignup.addEventListener("click", function(){ setAuthMode("signup"); });
     if(tabLogin) tabLogin.addEventListener("click", function(){ setAuthMode("login"); });
 
+    var authPassword = document.getElementById("authPassword");
+    var authPasswordToggle = document.getElementById("authPasswordToggle");
+    if(authPasswordToggle && authPassword){
+      authPasswordToggle.addEventListener("click", function(){
+        var show = authPassword.type === "password";
+        setPasswordVisibility(authPassword, authPasswordToggle, show);
+      });
+    }
+
     if(authForm){
       authForm.addEventListener("submit", async function(e){
         e.preventDefault();
@@ -1318,7 +1360,10 @@
           accessSession = data.session || accessSession;
           applyAccessUI();
           setMsg(msg, accessSession.subscribed ? "Welcome back — Photo & AI unlocked!" : "Account ready — pick a plan for Photo & AI, or continue free.", "ok");
-          if(document.getElementById("authPassword")) document.getElementById("authPassword").value = "";
+          if(authPassword){
+            authPassword.value = "";
+            setPasswordVisibility(authPassword, authPasswordToggle, false);
+          }
         } catch(err){
           setMsg(msg, err && err.message ? err.message : "Could not sign in.", "error");
         } finally {
