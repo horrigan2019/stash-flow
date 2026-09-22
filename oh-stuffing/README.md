@@ -44,7 +44,7 @@ Pantry scan, meal ideas from stock, recipe photo scan, flyer check, and recipe s
 
 - Owner key: [console.anthropic.com](https://console.anthropic.com) — a Claude Pro *chat* subscription is **not** an API key.
 - Calls go through `/api/vision` when hosted on Next/Vercel (recommended).
-- If AI isn’t configured on the server, the app says Photo AI is temporarily unavailable — it does **not** ask shoppers for a key.
+- If AI isn’t configured (or the key is rejected), the app shows an owner-actionable message about `ANTHROPIC_API_KEY` in Vercel — it does **not** ask shoppers for a key.
 
 ## Install on your phone
 

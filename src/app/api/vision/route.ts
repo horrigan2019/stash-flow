@@ -58,7 +58,9 @@ export async function POST(request: Request) {
       {
         error: {
           type: "configuration_error",
-          message: "AI isn't configured on the server yet. Try again later.",
+          // Actionable for the site owner; never ask shoppers for a key.
+          message:
+            "Photo AI isn't set up on the server yet (missing ANTHROPIC_API_KEY). Add it in Vercel → Settings → Environment Variables for Production, then Redeploy.",
         },
       },
       { status: 503 }
@@ -116,12 +118,27 @@ export async function POST(request: Request) {
 
   // Never pass Anthropic auth failures through as HTTP 401 — the client used to map
   // any 401 to "Sign in", which falsely told logged-in / subscribed users to sign in.
+  // Remap to configuration_error with an owner-actionable message (no secret leakage).
   if (upstream.status === 401 || upstream.status === 403) {
+    const upstreamType =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      data.error &&
+      typeof data.error === "object" &&
+      "type" in data.error
+        ? String((data.error as { type?: unknown }).type || "")
+        : "";
+    console.error("[vision] Anthropic rejected API key", {
+      status: upstream.status,
+      upstreamType: upstreamType || null,
+    });
     return NextResponse.json(
       {
         error: {
           type: "configuration_error",
-          message: "Photo AI is temporarily unavailable — try again later.",
+          message:
+            "Photo AI could not authenticate with the AI provider. The site owner should check ANTHROPIC_API_KEY in Vercel (Production) — valid key from console.anthropic.com, then Redeploy.",
         },
       },
       { status: 503 }

@@ -2814,7 +2814,7 @@
     }).catch(function(){ syncPantryAvailability(); });
   })();
 
-  function sampleErrorMessage(code){
+  function sampleErrorMessage(code, serverMsg){
     if(code === "not_granted") return "Photo lookup needs your permission — try again and allow it when asked.";
     if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
@@ -2827,12 +2827,21 @@
       }
       return "Sign in to use Photo & AI — free list features still work without an account.";
     }
-    if(code === "no_api_key" || code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
+    // Server-owned config/session messages (no secrets) — show them so Debra can act.
+    if(code === "configuration_error" || code === "no_api_key"){
+      if(serverMsg && String(serverMsg).trim()) return String(serverMsg).trim();
+      return "Photo AI isn't set up on the server yet. Add ANTHROPIC_API_KEY in Vercel (Production) and Redeploy.";
+    }
+    if(code === "session_unavailable"){
+      if(serverMsg && String(serverMsg).trim()) return String(serverMsg).trim();
+      return "Your account session could not be loaded. Try again, or log out and sign back in.";
+    }
+    if(code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
     if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
   }
   function needApiKeyMessage(){
-    return "Photo AI is temporarily unavailable — try again later.";
+    return "Photo AI isn't set up on the server yet. Add ANTHROPIC_API_KEY in Vercel (Production) and Redeploy.";
   }
 
   function fileToAnthropicImage(file){
@@ -2916,10 +2925,11 @@
             // (Anthropic upstream auth used to leak through as "Sign in").
             if(errType === "auth_required") e.code = "auth_required";
             else if(errType === "subscription_required" || res.status === 402) e.code = "subscription_required";
-            else if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
-            else if(res.status === 403) e.code = "unavailable";
+            else if(errType === "configuration_error" || res.status === 503) e.code = "configuration_error";
+            else if(errType === "unavailable") e.code = "session_unavailable";
+            else if(res.status === 403) e.code = "configuration_error";
             else if(res.status === 429) e.code = "rate_limited";
-            else if(res.status === 401) e.code = "unavailable";
+            else if(res.status === 401) e.code = "session_unavailable";
             else e.code = "api_error";
             if(e.code === "subscription_required" || e.code === "auth_required"){
               // Re-open the right CTA after a fresh session read.
@@ -3064,7 +3074,7 @@
     ).then(function(items){
       renderScanResults(Array.isArray(items) ? items : []);
     }).catch(function(e){
-      pantryStatus.textContent = sampleErrorMessage(e && e.code);
+      pantryStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
     }).finally(function(){
       scanPantryBtn.disabled = false;
     });
@@ -3444,7 +3454,7 @@
         : "";
       renderMealIdeas(ideas, haveList);
     }).catch(function(e){
-      mealSuggestStatus.textContent = sampleErrorMessage(e && e.code);
+      mealSuggestStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
       mealSuggestEmpty.hidden = false;
       mealSuggestEmpty.textContent = "Couldn't get meal ideas just now.";
       mealSuggestList.innerHTML = "";
@@ -3533,7 +3543,7 @@
       if(data && data.text) recipeText.value = data.text;
       recipeScanStatus.textContent = "Read it — review and edit below, then save.";
     }).catch(function(e){
-      recipeScanStatus.textContent = sampleErrorMessage(e && e.code);
+      recipeScanStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
     }).finally(function(){
       recipeScanPhotoBtn.disabled = false;
     });
@@ -3616,7 +3626,7 @@
       document.getElementById("recipeResultText").textContent = res.text;
       document.getElementById("recipeResultBox").hidden = false;
     }).catch(function(e){
-      statusEl.textContent = sampleErrorMessage(e && e.code);
+      statusEl.textContent = sampleErrorMessage(e && e.code, e && e.message);
     }).finally(function(){
       scaleBtn.disabled = false; adaptBtn.disabled = false;
     });
@@ -3658,7 +3668,7 @@
       addItems(list.join(", "), currentRecipe.title);
       statusEl.textContent = "Added " + list.length + " ingredient" + (list.length === 1 ? "" : "s") + " to your list.";
     }).catch(function(e){
-      statusEl.textContent = sampleErrorMessage(e && e.code);
+      statusEl.textContent = sampleErrorMessage(e && e.code, e && e.message);
     });
   });
 
@@ -4207,7 +4217,7 @@
       });
       flyerResults.hidden = false;
     }).catch(function(e){
-      flyerStatus.textContent = sampleErrorMessage(e && e.code);
+      flyerStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
     }).finally(function(){
       checkFlyerBtn.disabled = false;
     });

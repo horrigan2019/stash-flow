@@ -142,3 +142,18 @@ Photo scan, meal ideas from stock photos, recipe helpers that call Anthropic, an
 A Claude Pro *chat* plan is not an API key — create one at [console.anthropic.com](https://console.anthropic.com) for the site owner only.
 
 GitHub Pages can host HTML only; use **Vercel** for Photo & AI helper and paid signup.
+
+### Debra: “Photo AI isn’t set up” / scans fail while Settings says unlocked
+
+Subscription unlock only means the **account** is allowed to call Photo & AI. The **server** still needs a working Anthropic key.
+
+1. Open [Vercel](https://vercel.com) → project for **stash-flow** / ohstuffing.com  
+2. **Settings → Environment Variables**  
+3. Confirm **`ANTHROPIC_API_KEY`** exists for **Production** (value starts with `sk-ant-…`, from [console.anthropic.com](https://console.anthropic.com) → API keys — not a Claude chat login)  
+4. If missing, wrong, or only set for Preview: add/fix for **Production** → Save  
+5. **Deployments** → ⋮ on the latest Production deploy → **Redeploy** (env changes do not apply until redeploy)  
+6. On the phone: hard-refresh or reopen the site, then What’s My Stock → **See what’s there** again  
+
+App models used: `claude-haiku-4-5` (quick scans) and `claude-sonnet-4-5` (heavier helpers). Invalid test names like `claude-opus-5` are **not** used by the live app.
+
+If the key is missing or Anthropic rejects it, the app shows an owner-actionable message (not a vague “try again later”), and never asks shoppers for a key.
