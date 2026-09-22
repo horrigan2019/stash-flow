@@ -426,9 +426,32 @@
     background:var(--surface); color:var(--ink); font:inherit;
   }
   .plan-btn:hover, .plan-btn:focus-visible{ border-color:var(--accent); outline:none; }
+  .plan-btn[aria-pressed="true"]{
+    border-color:var(--accent); background:#fff; box-shadow:0 1px 0 rgba(63,107,74,.08);
+  }
   .plan-btn strong{ font-size:1.05rem; }
   .plan-btn span{ font-size:.85rem; color:var(--muted); }
   .plan-btn .plan-price{ font-family:"Fraunces",Georgia,serif; font-size:1.35rem; color:var(--accent); font-weight:700; }
+  .plan-badge{
+    display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+    background:#E8A87C; color:#3A2414; font-size:.68rem; font-weight:800;
+    letter-spacing:.04em; text-transform:uppercase; vertical-align:middle;
+  }
+  .trial-callout{
+    margin:0 0 12px; padding:10px 12px; border-radius:12px;
+    background:rgba(63,107,74,.12); color:#2C4A34; font-size:.9rem; font-weight:600; line-height:1.4;
+  }
+  .paywall-trust{ margin-top:12px; text-align:center; font-size:.78rem; color:var(--muted); line-height:1.55; }
+  .paywall-trust a{ color:var(--accent); }
+  .access-dismiss{
+    position:absolute; right:10px; top:10px; width:36px; height:36px; border:none; border-radius:999px;
+    background:transparent; color:var(--muted); font-size:1.1rem; cursor:pointer;
+  }
+  .access-dismiss:hover, .access-dismiss:focus-visible{ background:var(--surface-2); color:var(--ink); outline:none; }
+  .access-inner{ position:relative; }
+  .access-gate{
+    backdrop-filter:blur(4px);
+  }
   .auth-tabs{ display:flex; gap:8px; margin-bottom:12px; }
   .auth-tabs button{
     flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border);
@@ -504,17 +527,18 @@
 
 <div id="accessGate" class="access-gate" role="dialog" aria-modal="true" aria-labelledby="accessBrand" hidden>
   <div class="access-inner">
+    <button type="button" class="access-dismiss" id="accessDismissBtn" aria-label="Close">✕</button>
     <div class="access-brand" id="accessBrand">Oh Stuffing!</div>
-    <p class="access-tag">Free grocery list, meal planning, and leftover countdown — plus optional Photo &amp; AI for pantry scans and meal ideas from what's already in your kitchen.</p>
+    <p class="access-tag">Free grocery list forever. Pro adds Photo &amp; AI, flyer match, store compare, and leftover countdown — with a 7-day free trial.</p>
 
     <div class="access-panel" id="previewPanel">
-      <h2>Free vs Photo &amp; AI</h2>
+      <h2>Free vs Pro</h2>
       <ul class="access-features">
-        <li><strong>Free:</strong> grocery list by aisle, meal planning, leftover &amp; open-food countdown, recipe vault, share list, send to store</li>
-        <li><strong>Paid ($7.99/mo or $49/yr):</strong> What's My Stock pantry photos and AI meal ideas from your fridge &amp; pantry</li>
+        <li><strong>Free:</strong> type items, aisle sorting, check off, meal planning, recipes, share list</li>
+        <li><strong>Pro:</strong> unlimited fridge &amp; pantry scans, flyer price match, multi-store compare, leftover &amp; expiry countdown</li>
       </ul>
-      <p>Core Oh Stuffing stays free. Subscribe only when you want photo pantry scans and AI recommendations.</p>
-      <button type="button" class="primary" id="continueFreeBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:4px;">Continue with free</button>
+      <p>Try Pro free for 7 days — you won’t be charged until day 7.</p>
+      <button type="button" class="primary" id="continueFreeBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:4px;">Continue with free list</button>
     </div>
 
     <div class="access-panel" id="authPanel">
@@ -543,23 +567,40 @@
     </div>
 
     <div class="access-panel" id="pricingPanel" hidden>
-      <h2>Unlock Photo &amp; AI</h2>
-      <p id="pricingIntro">You're signed in. Pick a plan for What's My Stock pantry photos and AI meal ideas — cancel anytime from Manage subscription.</p>
+      <h2>Try free for 7 days</h2>
+      <p id="pricingIntro">You're signed in. Start a trial for Pro tools — cancel anytime in 1 tap.</p>
+      <p class="trial-callout">Try free for 7 days. You will not be charged until day 7. Cancel anytime in 1 tap.</p>
       <div class="plan-row">
-        <button type="button" class="plan-btn" id="planMonthly" data-plan="monthly">
-          <strong>Monthly</strong>
-          <span class="plan-price">$7.99<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / month</span></span>
-          <span>Photo pantry + AI recommendations — cancel anytime</span>
+        <button type="button" class="plan-btn" id="planYearly" data-plan="yearly" aria-pressed="true">
+          <strong>Annual <span class="plan-badge">Best value · Save 61%</span></strong>
+          <span class="plan-price">$39.99<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / year</span></span>
+          <span>$0.77 / week</span>
         </button>
-        <button type="button" class="plan-btn" id="planYearly" data-plan="yearly">
-          <strong>Yearly</strong>
-          <span class="plan-price">$49<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / year</span></span>
-          <span>Best value — about two months free vs monthly</span>
+        <button type="button" class="plan-btn" id="planWeekly" data-plan="weekly" aria-pressed="false">
+          <strong>Weekly</strong>
+          <span class="plan-price">$1.99<span style="font-size:.85rem;font-weight:500;color:var(--muted)"> / week</span></span>
+          <span>Flexible, cancel anytime</span>
         </button>
       </div>
+      <ul class="access-features">
+        <li>Instant dinner ideas from photos of your fridge</li>
+        <li>Match real flyer sales to your list automatically</li>
+        <li>Compare multi-store prices to cut your grocery bill</li>
+        <li>Leftover &amp; expiry countdown so food never spoils</li>
+      </ul>
+      <button type="button" class="primary" id="startTrialCta">Start 7-Day Free Trial, then $39.99/year</button>
       <p class="auth-msg" id="checkoutMsg" aria-live="polite"></p>
-      <p class="hint" id="mockPayHint" hidden style="margin-top:8px;">Local mock mode: Stripe keys aren't set, so choosing a plan unlocks Photo &amp; AI without charging a card.</p>
-      <button type="button" class="primary" id="continueFreeFromPricingBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:10px;">Keep using free features</button>
+      <p class="hint" id="mockPayHint" hidden style="margin-top:8px;">Stripe keys aren't set — starting a trial unlocks Pro in mock mode (no card charged).</p>
+      <button type="button" class="primary" id="continueFreeFromPricingBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);margin-top:10px;">Continue with free list</button>
+      <div class="paywall-trust">
+        <div>🔒 Secure checkout powered by Stripe</div>
+        <div>⚡ 1-click cancellation anytime</div>
+        <div style="margin-top:6px;">
+          <a href="#restore" id="restorePurchaseLink">Restore Purchase</a> ·
+          <a href="/terms">Terms</a> ·
+          <a href="/privacy">Privacy</a>
+        </div>
+      </div>
     </div>
 
     <div class="access-panel" id="accountOnGate" hidden>
@@ -656,7 +697,7 @@
     <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo &amp; AI (pantry scans and meal ideas) uses your Oh Stuffing subscription — you never paste an API key here. Free list features stay free.</div>
     <div class="field-row" id="accountSettingsRow">
       <label>Account</label>
-      <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Free features work without an account. Sign up to unlock Photo &amp; AI ($7.99/mo or $49/yr).</div>
+      <div class="hint" id="accountSettingsHint" style="margin-top:4px;">Free list features work without an account. Sign up to try Pro free for 7 days ($1.99/wk or $39.99/yr after).</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
         <button class="chip-btn" id="settingsManageBtn" type="button" hidden>Manage subscription</button>
         <button class="chip-btn" id="settingsMockCancelBtn" type="button" hidden>Clear mock Photo &amp; AI unlock</button>
@@ -1049,11 +1090,37 @@
     authenticated: false,
     email: null,
     subscribed: false,
+    isPro: false,
+    isInTrial: false,
+    trialDaysRemaining: 0,
     plan: null,
     mockPayments: true,
     storeBackend: "memory"
   };
   var authMode = "signup"; // signup | login
+  var selectedPlan = "yearly"; // yearly | weekly
+  var FREE_SCAN_KEY = "ohStuffing.freePantryScansUsed";
+
+  function freeScansUsed(){
+    try{ return parseInt(localStorage.getItem(FREE_SCAN_KEY) || "0", 10) || 0; } catch(e){ return 0; }
+  }
+  function bumpFreeScan(){
+    try{ localStorage.setItem(FREE_SCAN_KEY, String(freeScansUsed() + 1)); } catch(e){}
+  }
+  function hasProAccess(){
+    return !!(accessSession.subscribed || accessSession.isPro);
+  }
+  function updateTrialCta(){
+    var cta = document.getElementById("startTrialCta");
+    if(!cta) return;
+    cta.textContent = selectedPlan === "yearly"
+      ? "Start 7-Day Free Trial, then $39.99/year"
+      : "Start 7-Day Free Trial, then $1.99/week";
+    var yearly = document.getElementById("planYearly");
+    var weekly = document.getElementById("planWeekly");
+    if(yearly) yearly.setAttribute("aria-pressed", selectedPlan === "yearly" ? "true" : "false");
+    if(weekly) weekly.setAttribute("aria-pressed", selectedPlan === "weekly" ? "true" : "false");
+  }
 
   function setMsg(el, text, kind){
     if(!el) return;
@@ -1064,7 +1131,7 @@
 
   function applyAccessUI(){
     var gate = document.getElementById("accessGate");
-    var subscribed = !!accessSession.subscribed;
+    var subscribed = hasProAccess();
     // Freemium: never lock the whole app. Gate is an upgrade overlay only.
     if(subscribed){
       if(gate) gate.hidden = true;
@@ -1080,13 +1147,17 @@
     var accountOnGate = document.getElementById("accountOnGate");
     var mockHint = document.getElementById("mockPayHint");
     if(authPanel) authPanel.hidden = accessSession.authenticated;
-    if(pricingPanel) pricingPanel.hidden = !(accessSession.authenticated && !accessSession.subscribed);
+    if(pricingPanel) pricingPanel.hidden = !(accessSession.authenticated && !subscribed);
     if(accountOnGate) accountOnGate.hidden = !accessSession.authenticated;
-    if(mockHint) mockHint.hidden = !(accessSession.mockPayments && accessSession.authenticated && !accessSession.subscribed);
+    if(mockHint) mockHint.hidden = !(accessSession.mockPayments && accessSession.authenticated && !subscribed);
 
     var gateEmail = document.getElementById("gateAccountEmail");
     if(gateEmail && accessSession.email){
-      gateEmail.textContent = accessSession.email + (accessSession.plan ? " · " + accessSession.plan : "");
+      var planLabel = accessSession.plan === "yearly" ? "Annual" : accessSession.plan === "weekly" || accessSession.plan === "monthly" ? "Weekly" : "";
+      var trialBit = accessSession.isInTrial && accessSession.trialDaysRemaining
+        ? " · Trial · " + accessSession.trialDaysRemaining + "d left"
+        : (planLabel ? " · " + planLabel : "");
+      gateEmail.textContent = accessSession.email + trialBit;
     }
 
     var chip = document.getElementById("accountChip");
@@ -1095,7 +1166,7 @@
     if(chipEmail) chipEmail.textContent = accessSession.email || "";
     var manageSubBtnEl = document.getElementById("manageSubBtn");
     if(manageSubBtnEl){
-      if(accessSession.subscribed){
+      if(subscribed){
         manageSubBtnEl.textContent = accessSession.mockPayments ? "Account" : "Manage";
       } else {
         manageSubBtnEl.textContent = "Upgrade";
@@ -1108,23 +1179,26 @@
     var logoutBtn = document.getElementById("settingsLogoutBtn");
     var openGate = document.getElementById("settingsOpenGateBtn");
     if(hint){
-      if(accessSession.subscribed){
-        hint.textContent = (accessSession.email || "Signed in") + " · Photo & AI unlocked · " +
-          (accessSession.plan === "yearly" ? "Yearly plan" : accessSession.plan === "monthly" ? "Monthly plan" : "Active") +
+      if(subscribed){
+        hint.textContent = (accessSession.email || "Signed in") + " · Pro unlocked · " +
+          (accessSession.isInTrial
+            ? ("7-day trial · " + (accessSession.trialDaysRemaining || 0) + " day(s) left")
+            : (accessSession.plan === "yearly" ? "Annual plan" : accessSession.plan === "weekly" || accessSession.plan === "monthly" ? "Weekly plan" : "Active")) +
           (accessSession.mockPayments ? " (mock payments)" : "");
       } else if(accessSession.authenticated){
-        hint.textContent = (accessSession.email || "Signed in") + " — free features are open. Choose a plan for Photo & AI.";
+        hint.textContent = (accessSession.email || "Signed in") + " — free list is open. Start a 7-day Pro trial for Photo & AI, flyers, compare, and countdown.";
       } else {
-        hint.textContent = "Free features work without an account. Sign up to unlock Photo & AI ($7.99/mo or $49/yr).";
+        hint.textContent = "Free list features work without an account. Sign up to try Pro free for 7 days ($1.99/wk or $39.99/yr after).";
       }
     }
-    if(manageBtn) manageBtn.hidden = !(accessSession.subscribed && !accessSession.mockPayments);
-    if(mockCancel) mockCancel.hidden = !(accessSession.subscribed && accessSession.mockPayments);
+    if(manageBtn) manageBtn.hidden = !(subscribed && !accessSession.mockPayments);
+    if(mockCancel) mockCancel.hidden = !(subscribed && accessSession.mockPayments);
     if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
     if(openGate){
-      openGate.hidden = accessSession.subscribed;
-      openGate.textContent = accessSession.authenticated ? "Upgrade Photo & AI" : "Sign up / Upgrade Photo & AI";
+      openGate.hidden = subscribed;
+      openGate.textContent = accessSession.authenticated ? "Upgrade to Pro" : "Sign up / Start free trial";
     }
+    updateTrialCta();
   }
 
   function closeUpgradeGate(){
@@ -1139,23 +1213,28 @@
     var gate = document.getElementById("accessGate");
     if(gate) gate.hidden = false;
     applyAccessUI();
-    var label = actionLabel || "Photo & AI";
+    var label = actionLabel || "Pro tools";
     if(accessSession.authenticated){
-      // Logged in but not subscribed — Upgrade CTA only (never "sign in").
       setMsg(document.getElementById("authMsg"), "", null);
       setMsg(document.getElementById("checkoutMsg"),
-        label + " needs Photo & AI ($7.99/mo or $49/yr). Pick a plan below — free features stay open anytime.", "error");
+        label + " is included in Pro. Start a 7-day free trial below — free list stays open anytime.", "error");
     } else {
       setMsg(document.getElementById("checkoutMsg"), "", null);
       setMsg(document.getElementById("authMsg"),
-        "Sign in (or create an account) to unlock " + label + " — or continue with free features anytime.", "error");
+        "Sign in (or create an account) to try " + label + " free for 7 days — or continue with the free list.", "error");
     }
+    updateTrialCta();
   }
 
   /** Refresh session, then allow / upgrade / sign-in. Never treat a logged-in user as logged-out. */
-  async function requireAccess(actionLabel){
+  async function requireAccess(actionLabel, opts){
+    opts = opts || {};
     await refreshSession();
-    if(accessSession.subscribed) return true;
+    if(hasProAccess()) return true;
+    // One free pantry scan for unsubscribed users (What's My Stock only).
+    if(opts.allowFreeScan && freeScansUsed() < 1){
+      return true;
+    }
     openUpgradeGate(actionLabel);
     return false;
   }
@@ -1201,15 +1280,15 @@
 
   async function startCheckout(plan){
     var msg = document.getElementById("checkoutMsg");
-    setMsg(msg, "Opening checkout…", "loading");
-    var buttons = document.querySelectorAll(".plan-btn");
+    setMsg(msg, "Starting your 7-day free trial…", "loading");
+    var buttons = document.querySelectorAll(".plan-btn, #startTrialCta");
     buttons.forEach(function(b){ b.disabled = true; });
     try{
-      var res = await fetch("/api/stripe/checkout", {
+      var res = await fetch("/api/create-checkout-session", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan })
+        body: JSON.stringify({ plan: plan || selectedPlan })
       });
       var data = await res.json().catch(function(){ return {}; });
       if(!res.ok){
@@ -1218,7 +1297,8 @@
       if(data.mock && data.session){
         accessSession = data.session;
         applyAccessUI();
-        setMsg(msg, "Photo & AI unlocked! Mock mode (no card charged).", "ok");
+        setMsg(msg, "Pro unlocked for 7 days! Mock trial (no card charged).", "ok");
+        closeUpgradeGate();
         return;
       }
       if(data.url){
@@ -1248,8 +1328,8 @@
       openUpgradeGate("Photo & AI");
       return;
     }
-    if(!accessSession.subscribed){
-      openUpgradeGate("Photo & AI");
+    if(!accessSession.subscribed && !accessSession.isPro){
+      openUpgradeGate("Pro tools");
       return;
     }
     if(accessSession.mockPayments){
@@ -1270,8 +1350,8 @@
       openUpgradeGate("Photo & AI");
       return;
     }
-    if(!accessSession.subscribed){
-      openUpgradeGate("Photo & AI");
+    if(!accessSession.subscribed && !accessSession.isPro){
+      openUpgradeGate("Pro tools");
       return;
     }
     try{
@@ -1306,7 +1386,8 @@
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     } catch(e){}
     accessSession = {
-      authenticated: false, email: null, subscribed: false, plan: null,
+      authenticated: false, email: null, subscribed: false, isPro: false,
+      isInTrial: false, trialDaysRemaining: 0, plan: null,
       mockPayments: accessSession.mockPayments, storeBackend: accessSession.storeBackend
     };
     applyAccessUI();
@@ -1318,14 +1399,17 @@
     var tabSignup = document.getElementById("tabSignup");
     var tabLogin = document.getElementById("tabLogin");
     var authForm = document.getElementById("authForm");
-    var planMonthly = document.getElementById("planMonthly");
+    var planWeekly = document.getElementById("planWeekly");
     var planYearly = document.getElementById("planYearly");
+    var startTrialCta = document.getElementById("startTrialCta");
     var gateLogout = document.getElementById("gateLogoutBtn");
     var manageSubBtn = document.getElementById("manageSubBtn");
     var settingsManageBtn = document.getElementById("settingsManageBtn");
     var settingsLogoutBtn = document.getElementById("settingsLogoutBtn");
     var settingsOpenGateBtn = document.getElementById("settingsOpenGateBtn");
     var settingsMockCancelBtn = document.getElementById("settingsMockCancelBtn");
+    var accessDismissBtn = document.getElementById("accessDismissBtn");
+    var restorePurchaseLink = document.getElementById("restorePurchaseLink");
 
     if(tabSignup) tabSignup.addEventListener("click", function(){ setAuthMode("signup"); });
     if(tabLogin) tabLogin.addEventListener("click", function(){ setAuthMode("login"); });
@@ -1359,7 +1443,7 @@
           if(!res.ok) throw new Error(data.error || "Something went wrong.");
           accessSession = data.session || accessSession;
           applyAccessUI();
-          setMsg(msg, accessSession.subscribed ? "Welcome back — Photo & AI unlocked!" : "Account ready — pick a plan for Photo & AI, or continue free.", "ok");
+          setMsg(msg, hasProAccess() ? "Welcome back — Pro unlocked!" : "Account ready — start a 7-day Pro trial, or continue free.", "ok");
           if(authPassword){
             authPassword.value = "";
             setPasswordVisibility(authPassword, authPasswordToggle, false);
@@ -1372,8 +1456,13 @@
       });
     }
 
-    if(planMonthly) planMonthly.addEventListener("click", function(){ startCheckout("monthly"); });
-    if(planYearly) planYearly.addEventListener("click", function(){ startCheckout("yearly"); });
+    function pickPlan(plan){
+      selectedPlan = plan === "weekly" ? "weekly" : "yearly";
+      updateTrialCta();
+    }
+    if(planWeekly) planWeekly.addEventListener("click", function(){ pickPlan("weekly"); });
+    if(planYearly) planYearly.addEventListener("click", function(){ pickPlan("yearly"); });
+    if(startTrialCta) startTrialCta.addEventListener("click", function(){ startCheckout(selectedPlan); });
     if(gateLogout) gateLogout.addEventListener("click", doLogout);
     if(manageSubBtn) manageSubBtn.addEventListener("click", function(){
       openAccountOrManage();
@@ -1386,11 +1475,30 @@
     var continueFreeFromPricingBtn = document.getElementById("continueFreeFromPricingBtn");
     if(continueFreeBtn) continueFreeBtn.addEventListener("click", closeUpgradeGate);
     if(continueFreeFromPricingBtn) continueFreeFromPricingBtn.addEventListener("click", closeUpgradeGate);
+    if(accessDismissBtn) accessDismissBtn.addEventListener("click", closeUpgradeGate);
+    if(restorePurchaseLink){
+      restorePurchaseLink.addEventListener("click", function(ev){
+        ev.preventDefault();
+        refreshSession().then(function(){
+          if(hasProAccess()){
+            closeUpgradeGate();
+            alert("Purchase restored — Pro is unlocked on this account.");
+          } else if(accessSession.authenticated){
+            setMsg(document.getElementById("checkoutMsg"),
+              "No active Pro trial or subscription found for this account. Start a free trial below.", "error");
+          } else {
+            setAuthMode("login");
+            setMsg(document.getElementById("authMsg"),
+              "Log in with the email you used to subscribe, then tap Restore Purchase again.", "error");
+          }
+        });
+      });
+    }
     if(settingsOpenGateBtn){
       settingsOpenGateBtn.addEventListener("click", function(){
         var dlg = document.getElementById("settingsDialog");
         if(dlg && dlg.open) dlg.close();
-        openUpgradeGate("Photo & AI");
+        openUpgradeGate("Pro tools");
       });
     }
     if(settingsMockCancelBtn){
@@ -1411,26 +1519,27 @@
     document.body.classList.remove("gated");
     var gateEl = document.getElementById("accessGate");
     if(gateEl) gateEl.hidden = true;
+    updateTrialCta();
 
     refreshSession().then(function(session){
       setMsg(document.getElementById("authMsg"), "", null);
       var params = new URLSearchParams(window.location.search);
       if(params.get("checkout") === "success"){
-        if(session.subscribed){
+        if(session.subscribed || session.isPro){
           closeUpgradeGate();
           setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
-            "Photo & AI unlocked — welcome!", "ok");
+            "Pro unlocked — enjoy your 7-day free trial!", "ok");
         } else {
-          openUpgradeGate("Photo & AI");
+          openUpgradeGate("Pro tools");
           setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
-            "Payment received. If Photo & AI is still locked, wait a few seconds and refresh (webhook may be catching up).",
+            "Payment received. If Pro is still locked, wait a few seconds and refresh (webhook may be catching up).",
             "loading");
           setTimeout(function(){ refreshSession(); }, 2500);
         }
       } else if(params.get("checkout") === "cancel"){
-        openUpgradeGate("Photo & AI");
+        openUpgradeGate("Pro tools");
         setMsg(document.getElementById("checkoutMsg") || document.getElementById("authMsg"),
-          "Checkout canceled — free features still work. You can subscribe whenever you're ready.", "error");
+          "Checkout canceled — free list still works. You can start a trial whenever you're ready.", "error");
       }
       if(params.has("checkout") || params.has("unlocked")){
         try{
@@ -1440,27 +1549,34 @@
       }
     });
 
-    // Only Photo & AI entry points need a subscription (core list stays free).
-    // Always refresh session first so a logged-in user is never shown "Sign in"
-    // from a stale accessSession (initial defaults / race before first refresh).
+    // Pro-gated tools (free list / meal plan / recipes / share stay free).
     var paidFeatureIds = {
-      pantryBtn: "What's My Stock",
-      flyerBtn: "Flyer photo check (AI)"
+      pantryBtn: { label: "What's My Stock", allowFreeScan: true },
+      flyerBtn: { label: "Check A Flyer", allowFreeScan: false },
+      storeCompareBtn: { label: "Compare Stores", allowFreeScan: false },
+      wasteBtn: { label: "Countdown (leftover & expiry alerts)", allowFreeScan: false }
     };
+    var paidClickBypass = null;
     document.addEventListener("click", function(ev){
       var t = ev.target;
       if(!t || !t.closest) return;
       for(var id in paidFeatureIds){
         if(t.closest("#" + id)){
-          // Fast path only when we already know they're subscribed; otherwise refresh.
-          if(accessSession.subscribed) return;
+          if(paidClickBypass === id){
+            paidClickBypass = null;
+            return;
+          }
+          if(hasProAccess()) return;
           ev.preventDefault();
           ev.stopPropagation();
-          var label = paidFeatureIds[id];
+          var meta = paidFeatureIds[id];
+          var label = meta.label;
           var btnId = id;
-          requireAccess(label).then(function(ok){
+          var allowFree = !!meta.allowFreeScan;
+          requireAccess(label, { allowFreeScan: allowFree }).then(function(ok){
             if(!ok) return;
-            // Session confirmed subscribed after refresh — run the real open handler.
+            if(allowFree && !hasProAccess()) bumpFreeScan();
+            paidClickBypass = btnId;
             var btn = document.getElementById(btnId);
             if(btn) btn.click();
           });
@@ -2819,13 +2935,13 @@
     if(code === "image_rejected") return "That photo didn't work — try a different one (JPEG, PNG, WebP or GIF).";
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
-    if(code === "subscription_required") return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
+    if(code === "subscription_required") return "Pro needs a free trial or subscription — tap Upgrade ($1.99/wk or $39.99/yr after 7 days free).";
     if(code === "auth_required"){
       // Don't tell a logged-in user to sign in — they need Upgrade (or a session refresh).
       if(accessSession.authenticated){
-        return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
+        return "Pro needs a free trial or subscription — tap Upgrade ($1.99/wk or $39.99/yr after 7 days free).";
       }
-      return "Sign in to use Photo & AI — free list features still work without an account.";
+      return "Sign in to try Pro free for 7 days — free list features still work without an account.";
     }
     // Server-owned config/session messages (no secrets) — show them so Debra can act.
     if(code === "configuration_error" || code === "no_api_key"){

@@ -60,12 +60,18 @@ async function applySubscription(
   user.subscriptionStatus = mapStatus(sub.status);
   user.plan =
     planFromPriceId(priceId) ||
-    (sub.metadata?.plan === "yearly" || sub.metadata?.plan === "monthly"
-      ? sub.metadata.plan
+    (sub.metadata?.plan === "yearly" ||
+    sub.metadata?.plan === "weekly" ||
+    sub.metadata?.plan === "monthly"
+      ? sub.metadata.plan === "monthly"
+        ? "weekly"
+        : (sub.metadata.plan as "weekly" | "yearly")
       : user.plan) ||
     null;
-  if (user.subscriptionStatus === "canceled" || user.subscriptionStatus === "none") {
-    // keep plan history but access is gated by status
+  if (sub.status === "trialing" && sub.trial_end) {
+    user.trialEndsAt = new Date(sub.trial_end * 1000).toISOString();
+  } else if (sub.status === "active") {
+    user.trialEndsAt = null;
   }
   await saveUser(user);
 }
@@ -128,9 +134,12 @@ export async function POST(request: Request) {
         } else {
           user.subscriptionStatus = "active";
           user.plan =
-            session.metadata?.plan === "yearly" || session.metadata?.plan === "monthly"
-              ? session.metadata.plan
-              : user.plan;
+            session.metadata?.plan === "yearly"
+              ? "yearly"
+              : session.metadata?.plan === "weekly" ||
+                  session.metadata?.plan === "monthly"
+                ? "weekly"
+                : user.plan;
           await saveUser(user);
         }
         break;

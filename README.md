@@ -2,7 +2,7 @@
 
 Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, flyer check, leftover countdown.
 
-**Freemium:** core list tools are free; **Photo & AI** (What's My Stock pantry camera + AI meal ideas) is **$7.99/mo or $49/yr** via email signup + Stripe Checkout.
+**Freemium:** core shopping list tools are free; **Oh Stuffing Pro** (What's My Stock / dinner ideas, Check A Flyer, Compare Stores, Countdown leftover & expiry alerts) starts with a **7-day free trial**, then **$1.99/week** or **$39.99/year** (best value) via email signup + Stripe Checkout.
 
 ## Deploy (like Fiona)
 
@@ -14,7 +14,7 @@ Same flow as Fiona: the **whole** app lives on GitHub (`package.json`, `src/`, `
 2. In [Vercel](https://vercel.com): Import **stash-flow** (or refresh if already connected)
 3. Framework: **Next.js** · Build: `next build`
 4. Add environment variables (names below) → **Save** → **Deployments** → ⋮ on the latest → **Redeploy**
-5. Open the `*.vercel.app` URL → use the free list/meal/countdown tools → tap **What's My Stock** to see the upgrade path → sign up → subscribe for Photo & AI
+5. Open the `*.vercel.app` URL → use the free list tools → tap **What's My Stock** (1 free scan) or **Countdown** to see the Pro trial paywall → sign up → start 7-day free trial
 6. Optional later: Domains → add **ohstuffing.com**
 
 **Never paste secret keys into chat** — only into Vercel Environment Variables.
@@ -38,8 +38,9 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 | `AUTH_SECRET` | Long random string used to sign login cookies (e.g. `openssl rand -hex 32`) |
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_live_…` or `sk_test_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_…`) |
-| `STRIPE_PRICE_MONTHLY` | Stripe Price ID for **$7.99/month** |
-| `STRIPE_PRICE_YEARLY` | Stripe Price ID for **$49/year** |
+| `STRIPE_PRICE_WEEKLY` | Stripe Price ID for **$1.99/week** (preferred) |
+| `STRIPE_PRICE_MONTHLY` | Legacy alias — used if `STRIPE_PRICE_WEEKLY` is unset |
+| `STRIPE_PRICE_YEARLY` | Stripe Price ID for **$39.99/year** |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (account storage) |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
 
@@ -57,9 +58,9 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 ## Stripe Dashboard steps (Debra)
 
 1. [Stripe Dashboard](https://dashboard.stripe.com) → **Product catalog** → create a product **Oh Stuffing**
-2. Add two **recurring** prices:
-   - **$7.99 USD / month** → copy Price ID → `STRIPE_PRICE_MONTHLY`
-   - **$49 USD / year** → copy Price ID → `STRIPE_PRICE_YEARLY`
+2. Add two **recurring** prices (both with a **7-day free trial** in Checkout — trial is set in code via `trial_period_days: 7`):
+   - **$1.99 USD / week** → copy Price ID → `STRIPE_PRICE_WEEKLY`
+   - **$39.99 USD / year** → copy Price ID → `STRIPE_PRICE_YEARLY`
 3. **Developers → API keys** → copy Secret key → `STRIPE_SECRET_KEY` (Publishable key optional for now)
 4. **Developers → Webhooks → Add endpoint**
    - URL: `https://www.ohstuffing.com/api/stripe/webhook` (or your `*.vercel.app` URL + `/api/stripe/webhook`)

@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         error: {
           type: "subscription_required",
           message:
-            "Photo pantry scans and AI recommendations need an Oh Stuffing subscription ($7.99/mo or $49/yr).",
+            "Photo pantry scans and AI recommendations need an Oh Stuffing Pro trial or subscription ($1.99/wk or $39.99/yr).",
         },
       },
       { status: 402 }

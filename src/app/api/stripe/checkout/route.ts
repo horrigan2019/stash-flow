@@ -2,49 +2,67 @@ import { NextResponse } from "next/server";
 import { getSessionUser, setSessionCookie, toPublicSession } from "@/lib/auth";
 import { isSubscribed, saveUser, storeBackend } from "@/lib/store";
 import {
+  TRIAL_DAYS,
   appBaseUrl,
   getStripe,
+  normalizePlan,
   priceIdForPlan,
   stripeConfigured,
+  type BillingPlan,
 } from "@/lib/stripe";
 
 export const runtime = "nodejs";
+
+function trialEndIso(from = new Date()): string {
+  const d = new Date(from);
+  d.setDate(d.getDate() + TRIAL_DAYS);
+  return d.toISOString();
+}
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
-      { error: "Sign in first, then choose a plan." },
+      { error: "Sign in first, then start your free trial." },
       { status: 401 }
     );
   }
 
-  let body: { plan?: string };
+  let body: { plan?: string; priceId?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Request body must be JSON." }, { status: 400 });
   }
 
-  const plan = body.plan === "yearly" ? "yearly" : body.plan === "monthly" ? "monthly" : null;
+  const plan: BillingPlan | null =
+    normalizePlan(body.plan) ||
+    (body.priceId?.includes("year")
+      ? "yearly"
+      : body.priceId
+        ? "weekly"
+        : null);
+
   if (!plan) {
     return NextResponse.json(
-      { error: "Choose monthly ($7.99) or yearly ($49)." },
+      { error: "Choose weekly ($1.99) or yearly ($39.99)." },
       { status: 400 }
     );
   }
 
-  // Local / missing Stripe keys: unlock immediately so Debra can develop without Checkout.
+  // Local / missing Stripe keys: start a mock 7-day trial unlock.
   if (!stripeConfigured()) {
-    user.subscriptionStatus = "active";
+    user.subscriptionStatus = "trialing";
     user.plan = plan;
-    user.stripeSubscriptionId = `mock_sub_${plan}_${user.id.slice(0, 8)}`;
+    user.trialEndsAt = trialEndIso();
+    user.stripeSubscriptionId = `mock_trial_${plan}_${user.id.slice(0, 8)}`;
     await saveUser(user);
-    // Refresh cookie claims so /api/vision (separate serverless isolate) sees the unlock.
     await setSessionCookie(user);
     return NextResponse.json({
       ok: true,
       mock: true,
+      trial: true,
+      trialDays: TRIAL_DAYS,
       url: "/?unlocked=1",
       session: toPublicSession(user, {
         mockPayments: true,
@@ -55,7 +73,10 @@ export async function POST(request: Request) {
 
   if (isSubscribed(user)) {
     return NextResponse.json(
-      { error: "You're already subscribed. Use Manage subscription to change or cancel." },
+      {
+        error:
+          "You're already subscribed (or in a free trial). Use Manage subscription to change or cancel.",
+      },
       { status: 400 }
     );
   }
@@ -65,12 +86,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
-  const priceId = priceIdForPlan(plan);
+  const priceId = body.priceId?.startsWith("price_")
+    ? body.priceId
+    : priceIdForPlan(plan);
   if (priceId.startsWith("price_mock_")) {
     return NextResponse.json(
       {
         error:
-          "Set STRIPE_PRICE_MONTHLY and STRIPE_PRICE_YEARLY in Vercel to your Stripe Price IDs, then redeploy.",
+          "Set STRIPE_PRICE_WEEKLY and STRIPE_PRICE_YEARLY in Vercel to your Stripe Price IDs, then redeploy.",
       },
       { status: 503 }
     );
@@ -102,6 +125,7 @@ export async function POST(request: Request) {
         plan,
       },
       subscription_data: {
+        trial_period_days: TRIAL_DAYS,
         metadata: {
           ohStuffingUserId: user.id,
           plan,

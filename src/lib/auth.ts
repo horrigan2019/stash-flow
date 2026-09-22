@@ -16,7 +16,8 @@ export type SessionPayload = {
   exp: number;
   /** Snapshotted at cookie issue time — lets /api/vision auth across serverless isolates without shared KV. */
   subscriptionStatus?: SubscriptionStatus;
-  plan?: "monthly" | "yearly" | null;
+  plan?: "weekly" | "yearly" | "monthly" | null;
+  trialEndsAt?: string | null;
 };
 
 function authSecret(): string {
@@ -71,6 +72,7 @@ export function createSessionToken(user: UserRecord): string {
     exp: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000,
     subscriptionStatus: user.subscriptionStatus || "none",
     plan: user.plan ?? null,
+    trialEndsAt: user.trialEndsAt ?? null,
   };
   return sign(payload);
 }
@@ -120,14 +122,27 @@ export async function getSessionUser(): Promise<UserRecord | null> {
     createdAt: "",
     subscriptionStatus: payload.subscriptionStatus || "none",
     plan: payload.plan ?? null,
+    trialEndsAt: payload.trialEndsAt ?? null,
   };
+}
+
+function trialDaysRemaining(user: UserRecord): number {
+  if (user.subscriptionStatus !== "trialing") return 0;
+  const end = user.trialEndsAt ? Date.parse(user.trialEndsAt) : NaN;
+  if (!Number.isFinite(end)) return 0;
+  const ms = end - Date.now();
+  if (ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
 }
 
 export type PublicSession = {
   authenticated: boolean;
   email: string | null;
   subscribed: boolean;
-  plan: "monthly" | "yearly" | null;
+  isPro: boolean;
+  isInTrial: boolean;
+  trialDaysRemaining: number;
+  plan: "weekly" | "yearly" | "monthly" | null;
   subscriptionStatus: string;
   mockPayments: boolean;
   storeBackend: "upstash" | "memory";
@@ -142,16 +157,24 @@ export function toPublicSession(
       authenticated: false,
       email: null,
       subscribed: false,
+      isPro: false,
+      isInTrial: false,
+      trialDaysRemaining: 0,
       plan: null,
       subscriptionStatus: "none",
       mockPayments: extras.mockPayments,
       storeBackend: extras.storeBackend,
     };
   }
+  const subscribed = isSubscribed(user);
+  const isInTrial = user.subscriptionStatus === "trialing";
   return {
     authenticated: true,
     email: user.email,
-    subscribed: isSubscribed(user),
+    subscribed,
+    isPro: subscribed,
+    isInTrial,
+    trialDaysRemaining: trialDaysRemaining(user),
     plan: user.plan ?? null,
     subscriptionStatus: user.subscriptionStatus,
     mockPayments: extras.mockPayments,

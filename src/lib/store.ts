@@ -20,7 +20,10 @@ export type UserRecord = {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus: SubscriptionStatus;
-  plan?: "monthly" | "yearly" | null;
+  /** weekly ($1.99) or yearly ($39.99); legacy "monthly" treated as weekly */
+  plan?: "weekly" | "yearly" | "monthly" | null;
+  /** ISO timestamp when free trial ends (subscriptionStatus may be trialing) */
+  trialEndsAt?: string | null;
 };
 
 const USER_PREFIX = "ohstuffing:user:";
