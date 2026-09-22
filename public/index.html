@@ -3111,18 +3111,30 @@
     mealSuggestDialog.showModal();
 
     var prompt =
-      "You are helping a busy home cook. They have these foods on hand:\n" +
+      "You are helping a busy home cook plan delicious weeknight dinners. They have these foods on hand:\n" +
       JSON.stringify(haveList) +
-      "\n\nSuggest 4 to 6 easy meal ideas that mostly use those items plus common pantry staples " +
-      "(salt, pepper, oil, butter, flour, rice, pasta, garlic, onion, spices they might already have).\n" +
-      "Include at least 2 \"upgrade\" ideas that turn something plain into a satisfying dinner " +
-      "(examples: can of soup → fuller meal with toast/egg/veg; leftover rice → fried rice or burrito bowl; " +
-      "pasta + jar sauce → baked pasta; beans + tortillas → quick tacos).\n" +
-      "Keep ingredient lists short and steps simple (3–5 steps).\n" +
+      "\n\nSuggest 4 to 6 REAL, craveable dinners people actually want to eat — skillet pasta, sheet-pan dinners, " +
+      "quesadillas, stir-fries, burrito/grain bowls, tacos, fried rice, soup-and-toast upgrades, baked pasta, " +
+      "simple skillet chicken/veg. Favor familiar restaurant-ish or cozy home-cook meals.\n" +
+      "HARD RULES:\n" +
+      "- NO frankenstein random mixes (e.g. weird canned + random spice combos that aren't a real dish).\n" +
+      "- Low-effort only: one pan/sheet/skillet when possible, simple cleanup, about 20–35 minutes cook time.\n" +
+      "- Flavor-first: every meal must taste good. Call for aromatics and seasonings that make food delicious " +
+      "(garlic, onion/shallot, cumin, chili, soy sauce, citrus/lemon, butter or oil, herbs, cheese, vinegar, " +
+      "ginger, etc.) when they fit the dish — NOT bare protein+beans+one spice lists.\n" +
+      "- Assume salt, pepper, oil/cooking fat, and water already exist. Do NOT put salt, pepper, oil, or water " +
+      "in uses or need unless they are the hero (e.g. olive-oil finishing, chili crisp).\n" +
+      "- uses = ONLY items from their on-hand list that this meal actually uses (detected/scan stock).\n" +
+      "- need = at most 1–2 crucial missing items that turn the meal from bare-minimum into something delicious " +
+      "(e.g. tortillas, lime, cheese, soy sauce). Prefer empty need when stock already supports a tasty dish. " +
+      "Never clog need with staples they almost certainly have.\n" +
+      "- Include at least 2 \"upgrade\" ideas that stretch plain pantry items into a satisfying dinner " +
+      "(soup → fuller meal with toast/egg/veg; leftover rice → fried rice or burrito bowl; pasta + sauce → baked pasta; " +
+      "beans + tortillas → quick tacos).\n" +
+      "- Steps: 3–5 short, clear cooking steps. Name dishes appetizingly (not \"beef and beans\").\n" +
       "Reply with ONLY a JSON object shaped like:\n" +
       "{\"ideas\":[{\"name\":string,\"kind\":\"from_stock\"|\"upgrade\",\"uses\":[string],\"need\":[string],\"steps\":[string],\"upgradeNote\":string}]}\n" +
-      "uses = items from their list that this meal uses. need = extra items they may still need to buy " +
-      "(omit staples they almost certainly have; keep need short). upgradeNote is required when kind is upgrade, else empty string.";
+      "uses = on-hand items used. need = 0–2 extras to buy. upgradeNote is required when kind is upgrade, else empty string.";
 
     aiJson(prompt, { modelTier: "default" }).then(function(data){
       var ideas = (data && Array.isArray(data.ideas)) ? data.ideas : (Array.isArray(data) ? data : []);
