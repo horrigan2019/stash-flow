@@ -1115,11 +1115,22 @@
     var gate = document.getElementById("accessGate");
     if(gate) gate.hidden = false;
     applyAccessUI();
-    setMsg(document.getElementById("authMsg"),
-      (actionLabel || "Photo & AI") + " needs an Oh Stuffing subscription ($7.99/mo or $49/yr). Free features stay open anytime.", "error");
+    var label = actionLabel || "Photo & AI";
+    if(accessSession.authenticated){
+      // Logged in but not subscribed — Upgrade CTA only (never "sign in").
+      setMsg(document.getElementById("authMsg"), "", null);
+      setMsg(document.getElementById("checkoutMsg"),
+        label + " needs Photo & AI ($7.99/mo or $49/yr). Pick a plan below — free features stay open anytime.", "error");
+    } else {
+      setMsg(document.getElementById("checkoutMsg"), "", null);
+      setMsg(document.getElementById("authMsg"),
+        "Sign in (or create an account) to unlock " + label + " — or continue with free features anytime.", "error");
+    }
   }
 
-  function requireAccess(actionLabel){
+  /** Refresh session, then allow / upgrade / sign-in. Never treat a logged-in user as logged-out. */
+  async function requireAccess(actionLabel){
+    await refreshSession();
     if(accessSession.subscribed) return true;
     openUpgradeGate(actionLabel);
     return false;
@@ -1133,10 +1144,8 @@
       applyAccessUI();
       return accessSession;
     } catch(err){
-      accessSession = {
-        authenticated: false, email: null, subscribed: false, plan: null,
-        mockPayments: true, storeBackend: "memory"
-      };
+      // Soft-fail: keep the last known session so a network blip doesn't flash "Sign in"
+      // at someone who is already logged in.
       applyAccessUI();
       setMsg(document.getElementById("authMsg"),
         err && err.message ? err.message : "Could not reach the server. Try again.", "error");
@@ -1336,19 +1345,29 @@
     });
 
     // Only Photo & AI entry points need a subscription (core list stays free).
+    // Always refresh session first so a logged-in user is never shown "Sign in"
+    // from a stale accessSession (initial defaults / race before first refresh).
     var paidFeatureIds = {
       pantryBtn: "What's My Stock",
       flyerBtn: "Flyer photo check (AI)"
     };
     document.addEventListener("click", function(ev){
-      if(accessSession.subscribed) return;
       var t = ev.target;
       if(!t || !t.closest) return;
       for(var id in paidFeatureIds){
         if(t.closest("#" + id)){
+          // Fast path only when we already know they're subscribed; otherwise refresh.
+          if(accessSession.subscribed) return;
           ev.preventDefault();
           ev.stopPropagation();
-          requireAccess(paidFeatureIds[id]);
+          var label = paidFeatureIds[id];
+          var btnId = id;
+          requireAccess(label).then(function(ok){
+            if(!ok) return;
+            // Session confirmed subscribed after refresh — run the real open handler.
+            var btn = document.getElementById(btnId);
+            if(btn) btn.click();
+          });
           return;
         }
       }
@@ -2705,7 +2724,13 @@
     if(code === "rate_limited") return "Too many requests right now — wait a moment and try again.";
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
     if(code === "subscription_required") return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
-    if(code === "auth_required") return "Sign in (or subscribe) to use Photo & AI — free list features still work without an account.";
+    if(code === "auth_required"){
+      // Don't tell a logged-in user to sign in — they need Upgrade (or a session refresh).
+      if(accessSession.authenticated){
+        return "Photo & AI needs a subscription — tap Upgrade in Settings ($7.99/mo or $49/yr).";
+      }
+      return "Sign in to use Photo & AI — free list features still work without an account.";
+    }
     if(code === "no_api_key" || code === "unavailable" || code === "auth") return "Photo AI is temporarily unavailable — try again later.";
     if(code === "api_error") return "Couldn't reach the AI helper just now — check your connection and try again.";
     return "Couldn't look at that photo just now — try again.";
@@ -2763,76 +2788,86 @@
 
   function anthropicMessages(prompt, opts){
     opts = opts || {};
-    if(!accessSession.subscribed){
-      requireAccess("Photo & AI");
-      var denied = new Error("Photo & AI needs a subscription");
-      denied.code = "subscription_required";
-      return Promise.reject(denied);
-    }
-    var model = opts.modelTier === "quick" ? "claude-haiku-4-5" : "claude-sonnet-4-5";
-    var buildContent = opts.images && opts.images.length
-      ? Promise.all(opts.images.map(fileToAnthropicImage)).then(function(imgs){
-          var parts = imgs.map(function(img){
-            return { type: "image", source: { type: "base64", media_type: img.media_type, data: img.data } };
-          });
-          parts.push({ type: "text", text: prompt });
-          return parts;
-        })
-      : Promise.resolve([{ type: "text", text: prompt }]);
+    // Refresh before the client-side gate so a stale accessSession never shows "Sign in"
+    // to someone who is already logged in (or Upgrade when they're already subscribed).
+    return refreshSession().then(function(){
+      if(!accessSession.subscribed){
+        openUpgradeGate("Photo & AI");
+        var denied = new Error(accessSession.authenticated
+          ? "Photo & AI needs a subscription"
+          : "Sign in to use Photo & AI");
+        denied.code = accessSession.authenticated ? "subscription_required" : "auth_required";
+        return Promise.reject(denied);
+      }
+      var model = opts.modelTier === "quick" ? "claude-haiku-4-5" : "claude-sonnet-4-5";
+      var buildContent = opts.images && opts.images.length
+        ? Promise.all(opts.images.map(fileToAnthropicImage)).then(function(imgs){
+            var parts = imgs.map(function(img){
+              return { type: "image", source: { type: "base64", media_type: img.media_type, data: img.data } };
+            });
+            parts.push({ type: "text", text: prompt });
+            return parts;
+          })
+        : Promise.resolve([{ type: "text", text: prompt }]);
 
-    function parseAnthropicResponse(res){
-      return res.json().then(function(data){
-        if(!res.ok){
-          var errType = data && data.error && data.error.type;
-          var msg = (data && data.error && data.error.message) || ("API error " + res.status);
-          var e = new Error(msg);
-          if(res.status === 401 || errType === "auth_required") e.code = "auth_required";
-          else if(res.status === 402 || errType === "subscription_required") e.code = "subscription_required";
-          else if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
-          else if(res.status === 403) e.code = "unavailable";
-          else if(res.status === 429) e.code = "rate_limited";
-          else e.code = "api_error";
-          if(e.code === "subscription_required" || e.code === "auth_required"){
-            requireAccess("Photo & AI");
+      function parseAnthropicResponse(res){
+        return res.json().then(function(data){
+          if(!res.ok){
+            var errType = data && data.error && data.error.type;
+            var msg = (data && data.error && data.error.message) || ("API error " + res.status);
+            var e = new Error(msg);
+            // Only treat OUR gate codes as auth/subscription — never blind HTTP 401
+            // (Anthropic upstream auth used to leak through as "Sign in").
+            if(errType === "auth_required") e.code = "auth_required";
+            else if(errType === "subscription_required" || res.status === 402) e.code = "subscription_required";
+            else if(res.status === 503 || errType === "configuration_error") e.code = "unavailable";
+            else if(res.status === 403) e.code = "unavailable";
+            else if(res.status === 429) e.code = "rate_limited";
+            else if(res.status === 401) e.code = "unavailable";
+            else e.code = "api_error";
+            if(e.code === "subscription_required" || e.code === "auth_required"){
+              // Re-open the right CTA after a fresh session read.
+              requireAccess("Photo & AI");
+            }
+            throw e;
           }
+          var text = "";
+          (data.content || []).forEach(function(block){
+            if(block.type === "text") text += block.text;
+          });
+          return { text: text };
+        }, function(){
+          var e = new Error("Bad response from API");
+          e.code = "api_error";
           throw e;
-        }
-        var text = "";
-        (data.content || []).forEach(function(block){
-          if(block.type === "text") text += block.text;
         });
-        return { text: text };
-      }, function(){
-        var e = new Error("Bad response from API");
-        e.code = "api_error";
-        throw e;
-      });
-    }
+      }
 
-    // Same-origin Next.js proxy uses server ANTHROPIC_API_KEY (customers never send a key).
-    // Session cookie required — Photo & AI is a paid feature enforced on the server.
-    return buildContent.then(function(content){
-      var payload = JSON.stringify({
-        model: model,
-        max_tokens: 4096,
-        messages: [{ role: "user", content: content }]
-      });
-      return fetch("/api/vision", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: payload
-      }).then(function(res){
-        if(res.status === 404 || res.status === 405){
+      // Same-origin Next.js proxy uses server ANTHROPIC_API_KEY (customers never send a key).
+      // Session cookie required — Photo & AI is a paid feature enforced on the server.
+      return buildContent.then(function(content){
+        var payload = JSON.stringify({
+          model: model,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: content }]
+        });
+        return fetch("/api/vision", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: payload
+        }).then(function(res){
+          if(res.status === 404 || res.status === 405){
+            var e = new Error("Photo AI is temporarily unavailable");
+            e.code = "unavailable";
+            throw e;
+          }
+          return parseAnthropicResponse(res);
+        }, function(){
           var e = new Error("Photo AI is temporarily unavailable");
           e.code = "unavailable";
           throw e;
-        }
-        return parseAnthropicResponse(res);
-      }, function(){
-        var e = new Error("Photo AI is temporarily unavailable");
-        e.code = "unavailable";
-        throw e;
+        });
       });
     });
   }
@@ -3044,13 +3079,21 @@
   });
 
   document.getElementById("pantryBtn").addEventListener("click", function(){
-    syncPantryAvailability();
-    renderPantryPhotoGrid();
-    renderPantryChips();
-    pantryMatchesEl.innerHTML = "";
-    document.getElementById("suggestMealsFromScanHint").textContent = "";
-    document.getElementById("suggestMealsFromStockHint").textContent = "";
-    pantryDialog.showModal();
+    // Refresh when opening What's My Stock so meal suggest / scan see a fresh session
+    // (avoids stale authenticated:false showing Sign in to a logged-in user).
+    refreshSession().then(function(){
+      if(!accessSession.subscribed){
+        openUpgradeGate("What's My Stock");
+        return;
+      }
+      syncPantryAvailability();
+      renderPantryPhotoGrid();
+      renderPantryChips();
+      pantryMatchesEl.innerHTML = "";
+      document.getElementById("suggestMealsFromScanHint").textContent = "";
+      document.getElementById("suggestMealsFromStockHint").textContent = "";
+      pantryDialog.showModal();
+    });
   });
   document.getElementById("closePantry").addEventListener("click", function(){ pantryDialog.close(); });
 
@@ -3993,11 +4036,17 @@
   wireCameraTile(flyerPhotoInput2, document.getElementById("flyerPreview2"), document.getElementById("flyerRetake2"), document.getElementById("flyerTileLabel2"));
 
   document.getElementById("flyerBtn").addEventListener("click", function(){
-    flyerUnavailable.hidden = hasVisionAI() || hasTextAI();
-    flyerScanArea.hidden = false;
-    flyerResults.hidden = true;
-    flyerStatus.textContent = "";
-    flyerDialog.showModal();
+    refreshSession().then(function(){
+      if(!accessSession.subscribed){
+        openUpgradeGate("Flyer photo check (AI)");
+        return;
+      }
+      flyerUnavailable.hidden = hasVisionAI() || hasTextAI();
+      flyerScanArea.hidden = false;
+      flyerResults.hidden = true;
+      flyerStatus.textContent = "";
+      flyerDialog.showModal();
+    });
   });
   document.getElementById("closeFlyer").addEventListener("click", function(){ flyerDialog.close(); });
 

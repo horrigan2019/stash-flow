@@ -108,6 +108,20 @@ export async function POST(request: Request) {
     } satisfies AnthropicErrorBody;
   }
 
+  // Never pass Anthropic auth failures through as HTTP 401 — the client used to map
+  // any 401 to "Sign in", which falsely told logged-in / subscribed users to sign in.
+  if (upstream.status === 401 || upstream.status === 403) {
+    return NextResponse.json(
+      {
+        error: {
+          type: "configuration_error",
+          message: "Photo AI is temporarily unavailable — try again later.",
+        },
+      },
+      { status: 503 }
+    );
+  }
+
   return NextResponse.json(data, { status: upstream.status });
 }
 
