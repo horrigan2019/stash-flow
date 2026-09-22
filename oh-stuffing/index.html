@@ -1200,19 +1200,69 @@
     }
   }
 
+  function openAccountSettings(){
+    var dlg = document.getElementById("settingsDialog");
+    if(dlg && typeof dlg.showModal === "function") dlg.showModal();
+  }
+
+  /**
+   * Account chip / Manage: never show a Sign-in alert when the chip already
+   * shows an email. Mock → Settings; Stripe → Customer Portal; unpaid → Upgrade.
+   */
+  async function openAccountOrManage(){
+    await refreshSession();
+    if(!accessSession.authenticated){
+      openUpgradeGate("Photo & AI");
+      return;
+    }
+    if(!accessSession.subscribed){
+      openUpgradeGate("Photo & AI");
+      return;
+    }
+    if(accessSession.mockPayments){
+      openAccountSettings();
+      return;
+    }
+    await openPortal();
+  }
+
   async function openPortal(){
+    await refreshSession();
+    // Authenticated mock subscribers manage the account in Settings — never Sign in.
+    if(accessSession.authenticated && accessSession.mockPayments){
+      openAccountSettings();
+      return;
+    }
+    if(!accessSession.authenticated){
+      openUpgradeGate("Photo & AI");
+      return;
+    }
+    if(!accessSession.subscribed){
+      openUpgradeGate("Photo & AI");
+      return;
+    }
     try{
       var res = await fetch("/api/stripe/portal", {
         method: "POST",
         credentials: "same-origin"
       });
       var data = await res.json().catch(function(){ return {}; });
-      if(!res.ok) throw new Error(data.error || "Could not open billing.");
+      if(!res.ok){
+        // Never surface "Sign in…" when the account chip already shows an email.
+        if(accessSession.authenticated && (res.status === 401 || /sign in/i.test(String(data.error || "")))){
+          throw new Error("Couldn't open billing right now. Try again, or use Settings → Log out and sign back in.");
+        }
+        throw new Error(data.error || "Could not open billing.");
+      }
       if(data.mock){
-        alert(data.message || "Mock mode — use Clear mock unlock in Settings.");
+        openAccountSettings();
         return;
       }
-      if(data.url) window.location.href = data.url;
+      if(data.url){
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error("Billing portal did not return a link. Try again in a moment.");
     } catch(err){
       alert(err && err.message ? err.message : "Could not open billing portal.");
     }
@@ -1281,10 +1331,11 @@
     if(planYearly) planYearly.addEventListener("click", function(){ startCheckout("yearly"); });
     if(gateLogout) gateLogout.addEventListener("click", doLogout);
     if(manageSubBtn) manageSubBtn.addEventListener("click", function(){
-      if(accessSession.subscribed) openPortal();
-      else openUpgradeGate("Photo & AI");
+      openAccountOrManage();
     });
-    if(settingsManageBtn) settingsManageBtn.addEventListener("click", openPortal);
+    if(settingsManageBtn) settingsManageBtn.addEventListener("click", function(){
+      openAccountOrManage();
+    });
     if(settingsLogoutBtn) settingsLogoutBtn.addEventListener("click", doLogout);
     var continueFreeBtn = document.getElementById("continueFreeBtn");
     var continueFreeFromPricingBtn = document.getElementById("continueFreeFromPricingBtn");

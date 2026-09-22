@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, readSessionToken } from "@/lib/auth";
 import { appBaseUrl, getStripe, stripeConfigured } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -7,7 +7,17 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ error: "Sign in to manage your subscription." }, { status: 401 });
+    // Cookie present but account missing (e.g. memory-store cold start) ≠ "please sign in"
+    // for someone who already sees their email in the UI.
+    const hasCookie = Boolean(await readSessionToken());
+    return NextResponse.json(
+      {
+        error: hasCookie
+          ? "Your account session could not be loaded. Open Settings and try again, or log out and sign back in."
+          : "Sign in to manage your subscription.",
+      },
+      { status: 401 }
+    );
   }
 
   if (!stripeConfigured()) {
@@ -21,7 +31,7 @@ export async function POST(request: Request) {
 
   if (!user.stripeCustomerId) {
     return NextResponse.json(
-      { error: "No Stripe customer on this account yet. Subscribe first." },
+      { error: "No Stripe customer on this account yet. Choose a plan first (Upgrade in Settings)." },
       { status: 400 }
     );
   }
@@ -40,6 +50,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, url: portal.url });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not open billing portal.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json(
+      { error: "Could not open Stripe billing: " + message },
+      { status: 502 }
+    );
   }
 }

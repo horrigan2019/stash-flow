@@ -16,7 +16,10 @@ export async function POST() {
 
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Couldn't verify your account. Try again, or log out and sign back in." },
+      { status: 401 }
+    );
   }
 
   user.subscriptionStatus = "none";

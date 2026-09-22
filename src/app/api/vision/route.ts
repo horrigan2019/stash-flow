@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, readSessionToken } from "@/lib/auth";
 import { isSubscribed } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -19,11 +19,17 @@ type AnthropicErrorBody = {
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
+    const hasCookie = Boolean(await readSessionToken());
     return NextResponse.json(
       {
         error: {
-          type: "auth_required",
-          message: "Sign in to use Photo & AI features.",
+          // Keep type auth_required only when there is truly no session cookie.
+          // Cookie-present failures are treated as unavailable so a logged-in UI
+          // never gets told to "Sign in".
+          type: hasCookie ? "unavailable" : "auth_required",
+          message: hasCookie
+            ? "Your account session could not be loaded. Try again, or log out and sign back in."
+            : "Sign in to use Photo & AI features.",
         },
       },
       { status: 401 }
