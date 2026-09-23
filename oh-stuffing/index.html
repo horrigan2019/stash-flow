@@ -640,6 +640,7 @@
       <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
       <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
       <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
+      <button class="chip-btn" id="dinnerScanBtn" type="button">🥘 Scan Fridge &amp; Pantry for Dinner Ideas</button>
       <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
       <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
       <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
@@ -853,6 +854,19 @@
     </div>
 
     <button class="dialog-close" id="closePantry" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="dinnerScanDialog">
+  <div class="dialog-inner">
+    <h2>Scan Fridge &amp; Pantry for Dinner Ideas</h2>
+    <div id="dinnerUnavailable" class="hint" hidden>You can still take or pick photos below. Photo AI is temporarily unavailable — try again later.</div>
+    <div class="hint" style="margin-bottom:10px;">Add photos of your fridge and pantry, then get dinner ideas in one step — spot what’s there and cook from it.</div>
+    <div class="camera-grid" id="dinnerPhotoGrid"></div>
+    <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead. Photos are kept on this device only (shared with What’s My Stock).</div>
+    <button class="dialog-close" id="runDinnerScanBtn" type="button">🍳 Get dinner ideas</button>
+    <div class="hint" id="dinnerScanStatus" style="margin-top:8px;"></div>
+    <button class="dialog-close" id="closeDinnerScan" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1552,6 +1566,7 @@
     // Pro-gated tools (free list / meal plan / recipes / share stay free).
     var paidFeatureIds = {
       pantryBtn: { label: "What's My Stock", allowFreeScan: true },
+      dinnerScanBtn: { label: "Scan Fridge & Pantry for Dinner Ideas", allowFreeScan: true },
       flyerBtn: { label: "Check A Flyer", allowFreeScan: false },
       storeCompareBtn: { label: "Compare Stores", allowFreeScan: false },
       wasteBtn: { label: "Countdown (leftover & expiry alerts)", allowFreeScan: false }
@@ -2829,8 +2844,13 @@
   }
 
   function renderPantryPhotoGrid(){
-    if(!pantryPhotoGrid) return;
-    pantryPhotoGrid.innerHTML = "";
+    renderStockPhotoGrid(pantryPhotoGrid, "pantry", pantryStatus);
+    renderStockPhotoGrid(document.getElementById("dinnerPhotoGrid"), "dinner", document.getElementById("dinnerScanStatus"));
+  }
+
+  function renderStockPhotoGrid(gridEl, idPrefix, statusEl){
+    if(!gridEl) return;
+    gridEl.innerHTML = "";
     var photos = state.pantryPhotos || [];
     for(var i = 0; i < MAX_PANTRY_PHOTOS; i++){
       (function(slotIndex){
@@ -2855,7 +2875,7 @@
           tile.appendChild(preview);
           tile.appendChild(retake);
         } else {
-          var inputId = "pantryPhotoSlot" + slotIndex;
+          var inputId = idPrefix + "PhotoSlot" + slotIndex;
           var input = document.createElement("input");
           input.type = "file";
           input.accept = "image/*";
@@ -2869,13 +2889,13 @@
             var file = input.files && input.files[0];
             if(!file) return;
             if((state.pantryPhotos || []).length >= MAX_PANTRY_PHOTOS){
-              pantryStatus.textContent = "You already have 6 photos — remove one to add another.";
+              if(statusEl) statusEl.textContent = "You already have 6 photos — remove one to add another.";
               return;
             }
-            pantryStatus.textContent = "Saving photo…";
+            if(statusEl) statusEl.textContent = "Saving photo…";
             compressImageFile(file, 960, 0.72).then(function(dataUrl){
               if(!dataUrl || dataUrl.indexOf("data:image/") !== 0){
-                pantryStatus.textContent = "Couldn't save that photo — try another.";
+                if(statusEl) statusEl.textContent = "Couldn't save that photo — try another.";
                 return;
               }
               state.pantryPhotos.push({
@@ -2883,16 +2903,20 @@
                 dataUrl: dataUrl
               });
               savePantryPhotosState();
-              pantryStatus.textContent = "Photo saved on this phone — add more or tap See what's there.";
+              if(statusEl){
+                statusEl.textContent = idPrefix === "dinner"
+                  ? "Photo saved — add more or tap Get dinner ideas."
+                  : "Photo saved on this phone — add more or tap See what's there.";
+              }
               renderPantryPhotoGrid();
             }).catch(function(){
-              pantryStatus.textContent = "Couldn't save that photo — try another.";
+              if(statusEl) statusEl.textContent = "Couldn't save that photo — try another.";
             });
           });
           tile.appendChild(input);
           tile.appendChild(label);
         }
-        pantryPhotoGrid.appendChild(tile);
+        gridEl.appendChild(tile);
       })(i);
     }
   }
@@ -2914,6 +2938,8 @@
     // Camera UI always stays available; banner only inside Claude when photos aren't allowed
     pantryScanAreaEl.hidden = false;
     pantryUnavailableEl.hidden = hasVisionAI();
+    var dinnerUnavailableEl = document.getElementById("dinnerUnavailable");
+    if(dinnerUnavailableEl) dinnerUnavailableEl.hidden = hasVisionAI();
   }
   syncPantryAvailability();
   renderPantryPhotoGrid();
@@ -3314,10 +3340,72 @@
       pantryMatchesEl.innerHTML = "";
       document.getElementById("suggestMealsFromScanHint").textContent = "";
       document.getElementById("suggestMealsFromStockHint").textContent = "";
+      mealSuggestReturnTo = "pantry";
       pantryDialog.showModal();
     });
   });
   document.getElementById("closePantry").addEventListener("click", function(){ pantryDialog.close(); });
+
+  var dinnerScanDialog = document.getElementById("dinnerScanDialog");
+  var dinnerScanStatus = document.getElementById("dinnerScanStatus");
+  var runDinnerScanBtn = document.getElementById("runDinnerScanBtn");
+
+  document.getElementById("dinnerScanBtn").addEventListener("click", function(){
+    refreshSession().then(function(){
+      if(!accessSession.subscribed){
+        openUpgradeGate("Scan Fridge & Pantry for Dinner Ideas");
+        return;
+      }
+      syncPantryAvailability();
+      renderPantryPhotoGrid();
+      if(dinnerScanStatus) dinnerScanStatus.textContent = "";
+      mealSuggestReturnTo = "dinner";
+      dinnerScanDialog.showModal();
+    });
+  });
+  document.getElementById("closeDinnerScan").addEventListener("click", function(){
+    dinnerScanDialog.close();
+  });
+
+  runDinnerScanBtn.addEventListener("click", function(){
+    if(!hasVisionAI()){
+      dinnerScanStatus.textContent = needApiKeyMessage();
+      return;
+    }
+    var files = getPantryScanFiles();
+    if(!files.length){
+      dinnerScanStatus.textContent = "Add at least one fridge or pantry photo first (up to 6).";
+      return;
+    }
+    dinnerScanStatus.textContent = "Looking at your photo" + (files.length > 1 ? "s" : "") + "…";
+    runDinnerScanBtn.disabled = true;
+    aiJson(
+      "These are photo(s) of someone's home pantry and/or fridge, taken to help plan dinner. " +
+      "Identify every distinguishable food or grocery item you can actually see. " +
+      "Reply with ONLY a JSON array of short, lowercase, everyday grocery item names, like [\"milk\",\"ketchup\",\"apples\"] " +
+      "— no duplicates, no brand names unless that's the clearest way to name it, nothing you can't actually see.",
+      { images: files, modelTier: "quick" }
+    ).then(function(items){
+      renderScanResults(Array.isArray(items) ? items : []);
+      if(!pendingScanItems.length){
+        dinnerScanStatus.textContent = "Didn't spot anything recognizable — try a clearer or closer photo.";
+        return;
+      }
+      syncPendingScanToStock();
+      var have = gatherHaveItems(true);
+      if(!have.length){
+        dinnerScanStatus.textContent = "Couldn't build a stock list from that scan — try again with clearer photos.";
+        return;
+      }
+      dinnerScanStatus.textContent = "Spotted " + have.length + " item" + (have.length === 1 ? "" : "s") + " — cooking up dinner ideas…";
+      mealSuggestReturnTo = "dinner";
+      requestMealIdeas(have, dinnerScanStatus);
+    }).catch(function(e){
+      dinnerScanStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
+    }).finally(function(){
+      runDinnerScanBtn.disabled = false;
+    });
+  });
 
   // ---------- Meal ideas from pantry / fridge stock ----------
   var mealSuggestDialog = document.getElementById("mealSuggestDialog");
@@ -3325,6 +3413,7 @@
   var mealSuggestStatus = document.getElementById("mealSuggestStatus");
   var mealSuggestEmpty = document.getElementById("mealSuggestEmpty");
   var mealSuggestIntro = document.getElementById("mealSuggestIntro");
+  var mealSuggestReturnTo = "pantry";
   var lastMealIdeas = [];
   var lastMealIdeaHave = [];
 
@@ -3524,7 +3613,12 @@
     mealSuggestEmpty.hidden = true;
     mealSuggestList.innerHTML = "";
     mealSuggestIntro.textContent = "Based on: " + haveList.slice(0, 24).join(", ") + (haveList.length > 24 ? "…" : "");
-    pantryDialog.close();
+    var closeMealBtn = document.getElementById("closeMealSuggest");
+    if(closeMealBtn){
+      closeMealBtn.textContent = mealSuggestReturnTo === "dinner" ? "Back to photos" : "Back to stock";
+    }
+    if(pantryDialog && pantryDialog.open) pantryDialog.close();
+    if(dinnerScanDialog && dinnerScanDialog.open) dinnerScanDialog.close();
     mealSuggestDialog.showModal();
 
     var prompt =
@@ -3589,6 +3683,7 @@
       return;
     }
     hint.textContent = "";
+    mealSuggestReturnTo = "pantry";
     requestMealIdeas(have, hint);
   });
 
@@ -3604,13 +3699,22 @@
       return;
     }
     hint.textContent = "";
+    mealSuggestReturnTo = "pantry";
     requestMealIdeas(have, hint);
   });
 
   document.getElementById("closeMealSuggest").addEventListener("click", function(){
     mealSuggestDialog.close();
     renderPantryChips();
-    pantryDialog.showModal();
+    renderPantryPhotoGrid();
+    var closeBtn = document.getElementById("closeMealSuggest");
+    if(mealSuggestReturnTo === "dinner"){
+      if(closeBtn) closeBtn.textContent = "Back to photos";
+      if(dinnerScanDialog) dinnerScanDialog.showModal();
+    } else {
+      if(closeBtn) closeBtn.textContent = "Back to stock";
+      pantryDialog.showModal();
+    }
   });
 
   // ---------- Recipe vault (same AI path as pantry: Claude sample or Anthropic API key) ----------
