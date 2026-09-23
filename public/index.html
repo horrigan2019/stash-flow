@@ -110,9 +110,41 @@
     padding:14px 16px 10px;
     border-bottom:1px solid var(--border);
   }
-  .brand{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .brand{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .brand-bar{ position:relative; z-index:30; }
+  .brand-id{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand-copy{ min-width:0; }
+  .brand-actions{ display:flex; gap:8px; flex:none; }
+  .mascot-header{
+    width:48px; height:48px; border-radius:14px; flex:none;
+    background:#FBF7F0; object-fit:cover;
+  }
   .brand h1{ font-size:1.5rem; color:var(--accent); }
   .brand .tag{ color:var(--muted); font-size:.8rem; }
+  .more-menu{
+    position:absolute; z-index:40; top:calc(100% + 8px); left:0; right:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:0 14px 36px rgba(43,38,32,.18);
+    padding:10px; display:flex; flex-direction:column; gap:6px;
+    max-height:min(68vh, 480px); overflow:auto;
+  }
+  .more-menu[hidden]{ display:none !important; }
+  .more-menu-label{
+    font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); padding:2px 6px 4px;
+  }
+  .more-menu .chip-btn{
+    width:100%; text-align:left; border-radius:12px; padding:12px 14px; font-size:.95rem;
+  }
+  .dinner-cta{
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    width:100%; margin-top:12px; gap:2px;
+    background:var(--accent); color:var(--accent-ink); border:none;
+    border-radius:var(--radius); padding:12px 16px; cursor:pointer; text-align:left;
+    font-family:inherit;
+  }
+  .dinner-cta-title{ font-family:"Fraunces","Georgia",serif; font-weight:600; font-size:1.15rem; }
+  .dinner-cta-sub{ font-size:.8rem; opacity:.92; }
   .gear{
     border:1px solid var(--border); background:var(--surface); color:var(--ink);
     border-radius:999px; width:44px; height:44px; font-size:1.1rem; cursor:pointer; flex:none;
@@ -190,7 +222,11 @@
   .move-btn.repeat-on{ color:var(--accent-2); }
 
   .empty{
-    text-align:center; padding:40px 20px; color:var(--muted);
+    text-align:center; padding:28px 20px 40px; color:var(--muted);
+  }
+  .empty .mascot-empty{
+    width:132px; height:132px; border-radius:32px; margin:0 auto 12px; display:block;
+    background:#FBF7F0; object-fit:cover;
   }
 
   .footer-actions{
@@ -613,16 +649,38 @@
 
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <div>
-        <h1>Oh Stuffing</h1>
-        <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
-        <div class="account-chip" id="accountChip" hidden>
-          <span id="accountChipEmail"></span>
-          <button type="button" id="manageSubBtn">Manage</button>
+    <div class="brand-bar">
+      <div class="brand">
+        <div class="brand-id">
+          <img class="mascot-header" src="/icons/mascot.png" width="48" height="48" alt="">
+          <div class="brand-copy">
+            <h1>Oh Stuffing</h1>
+            <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
+            <div class="account-chip" id="accountChip" hidden>
+              <span id="accountChipEmail"></span>
+              <button type="button" id="manageSubBtn">Manage</button>
+            </div>
+          </div>
+        </div>
+        <div class="brand-actions">
+          <button class="gear" id="moreFeaturesBtn" type="button" aria-label="More features" aria-haspopup="true" aria-expanded="false" aria-controls="moreFeaturesMenu">☰</button>
+          <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
         </div>
       </div>
-      <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
+      <div id="moreFeaturesMenu" class="more-menu" hidden>
+        <div class="more-menu-label">More features</div>
+        <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
+        <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
+        <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
+        <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
+        <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
+        <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
+        <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
+        <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
+        <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
+        <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
+        <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
+      </div>
     </div>
 
     <form class="add" id="addForm">
@@ -634,20 +692,10 @@
     <div class="hint" id="micHint">Tip: tap the mic, say "flour, eggs, and bananas," then tap again to stop. Works in Chrome, Edge, and Safari once Oh Stuffing is live on its own site (blocked in this preview) — not a "hey Oh Stuffing" wake word, just tap-to-talk.</div>
     <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
 
-    <div class="toolbar">
-      <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
-      <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
-      <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
-      <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
-      <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
-      <button class="chip-btn" id="dinnerScanBtn" type="button">🥘 Scan Fridge &amp; Pantry for Dinner Ideas</button>
-      <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
-      <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
-      <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
-      <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
-      <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
-      <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
-    </div>
+    <button class="dinner-cta" id="dinnerScanBtn" type="button">
+      <span class="dinner-cta-title">What's For Dinner</span>
+      <span class="dinner-cta-sub">Scan the fridge &amp; pantry</span>
+    </button>
   </header>
 
   <main id="listArea"></main>
@@ -2053,7 +2101,7 @@
     if(!anyItems){
       var empty = document.createElement("div");
       empty.className = "empty";
-      empty.innerHTML = "Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.";
+      empty.innerHTML = '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
       listArea.appendChild(empty);
       return;
     }
@@ -2595,6 +2643,40 @@
     }
     itemInput.focus();
   });
+
+  // ---------- More features menu ----------
+  // Button ids and tool handlers stay the same; only the home chrome moved.
+  // Menu-close fix: the Pro gate listens on document capture and calls
+  // stopPropagation, so a bubble-phase "click outside" closer never sees
+  // those taps and the menu stays open over the dialog. Close from a later
+  // capture listener, and defer the hide until this click finishes so the
+  // tool button still receives it. Ignore the ☰ toggle so opening does not
+  // immediately close.
+  var moreFeaturesBtn = document.getElementById("moreFeaturesBtn");
+  var moreFeaturesMenu = document.getElementById("moreFeaturesMenu");
+  function setMoreFeaturesOpen(open){
+    if(!moreFeaturesMenu || !moreFeaturesBtn) return;
+    moreFeaturesMenu.hidden = !open;
+    moreFeaturesBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  if(moreFeaturesBtn && moreFeaturesMenu){
+    moreFeaturesBtn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      setMoreFeaturesOpen(moreFeaturesMenu.hidden);
+    });
+    document.addEventListener("click", function(ev){
+      if(moreFeaturesMenu.hidden) return;
+      var t = ev.target;
+      if(t && t.closest && t.closest("#moreFeaturesBtn")) return;
+      setTimeout(function(){ setMoreFeaturesOpen(false); }, 0);
+    }, true);
+    document.addEventListener("keydown", function(ev){
+      if(ev.key === "Escape" && !moreFeaturesMenu.hidden){
+        setMoreFeaturesOpen(false);
+        moreFeaturesBtn.focus();
+      }
+    });
+  }
 
   // ---------- Toolbar ----------
   var reorderToggle = document.getElementById("reorderToggle");
