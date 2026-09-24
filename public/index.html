@@ -539,6 +539,26 @@
   .auth-msg[data-kind="error"]{ color:var(--danger); }
   .auth-msg[data-kind="ok"]{ color:var(--accent); }
   .auth-msg[data-kind="loading"]{ color:var(--muted); }
+  .beta-code-link{
+    display:block; width:100%; margin-top:16px; padding:8px 4px;
+    background:none; border:none; color:var(--muted);
+    font:inherit; font-size:1rem; text-decoration:underline; text-underline-offset:3px;
+    cursor:pointer; text-align:center;
+  }
+  .beta-code-form{ margin-top:8px; text-align:left; }
+  .beta-code-form input{
+    width:100%; box-sizing:border-box; padding:12px; border-radius:10px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    font:inherit; font-size:1.05rem;
+  }
+  .beta-toast{
+    position:fixed; z-index:90; left:50%; bottom:22px; transform:translateX(-50%);
+    width:min(92vw, 420px); padding:14px 18px; border-radius:14px;
+    background:#2C4A34; color:#F7FBF5; text-align:center;
+    font-size:1.02rem; font-weight:650; line-height:1.35;
+    box-shadow:0 12px 28px rgba(43,38,32,.28);
+  }
+  .beta-toast[hidden]{ display:none !important; }
   .account-chip{
     display:inline-flex; align-items:center; gap:6px; margin-top:8px;
     padding:6px 10px; border-radius:999px; border:1.5px solid var(--border);
@@ -651,8 +671,17 @@
       <p id="gateAccountEmail" style="margin-bottom:10px;"></p>
       <button type="button" class="primary" id="gateLogoutBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Log out</button>
     </div>
+
+    <button type="button" class="beta-code-link" id="betaCodeToggle">Have a tester code? Enter it here.</button>
+    <form id="betaCodeForm" class="beta-code-form" hidden>
+      <label for="betaCodeInput">Tester code</label>
+      <input id="betaCodeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter your code">
+      <button class="primary" type="submit" style="margin-top:8px;">Unlock Pro</button>
+      <p class="auth-msg" id="betaCodeMsg" aria-live="polite"></p>
+    </form>
   </div>
 </div>
+<div id="betaToast" class="beta-toast" hidden role="status">Welcome Beta Tester! All Pro features unlocked.</div>
 
 <div class="wrap">
   <header class="top">
@@ -1193,8 +1222,47 @@
   function bumpFreeScan(){
     try{ localStorage.setItem(FREE_SCAN_KEY, String(freeScansUsed() + 1)); } catch(e){}
   }
+  var BETA_STORAGE_KEY = "oh_stuffing_beta_tester";
+  var BETA_QUERY_VALUE = "tester2026";
+  var BETA_CODE = "OHSTUFFINGBETA";
+  var betaToastPending = false;
+
+  function isBetaTester(){
+    try{ return localStorage.getItem(BETA_STORAGE_KEY) === "true"; }
+    catch(e){ return false; }
+  }
+  function markBetaTester(){
+    try{ localStorage.setItem(BETA_STORAGE_KEY, "true"); } catch(e){}
+    accessSession.isPro = true;
+  }
+  function showBetaToast(){
+    var toast = document.getElementById("betaToast");
+    if(!toast) return;
+    toast.hidden = false;
+    setTimeout(function(){ toast.hidden = true; }, 4500);
+  }
+  function consumeBetaLink(){
+    var params;
+    try{ params = new URLSearchParams(window.location.search); }
+    catch(e){ params = null; }
+    var fromLink = !!(params && params.get("beta") === BETA_QUERY_VALUE);
+    if(fromLink){
+      markBetaTester();
+      params.delete("beta");
+      var qs = params.toString();
+      var next = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+      try{ window.history.replaceState({}, "", next); } catch(e){}
+      betaToastPending = true;
+    } else if(isBetaTester()){
+      accessSession.isPro = true;
+    }
+  }
+  function applyBetaToSession(){
+    if(isBetaTester()) accessSession.isPro = true;
+  }
+
   function hasProAccess(){
-    return !!(accessSession.subscribed || accessSession.isPro);
+    return !!(isBetaTester() || accessSession.subscribed || accessSession.isPro);
   }
   function updateTrialCta(){
     var cta = document.getElementById("startTrialCta");
@@ -1252,7 +1320,9 @@
     if(chipEmail) chipEmail.textContent = accessSession.email || "";
     var manageSubBtnEl = document.getElementById("manageSubBtn");
     if(manageSubBtnEl){
-      if(subscribed){
+      if(isBetaTester() && !accessSession.subscribed){
+        manageSubBtnEl.textContent = "Account";
+      } else if(subscribed){
         manageSubBtnEl.textContent = accessSession.mockPayments ? "Account" : "Manage";
       } else {
         manageSubBtnEl.textContent = "Upgrade";
@@ -1265,7 +1335,9 @@
     var logoutBtn = document.getElementById("settingsLogoutBtn");
     var openGate = document.getElementById("settingsOpenGateBtn");
     if(hint){
-      if(subscribed){
+      if(isBetaTester() && !accessSession.subscribed){
+        hint.textContent = "Beta tester · All Pro features unlocked. No payment needed.";
+      } else if(subscribed){
         hint.textContent = (accessSession.email || "Signed in") + " · Pro unlocked · " +
           (accessSession.isInTrial
             ? ("7-day trial · " + (accessSession.trialDaysRemaining || 0) + " day(s) left")
@@ -1277,7 +1349,7 @@
         hint.textContent = "Free list features work without an account. Sign up to try Pro free for 7 days ($1.99/wk or $39.99/yr after).";
       }
     }
-    if(manageBtn) manageBtn.hidden = !(subscribed && !accessSession.mockPayments);
+    if(manageBtn) manageBtn.hidden = !(accessSession.subscribed && !accessSession.mockPayments);
     if(mockCancel) mockCancel.hidden = !(subscribed && accessSession.mockPayments);
     if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
     if(openGate){
@@ -1330,6 +1402,7 @@
       var res = await fetch("/api/auth/session", { credentials: "same-origin" });
       if(!res.ok) throw new Error("Could not check sign-in status.");
       accessSession = await res.json();
+      applyBetaToSession();
       applyAccessUI();
       return accessSession;
     } catch(err){
@@ -1365,6 +1438,12 @@
   }
 
   async function startCheckout(plan){
+    if(isBetaTester()){
+      applyBetaToSession();
+      applyAccessUI();
+      closeUpgradeGate();
+      return;
+    }
     var msg = document.getElementById("checkoutMsg");
     setMsg(msg, "Starting your 7-day free trial…", "loading");
     var buttons = document.querySelectorAll(".plan-btn, #startTrialCta");
@@ -1410,6 +1489,10 @@
    */
   async function openAccountOrManage(){
     await refreshSession();
+    if(isBetaTester() && !accessSession.subscribed){
+      if(accessSession.authenticated) openAccountSettings();
+      return;
+    }
     if(!accessSession.authenticated){
       openUpgradeGate("Photo & AI");
       return;
@@ -1427,6 +1510,10 @@
 
   async function openPortal(){
     await refreshSession();
+    if(isBetaTester() && !accessSession.subscribed){
+      if(accessSession.authenticated) openAccountSettings();
+      return;
+    }
     // Authenticated mock subscribers manage the account in Settings — never Sign in.
     if(accessSession.authenticated && accessSession.mockPayments){
       openAccountSettings();
@@ -1496,6 +1583,10 @@
     var settingsMockCancelBtn = document.getElementById("settingsMockCancelBtn");
     var accessDismissBtn = document.getElementById("accessDismissBtn");
     var restorePurchaseLink = document.getElementById("restorePurchaseLink");
+    var betaCodeToggle = document.getElementById("betaCodeToggle");
+    var betaCodeForm = document.getElementById("betaCodeForm");
+    var betaCodeInput = document.getElementById("betaCodeInput");
+    var betaCodeMsg = document.getElementById("betaCodeMsg");
 
     if(tabSignup) tabSignup.addEventListener("click", function(){ setAuthMode("signup"); });
     if(tabLogin) tabLogin.addEventListener("click", function(){ setAuthMode("login"); });
@@ -1549,6 +1640,26 @@
     if(planWeekly) planWeekly.addEventListener("click", function(){ pickPlan("weekly"); });
     if(planYearly) planYearly.addEventListener("click", function(){ pickPlan("yearly"); });
     if(startTrialCta) startTrialCta.addEventListener("click", function(){ startCheckout(selectedPlan); });
+    if(betaCodeToggle && betaCodeForm){
+      betaCodeToggle.addEventListener("click", function(){
+        betaCodeForm.hidden = !betaCodeForm.hidden;
+        if(!betaCodeForm.hidden && betaCodeInput) betaCodeInput.focus();
+      });
+    }
+    if(betaCodeForm){
+      betaCodeForm.addEventListener("submit", function(e){
+        e.preventDefault();
+        var code = (betaCodeInput && betaCodeInput.value || "").replace(/\s+/g, "").toUpperCase();
+        if(code !== BETA_CODE){
+          setMsg(betaCodeMsg, "That code didn't match. Check it and try again.", "error");
+          return;
+        }
+        markBetaTester();
+        applyAccessUI();
+        closeUpgradeGate();
+        showBetaToast();
+      });
+    }
     if(gateLogout) gateLogout.addEventListener("click", doLogout);
     if(manageSubBtn) manageSubBtn.addEventListener("click", function(){
       openAccountOrManage();
@@ -1607,6 +1718,8 @@
     if(gateEl) gateEl.hidden = true;
     updateTrialCta();
 
+    consumeBetaLink();
+    if(betaToastPending) showBetaToast();
     refreshSession().then(function(session){
       setMsg(document.getElementById("authMsg"), "", null);
       var params = new URLSearchParams(window.location.search);
@@ -3369,7 +3482,7 @@
     // Refresh before the client-side gate so a stale accessSession never shows "Sign in"
     // to someone who is already logged in (or Upgrade when they're already subscribed).
     return refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Photo & AI");
         var denied = new Error(accessSession.authenticated
           ? "Photo & AI needs a subscription"
@@ -3661,7 +3774,7 @@
     // Refresh when opening What's My Stock so meal suggest / scan see a fresh session
     // (avoids stale authenticated:false showing Sign in to a logged-in user).
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("What's My Stock");
         return;
       }
@@ -3683,7 +3796,7 @@
 
   document.getElementById("dinnerScanBtn").addEventListener("click", function(){
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Scan Fridge & Pantry for Dinner Ideas");
         return;
       }
@@ -4694,7 +4807,7 @@
 
   document.getElementById("flyerBtn").addEventListener("click", function(){
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Flyer photo check (AI)");
         return;
       }

@@ -40,6 +40,26 @@ const SubscriptionContext = createContext<SubscriptionContextValue | null>(
   null
 );
 
+export const BETA_STORAGE_KEY = "oh_stuffing_beta_tester";
+export const BETA_QUERY_VALUE = "tester2026";
+export const BETA_CODE = "OHSTUFFINGBETA";
+
+export function readBetaTester(): boolean {
+  try {
+    return localStorage.getItem(BETA_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function writeBetaTester(): void {
+  try {
+    localStorage.setItem(BETA_STORAGE_KEY, "true");
+  } catch {
+    /* private mode */
+  }
+}
+
 const EMPTY: EntitlementSession = {
   authenticated: false,
   email: null,
@@ -57,6 +77,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [featureTrigger, setFeatureTrigger] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [betaTester, setBetaTester] = useState(false);
+  const [betaToast, setBetaToast] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromLink = params.get("beta") === BETA_QUERY_VALUE;
+    if (fromLink) {
+      writeBetaTester();
+      params.delete("beta");
+      const qs = params.toString();
+      const next =
+        window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+      window.history.replaceState({}, "", next);
+      setBetaToast(true);
+    }
+    if (fromLink || readBetaTester()) setBetaTester(true);
+  }, []);
+
+  useEffect(() => {
+    if (!betaToast) return;
+    const timer = window.setTimeout(() => setBetaToast(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, [betaToast]);
 
   const refresh = useCallback(async () => {
     try {
@@ -89,16 +132,32 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const requirePro = useCallback(
     async (trigger?: string) => {
+      if (betaTester || readBetaTester()) return true;
       const next = (await refresh()) || EMPTY;
       if (next.isPro || next.subscribed) return true;
       openPaywall(trigger);
       return false;
     },
-    [openPaywall, refresh]
+    [betaTester, openPaywall, refresh]
   );
+
+  const redeemBetaCode = useCallback((code: string) => {
+    const normalized = code.replace(/\s+/g, "").toUpperCase();
+    if (normalized !== BETA_CODE) return false;
+    writeBetaTester();
+    setBetaTester(true);
+    setBetaToast(true);
+    setPaywallOpen(false);
+    setError(null);
+    return true;
+  }, []);
 
   const startTrial = useCallback(
     async (plan: BillingPlan) => {
+      if (betaTester || readBetaTester()) {
+        setPaywallOpen(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -138,12 +197,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    []
+    [betaTester]
   );
 
   const value = useMemo<SubscriptionContextValue>(
     () => ({
-      isPro: !!(session?.isPro || session?.subscribed),
+      isPro: betaTester || !!(session?.isPro || session?.subscribed),
       isInTrial: !!session?.isInTrial,
       trialDaysRemaining: session?.trialDaysRemaining || 0,
       session,
@@ -152,7 +211,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       closePaywall,
       requirePro,
     }),
-    [session, refresh, openPaywall, closePaywall, requirePro]
+    [betaTester, session, refresh, openPaywall, closePaywall, requirePro]
   );
 
   return (
@@ -166,7 +225,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         loading={loading}
         error={error}
         mockMode={session?.mockPayments !== false}
+        onRedeemBetaCode={redeemBetaCode}
       />
+      {betaToast ? (
+        <div
+          role="status"
+          className="fixed bottom-6 left-1/2 z-[90] w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl bg-[#2C4A34] px-4 py-3.5 text-center text-base font-semibold text-[#F7FBF5] shadow-lg"
+        >
+          Welcome Beta Tester! All Pro features unlocked.
+        </div>
+      ) : null}
     </SubscriptionContext.Provider>
   );
 }

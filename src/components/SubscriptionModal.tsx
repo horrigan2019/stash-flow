@@ -12,6 +12,7 @@ export type SubscriptionModalProps = {
   loading?: boolean;
   error?: string | null;
   mockMode?: boolean;
+  onRedeemBetaCode?: (code: string) => boolean;
 };
 
 const VALUE_BULLETS = [
@@ -29,8 +30,12 @@ export function SubscriptionModal({
   loading = false,
   error = null,
   mockMode = false,
+  onRedeemBetaCode,
 }: SubscriptionModalProps) {
   const [plan, setPlan] = useState<BillingPlan>("yearly");
+  const [showBetaCode, setShowBetaCode] = useState(false);
+  const [betaCode, setBetaCode] = useState("");
+  const [betaError, setBetaError] = useState<string | null>(null);
 
   const ctaLabel = useMemo(() => {
     if (plan === "yearly") {
@@ -184,6 +189,52 @@ export function SubscriptionModal({
             </a>
           </p>
         </div>
+
+        <button
+          type="button"
+          className="mt-4 w-full bg-transparent text-base text-[#5C5346] underline underline-offset-4"
+          onClick={() => {
+            setShowBetaCode((open) => !open);
+            setBetaError(null);
+          }}
+        >
+          Have a tester code? Enter it here.
+        </button>
+        {showBetaCode ? (
+          <form
+            className="mt-3 space-y-2 text-left"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const ok = onRedeemBetaCode?.(betaCode) ?? false;
+              if (!ok) setBetaError("That code didn't match. Check it and try again.");
+            }}
+          >
+            <label htmlFor="betaCodeInput" className="block text-sm text-[#5C5346]">
+              Tester code
+            </label>
+            <input
+              id="betaCodeInput"
+              value={betaCode}
+              onChange={(event) => setBetaCode(event.target.value)}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Enter your code"
+              className="w-full rounded-xl border border-[#D9CFC0] bg-white px-3 py-3 text-base text-[#2C261C]"
+            />
+            {betaError ? (
+              <p className="text-sm text-[#B42318]" role="alert">
+                {betaError}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-[#3F6B4A] px-4 py-3 text-sm font-bold text-[#F7FBF5]"
+            >
+              Unlock Pro
+            </button>
+          </form>
+        ) : null}
       </div>
     </div>
   );
