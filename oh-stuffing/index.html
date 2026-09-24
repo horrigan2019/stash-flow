@@ -1688,8 +1688,8 @@
     dairy: ["milk","eggs","egg","cheese","cheddar","mozzarella","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","string cheese","parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
-    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    canned: ["canned beans","black beans","chickpeas","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice"],
+    canned: ["canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
@@ -1999,6 +1999,26 @@
     var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
     return stripped.replace(/^\d+\s*/,"").trim();
   }
+  function stripTrailingFor(text){
+    return String(text).replace(/\s+for\s+.+$/i,"").trim();
+  }
+  function stripMealNotes(text){
+    var original = String(text).replace(/\s+/g," ").trim();
+    if(!original) return "";
+    var words = original.split(/\s+/);
+    var lower = words.map(function(w){ return w.toLowerCase(); });
+    var keep = [];
+    for(var i=0;i<words.length;i++){
+      if(lower[i] === "for" && keep.length){
+        var j = i + 1;
+        while(j < words.length && longestProductEnd(lower, j) === -1) j++;
+        i = j - 1;
+        continue;
+      }
+      keep.push(words[i]);
+    }
+    return keep.join(" ");
+  }
   function phraseVariants(phrase){
     var parts = phrase.split(/\s+/).filter(Boolean);
     if(!parts.length) return [];
@@ -2021,6 +2041,11 @@
     var text = rawText.trim().toLowerCase();
     if(!text) return null;
     if(state.learned[text]) return state.learned[text];
+    var withoutMeal = stripTrailingFor(text);
+    if(withoutMeal && withoutMeal !== text){
+      if(state.learned[withoutMeal]) return state.learned[withoutMeal];
+      text = withoutMeal;
+    }
     if(lookupKeyword(text)) return lookupKeyword(text);
     // try phrase without leading quantity words / articles
     var stripped = stripQuantity(text);
@@ -2095,7 +2120,9 @@
     var chunks = String(raw).split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
     var out = [];
     chunks.forEach(function(chunk){
-      splitRunOn(chunk).forEach(function(part){ out.push(part); });
+      var cleaned = stripMealNotes(chunk);
+      if(!cleaned) return;
+      splitRunOn(cleaned).forEach(function(part){ out.push(part); });
     });
     return out;
   }
