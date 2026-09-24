@@ -1316,8 +1316,13 @@
 
     var chip = document.getElementById("accountChip");
     var chipEmail = document.getElementById("accountChipEmail");
-    if(chip) chip.hidden = !accessSession.authenticated;
-    if(chipEmail) chipEmail.textContent = accessSession.email || "";
+    var showChip = accessSession.authenticated || isBetaTester();
+    if(chip) chip.hidden = !showChip;
+    if(chipEmail){
+      if(accessSession.authenticated) chipEmail.textContent = accessSession.email || "";
+      else if(isBetaTester()) chipEmail.textContent = "Beta tester";
+      else chipEmail.textContent = "";
+    }
     var manageSubBtnEl = document.getElementById("manageSubBtn");
     if(manageSubBtnEl){
       if(isBetaTester() && !accessSession.subscribed){
@@ -1480,7 +1485,8 @@
 
   function openAccountSettings(){
     var dlg = document.getElementById("settingsDialog");
-    if(dlg && typeof dlg.showModal === "function") dlg.showModal();
+    if(!dlg || typeof dlg.showModal !== "function") return;
+    if(!dlg.open) dlg.showModal();
   }
 
   /**
@@ -1488,9 +1494,12 @@
    * shows an email. Mock → Settings; Stripe → Customer Portal; unpaid → Upgrade.
    */
   async function openAccountOrManage(){
+    if(isBetaTester()){
+      openAccountSettings();
+    }
     await refreshSession();
     if(isBetaTester() && !accessSession.subscribed){
-      if(accessSession.authenticated) openAccountSettings();
+      openAccountSettings();
       return;
     }
     if(!accessSession.authenticated){
@@ -1511,7 +1520,7 @@
   async function openPortal(){
     await refreshSession();
     if(isBetaTester() && !accessSession.subscribed){
-      if(accessSession.authenticated) openAccountSettings();
+      openAccountSettings();
       return;
     }
     // Authenticated mock subscribers manage the account in Settings — never Sign in.
