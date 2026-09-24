@@ -110,9 +110,41 @@
     padding:14px 16px 10px;
     border-bottom:1px solid var(--border);
   }
-  .brand{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .brand{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .brand-bar{ position:relative; z-index:30; }
+  .brand-id{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand-copy{ min-width:0; }
+  .brand-actions{ display:flex; gap:8px; flex:none; }
+  .mascot-header{
+    width:48px; height:48px; border-radius:14px; flex:none;
+    background:#FBF7F0; object-fit:cover;
+  }
   .brand h1{ font-size:1.5rem; color:var(--accent); }
   .brand .tag{ color:var(--muted); font-size:.8rem; }
+  .more-menu{
+    position:absolute; z-index:40; top:calc(100% + 8px); left:0; right:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:0 14px 36px rgba(43,38,32,.18);
+    padding:10px; display:flex; flex-direction:column; gap:6px;
+    max-height:min(68vh, 480px); overflow:auto;
+  }
+  .more-menu[hidden]{ display:none !important; }
+  .more-menu-label{
+    font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); padding:2px 6px 4px;
+  }
+  .more-menu .chip-btn{
+    width:100%; text-align:left; border-radius:12px; padding:12px 14px; font-size:.95rem;
+  }
+  .dinner-cta{
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    width:100%; margin-top:12px; gap:2px;
+    background:var(--accent); color:var(--accent-ink); border:none;
+    border-radius:var(--radius); padding:12px 16px; cursor:pointer; text-align:left;
+    font-family:inherit;
+  }
+  .dinner-cta-title{ font-family:"Fraunces","Georgia",serif; font-weight:600; font-size:1.15rem; }
+  .dinner-cta-sub{ font-size:.8rem; opacity:.92; }
   .gear{
     border:1px solid var(--border); background:var(--surface); color:var(--ink);
     border-radius:999px; width:44px; height:44px; font-size:1.1rem; cursor:pointer; flex:none;
@@ -126,6 +158,13 @@
     flex:1; min-width:0; font-size:1.05rem; padding:14px 14px;
     border-radius:var(--radius); border:1.5px solid var(--border);
     background:var(--surface); color:var(--ink);
+  }
+  #itemInput{
+    border:2.5px solid #8A7F6A;
+    background:#FFFFFF;
+    color:#2B2620;
+    box-shadow:0 1px 4px rgba(43,38,32,.12);
+    min-height:52px;
   }
   .mic-btn, .add-btn{
     flex:none; width:52px; height:52px; border-radius:999px; border:none;
@@ -190,7 +229,11 @@
   .move-btn.repeat-on{ color:var(--accent-2); }
 
   .empty{
-    text-align:center; padding:40px 20px; color:var(--muted);
+    text-align:center; padding:28px 20px 40px; color:var(--muted);
+  }
+  .empty .mascot-empty{
+    width:132px; height:132px; border-radius:32px; margin:0 auto 12px; display:block;
+    background:#FBF7F0; object-fit:cover;
   }
 
   .footer-actions{
@@ -496,6 +539,26 @@
   .auth-msg[data-kind="error"]{ color:var(--danger); }
   .auth-msg[data-kind="ok"]{ color:var(--accent); }
   .auth-msg[data-kind="loading"]{ color:var(--muted); }
+  .beta-code-link{
+    display:block; width:100%; margin-top:16px; padding:8px 4px;
+    background:none; border:none; color:var(--muted);
+    font:inherit; font-size:1rem; text-decoration:underline; text-underline-offset:3px;
+    cursor:pointer; text-align:center;
+  }
+  .beta-code-form{ margin-top:8px; text-align:left; }
+  .beta-code-form input{
+    width:100%; box-sizing:border-box; padding:12px; border-radius:10px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    font:inherit; font-size:1.05rem;
+  }
+  .beta-toast{
+    position:fixed; z-index:90; left:50%; bottom:22px; transform:translateX(-50%);
+    width:min(92vw, 420px); padding:14px 18px; border-radius:14px;
+    background:#2C4A34; color:#F7FBF5; text-align:center;
+    font-size:1.02rem; font-weight:650; line-height:1.35;
+    box-shadow:0 12px 28px rgba(43,38,32,.28);
+  }
+  .beta-toast[hidden]{ display:none !important; }
   .account-chip{
     display:inline-flex; align-items:center; gap:6px; margin-top:8px;
     padding:6px 10px; border-radius:999px; border:1.5px solid var(--border);
@@ -608,22 +671,59 @@
       <p id="gateAccountEmail" style="margin-bottom:10px;"></p>
       <button type="button" class="primary" id="gateLogoutBtn" style="background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Log out</button>
     </div>
+
+    <button type="button" class="beta-code-link" id="betaCodeToggle">Have a tester code? Enter it here.</button>
+    <form id="betaCodeForm" class="beta-code-form" hidden>
+      <label for="betaCodeInput">Tester code</label>
+      <input id="betaCodeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter your code">
+      <button class="primary" type="submit" style="margin-top:8px;">Unlock Pro</button>
+      <p class="auth-msg" id="betaCodeMsg" aria-live="polite"></p>
+    </form>
   </div>
 </div>
+<div id="betaToast" class="beta-toast" hidden role="status">Welcome Beta Tester! All Pro features unlocked.</div>
 
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <div>
-        <h1>Oh Stuffing</h1>
-        <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
-        <div class="account-chip" id="accountChip" hidden>
-          <span id="accountChipEmail"></span>
-          <button type="button" id="manageSubBtn">Manage</button>
+    <div class="brand-bar">
+      <div class="brand">
+        <div class="brand-id">
+          <img class="mascot-header" src="/icons/mascot.png" width="48" height="48" alt="">
+          <div class="brand-copy">
+            <h1>Oh Stuffing</h1>
+            <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
+            <div class="account-chip" id="accountChip" hidden>
+              <span id="accountChipEmail"></span>
+              <button type="button" id="manageSubBtn">Manage</button>
+            </div>
+          </div>
+        </div>
+        <div class="brand-actions">
+          <button class="gear" id="moreFeaturesBtn" type="button" aria-label="More features" aria-haspopup="true" aria-expanded="false" aria-controls="moreFeaturesMenu">☰</button>
+          <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
         </div>
       </div>
-      <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
+      <div id="moreFeaturesMenu" class="more-menu" hidden>
+        <div class="more-menu-label">More features</div>
+        <button class="chip-btn" id="addAisleBtn" type="button">➕ Add aisle</button>
+        <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
+        <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
+        <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
+        <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
+        <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
+        <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
+        <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
+        <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
+        <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
+        <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
+        <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
+      </div>
     </div>
+
+    <button class="dinner-cta" id="dinnerScanBtn" type="button">
+      <span class="dinner-cta-title">What's For Dinner</span>
+      <span class="dinner-cta-sub">Scan the fridge &amp; pantry</span>
+    </button>
 
     <form class="add" id="addForm">
       <label for="itemInput" style="position:absolute;left:-9999px;">Add grocery items</label>
@@ -633,21 +733,6 @@
     </form>
     <div class="hint" id="micHint">Tip: tap the mic, say "flour, eggs, and bananas," then tap again to stop. Works in Chrome, Edge, and Safari once Oh Stuffing is live on its own site (blocked in this preview) — not a "hey Oh Stuffing" wake word, just tap-to-talk.</div>
     <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
-
-    <div class="toolbar">
-      <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
-      <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
-      <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
-      <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
-      <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
-      <button class="chip-btn" id="dinnerScanBtn" type="button">🥘 Scan Fridge &amp; Pantry for Dinner Ideas</button>
-      <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
-      <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
-      <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
-      <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
-      <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
-      <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
-    </div>
   </header>
 
   <main id="listArea"></main>
@@ -740,6 +825,22 @@
       </div>
     </div>
     <button class="dialog-close" id="repeatSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="addAisleDialog">
+  <div class="dialog-inner">
+    <h2>Add an aisle</h2>
+    <div class="field-row">
+      <label for="addAisleName">Name</label>
+      <input type="text" id="addAisleName" maxlength="40" placeholder="e.g. Party, Baby, Outdoor" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+    </div>
+    <div class="field-row">
+      <label for="addAisleEmoji">Emoji (optional)</label>
+      <input type="text" id="addAisleEmoji" maxlength="8" placeholder="🛒" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+    </div>
+    <div class="hint" id="addAisleHint" style="margin-bottom:14px;">It shows on your list once an item is in it. Tap any item to move it to this aisle.</div>
+    <button class="dialog-close" id="addAisleSave" type="button">Add aisle</button>
   </div>
 </dialog>
 
@@ -1121,8 +1222,47 @@
   function bumpFreeScan(){
     try{ localStorage.setItem(FREE_SCAN_KEY, String(freeScansUsed() + 1)); } catch(e){}
   }
+  var BETA_STORAGE_KEY = "oh_stuffing_beta_tester";
+  var BETA_QUERY_VALUE = "tester2026";
+  var BETA_CODE = "OHSTUFFINGBETA";
+  var betaToastPending = false;
+
+  function isBetaTester(){
+    try{ return localStorage.getItem(BETA_STORAGE_KEY) === "true"; }
+    catch(e){ return false; }
+  }
+  function markBetaTester(){
+    try{ localStorage.setItem(BETA_STORAGE_KEY, "true"); } catch(e){}
+    accessSession.isPro = true;
+  }
+  function showBetaToast(){
+    var toast = document.getElementById("betaToast");
+    if(!toast) return;
+    toast.hidden = false;
+    setTimeout(function(){ toast.hidden = true; }, 4500);
+  }
+  function consumeBetaLink(){
+    var params;
+    try{ params = new URLSearchParams(window.location.search); }
+    catch(e){ params = null; }
+    var fromLink = !!(params && params.get("beta") === BETA_QUERY_VALUE);
+    if(fromLink){
+      markBetaTester();
+      params.delete("beta");
+      var qs = params.toString();
+      var next = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+      try{ window.history.replaceState({}, "", next); } catch(e){}
+      betaToastPending = true;
+    } else if(isBetaTester()){
+      accessSession.isPro = true;
+    }
+  }
+  function applyBetaToSession(){
+    if(isBetaTester()) accessSession.isPro = true;
+  }
+
   function hasProAccess(){
-    return !!(accessSession.subscribed || accessSession.isPro);
+    return !!(isBetaTester() || accessSession.subscribed || accessSession.isPro);
   }
   function updateTrialCta(){
     var cta = document.getElementById("startTrialCta");
@@ -1180,7 +1320,9 @@
     if(chipEmail) chipEmail.textContent = accessSession.email || "";
     var manageSubBtnEl = document.getElementById("manageSubBtn");
     if(manageSubBtnEl){
-      if(subscribed){
+      if(isBetaTester() && !accessSession.subscribed){
+        manageSubBtnEl.textContent = "Account";
+      } else if(subscribed){
         manageSubBtnEl.textContent = accessSession.mockPayments ? "Account" : "Manage";
       } else {
         manageSubBtnEl.textContent = "Upgrade";
@@ -1193,7 +1335,9 @@
     var logoutBtn = document.getElementById("settingsLogoutBtn");
     var openGate = document.getElementById("settingsOpenGateBtn");
     if(hint){
-      if(subscribed){
+      if(isBetaTester() && !accessSession.subscribed){
+        hint.textContent = "Beta tester · All Pro features unlocked. No payment needed.";
+      } else if(subscribed){
         hint.textContent = (accessSession.email || "Signed in") + " · Pro unlocked · " +
           (accessSession.isInTrial
             ? ("7-day trial · " + (accessSession.trialDaysRemaining || 0) + " day(s) left")
@@ -1205,7 +1349,7 @@
         hint.textContent = "Free list features work without an account. Sign up to try Pro free for 7 days ($1.99/wk or $39.99/yr after).";
       }
     }
-    if(manageBtn) manageBtn.hidden = !(subscribed && !accessSession.mockPayments);
+    if(manageBtn) manageBtn.hidden = !(accessSession.subscribed && !accessSession.mockPayments);
     if(mockCancel) mockCancel.hidden = !(subscribed && accessSession.mockPayments);
     if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
     if(openGate){
@@ -1258,6 +1402,7 @@
       var res = await fetch("/api/auth/session", { credentials: "same-origin" });
       if(!res.ok) throw new Error("Could not check sign-in status.");
       accessSession = await res.json();
+      applyBetaToSession();
       applyAccessUI();
       return accessSession;
     } catch(err){
@@ -1293,6 +1438,12 @@
   }
 
   async function startCheckout(plan){
+    if(isBetaTester()){
+      applyBetaToSession();
+      applyAccessUI();
+      closeUpgradeGate();
+      return;
+    }
     var msg = document.getElementById("checkoutMsg");
     setMsg(msg, "Starting your 7-day free trial…", "loading");
     var buttons = document.querySelectorAll(".plan-btn, #startTrialCta");
@@ -1338,6 +1489,10 @@
    */
   async function openAccountOrManage(){
     await refreshSession();
+    if(isBetaTester() && !accessSession.subscribed){
+      if(accessSession.authenticated) openAccountSettings();
+      return;
+    }
     if(!accessSession.authenticated){
       openUpgradeGate("Photo & AI");
       return;
@@ -1355,6 +1510,10 @@
 
   async function openPortal(){
     await refreshSession();
+    if(isBetaTester() && !accessSession.subscribed){
+      if(accessSession.authenticated) openAccountSettings();
+      return;
+    }
     // Authenticated mock subscribers manage the account in Settings — never Sign in.
     if(accessSession.authenticated && accessSession.mockPayments){
       openAccountSettings();
@@ -1424,6 +1583,10 @@
     var settingsMockCancelBtn = document.getElementById("settingsMockCancelBtn");
     var accessDismissBtn = document.getElementById("accessDismissBtn");
     var restorePurchaseLink = document.getElementById("restorePurchaseLink");
+    var betaCodeToggle = document.getElementById("betaCodeToggle");
+    var betaCodeForm = document.getElementById("betaCodeForm");
+    var betaCodeInput = document.getElementById("betaCodeInput");
+    var betaCodeMsg = document.getElementById("betaCodeMsg");
 
     if(tabSignup) tabSignup.addEventListener("click", function(){ setAuthMode("signup"); });
     if(tabLogin) tabLogin.addEventListener("click", function(){ setAuthMode("login"); });
@@ -1477,6 +1640,26 @@
     if(planWeekly) planWeekly.addEventListener("click", function(){ pickPlan("weekly"); });
     if(planYearly) planYearly.addEventListener("click", function(){ pickPlan("yearly"); });
     if(startTrialCta) startTrialCta.addEventListener("click", function(){ startCheckout(selectedPlan); });
+    if(betaCodeToggle && betaCodeForm){
+      betaCodeToggle.addEventListener("click", function(){
+        betaCodeForm.hidden = !betaCodeForm.hidden;
+        if(!betaCodeForm.hidden && betaCodeInput) betaCodeInput.focus();
+      });
+    }
+    if(betaCodeForm){
+      betaCodeForm.addEventListener("submit", function(e){
+        e.preventDefault();
+        var code = (betaCodeInput && betaCodeInput.value || "").replace(/\s+/g, "").toUpperCase();
+        if(code !== BETA_CODE){
+          setMsg(betaCodeMsg, "That code didn't match. Check it and try again.", "error");
+          return;
+        }
+        markBetaTester();
+        applyAccessUI();
+        closeUpgradeGate();
+        showBetaToast();
+      });
+    }
     if(gateLogout) gateLogout.addEventListener("click", doLogout);
     if(manageSubBtn) manageSubBtn.addEventListener("click", function(){
       openAccountOrManage();
@@ -1535,6 +1718,8 @@
     if(gateEl) gateEl.hidden = true;
     updateTrialCta();
 
+    consumeBetaLink();
+    if(betaToastPending) showBetaToast();
     refreshSession().then(function(session){
       setMsg(document.getElementById("authMsg"), "", null);
       var params = new URLSearchParams(window.location.search);
@@ -1611,14 +1796,14 @@
     { id:"frozen",    name:"Frozen",                emoji:"🧊" },
     { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
     { id:"baking",    name:"Baking",                emoji:"🧁" },
-    { id:"pantry",    name:"Pantry",                emoji:"🧂" },
-    { id:"canned",    name:"Canned & Soup",         emoji:"🥫" },
+    { id:"pantry",    name:"Pantry Isle",           emoji:"🥫" },
     { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
-    { id:"condiments",name:"Condiments & Sauces",   emoji:"🍯" },
     { id:"snacks",    name:"Snacks",                emoji:"🍪" },
     { id:"beverages", name:"Beverages",             emoji:"🥤" },
     { id:"household", name:"Household & Paper",     emoji:"🧻" },
+    { id:"pets",      name:"Pets",                  emoji:"🐾" },
     { id:"personal",  name:"Personal Care",         emoji:"🧴" },
+    { id:"decorations", name:"Decorations & Gifts", emoji:"🎁" },
     { id:"other",     name:"Unsorted",              emoji:"❓" }
   ];
   var DEPT_BY_ID = {};
@@ -1634,14 +1819,14 @@
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
     baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    pantry: ["chili powder","cumin","ground cumin","paprika","smoked paprika","cinnamon","ground cinnamon","nutmeg","oregano","thyme","rosemary","bay leaves","turmeric","curry powder","garlic powder","onion powder","black pepper","ground pepper","peppercorns","cayenne","cayenne pepper","italian seasoning","taco seasoning","cloves","allspice","coriander","dill","sage","poultry seasoning","seasoned salt","garlic salt","onion salt","crushed red pepper","red pepper flakes","chili flakes","chili pepper","seasoning","spice","spices","salt","kosher salt","sea salt"],
-    canned: ["canned beans","black beans","chickpeas","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
+    pantry: ["canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
-    condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
     beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice"],
-    household: ["paper towels","toilet paper","napkins","aluminum foil","foil","plastic wrap","trash bags","dish soap","laundry detergent","sponges","ziploc bags","food storage bags","paper plates","cleaning spray"],
-    personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"]
+    household: ["paper towels","paper towel","toilet paper","toilet tissues","napkins","aluminum foil","foil","plastic wrap","trash bags","garbage bags","dish soap","dishwasher soap","dishwasher pods","laundry detergent","laundry pods","laundry pod","dryer sheets","fabric softener","sponges","sponge","ziploc bags","food storage bags","paper plates","cleaning spray","swiffer","swiffer duster","swiffer pads","duster","dusters","disinfecting wipes","clorox wipes","all purpose cleaner","glass cleaner","bleach","windex","lysol"],
+    pets: ["cat food","cat litter","kitty litter","kitten litter","dog food","dog treats","dog treat","puppy food","puppy treats","kitten food","cat treats","pet food","pet treats","bird food","bird seed","fish food","dog bones","litter box","catnip","flea treatment"],
+    personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"],
+    decorations: ["balloons","balloon","wrapping paper","gift bag","gift wrap","gift bags","greeting card","birthday card","candle","candles","party plates","streamers","ribbon","gift bow","gift bows","tissue paper","decorations","party decorations","halloween decorations","christmas decorations","ornament","ornaments","string lights","fairy lights","gift card","wrapping","bow"]
   };
   var WORD_TO_DEPT = {};
   Object.keys(KEYWORDS).forEach(function(dept){
@@ -1748,8 +1933,8 @@
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
-    breakfast: 30, baking: 60, pantry: 180, canned: 90, pasta: 90, condiments: 60,
-    snacks: 30, beverages: 30, household: 90, personal: 90, other: 10
+    breakfast: 30, baking: 60, pantry: 90, pasta: 90,
+    snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, decorations: 30, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
     var lead = DEPT_LEAD_DAYS[dept] !== undefined ? DEPT_LEAD_DAYS[dept] : DEPT_LEAD_DAYS.other;
@@ -1904,22 +2089,26 @@
     learnedEvents: {}, // eventName(lowercase) -> [item,...], taught by the user's own edits
     myStores: [],      // {id, name, membership:boolean}
     priceEntries: {},  // itemText(lowercase) -> { storeId: price }
-    prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" }
+    prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" },
+    customDepts: []
   };
-  // migrate: ensure every current department id is present in saved order
-  if(!state.order || !Array.isArray(state.order)) state.order = DEPARTMENTS.map(function(d){ return d.id; });
-  var hadPantryAisle = state.order.indexOf("pantry") !== -1;
-  DEPARTMENTS.forEach(function(d){
-    if(state.order.indexOf(d.id) === -1) state.order.push(d.id);
-  });
-  if(!hadPantryAisle){
-    var pantryOrderIdx = state.order.indexOf("pantry");
-    var bakingOrderIdx = state.order.indexOf("baking");
-    if(pantryOrderIdx !== -1 && bakingOrderIdx !== -1){
-      state.order.splice(pantryOrderIdx, 1);
-      state.order.splice(bakingOrderIdx + 1, 0, "pantry");
-    }
+  // migrate: drop retired aisles, keep every current department, Unsorted stays last
+  var RETIRED_DEPT = { canned: "pantry", condiments: "pantry" };
+  function remapRetiredDept(dept){
+    return RETIRED_DEPT[dept] || dept;
   }
+  if(!state.order || !Array.isArray(state.order)) state.order = DEPARTMENTS.map(function(d){ return d.id; });
+  state.order = state.order.filter(function(id){ return !RETIRED_DEPT[id]; });
+  DEPARTMENTS.forEach(function(d){
+    if(state.order.indexOf(d.id) !== -1) return;
+    if(d.id === "pantry"){
+      var bakeIdx = state.order.indexOf("baking");
+      if(bakeIdx !== -1){ state.order.splice(bakeIdx + 1, 0, d.id); return; }
+    }
+    var otherIdx = state.order.indexOf("other");
+    if(otherIdx === -1) state.order.push(d.id);
+    else state.order.splice(otherIdx, 0, d.id);
+  });
   if(!state.learned) state.learned = {};
   if(!state.items) state.items = [];
   if(!state.prefs) state.prefs = { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" };
@@ -1940,7 +2129,67 @@
   if(!state.learnedEvents) state.learnedEvents = {};
   if(!state.myStores) state.myStores = [];
   if(!state.priceEntries) state.priceEntries = {};
+  if(!Array.isArray(state.customDepts)) state.customDepts = [];
   state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
+
+  function keywordIsPantry(text){
+    var key = String(text || "").trim().toLowerCase();
+    if(!key) return false;
+    if(lookupKeyword(key) === "pantry") return true;
+    var stripped = stripQuantity(stripTrailingFor(key));
+    return !!(stripped && lookupKeyword(stripped) === "pantry");
+  }
+  function remigrateAisles(){
+    var changed = false;
+    var splitBaking = state.pantrySplit !== 1;
+    function take(dept, text){
+      var next = remapRetiredDept(dept);
+      if(splitBaking && next === "baking" && keywordIsPantry(text)) next = "pantry";
+      if(next !== dept) changed = true;
+      return next;
+    }
+    state.items.forEach(function(it){
+      if(!it) return;
+      it.dept = take(it.dept, it.text);
+    });
+    Object.keys(state.learned).forEach(function(key){
+      var next = take(state.learned[key], key);
+      if(next !== state.learned[key]) state.learned[key] = next;
+    });
+    Object.keys(state.regulars || {}).forEach(function(key){
+      var reg = state.regulars[key];
+      if(!reg) return;
+      reg.dept = take(reg.dept, reg.text || key);
+    });
+    (state.events || []).forEach(function(ev){
+      if(!ev || !Array.isArray(ev.items)) return;
+      ev.items.forEach(function(it){
+        if(!it) return;
+        var next = take(it.dept, it.text);
+        if(next !== it.dept && ev.date){
+          it.dept = next;
+          it.earliestBuyDate = earliestBuyDate(next, ev.date);
+        } else {
+          it.dept = next;
+        }
+      });
+    });
+    if(splitBaking){
+      state.pantrySplit = 1;
+      changed = true;
+    }
+    if(changed) saveState();
+  }
+  function rebuildDeptIndex(){
+    DEPT_BY_ID = {};
+    DEPARTMENTS.forEach(function(d){ DEPT_BY_ID[d.id] = d; });
+    state.customDepts.forEach(function(d){
+      if(!d || !d.id || !d.name) return;
+      DEPT_BY_ID[d.id] = { id: d.id, name: String(d.name).slice(0, 40), emoji: d.emoji || "🛒", custom: true };
+    });
+  }
+  remigrateAisles();
+  rebuildDeptIndex();
 
   // ---------- Categorizer ----------
   function singularize(w){
@@ -1949,50 +2198,136 @@
     if(w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0,-1);
     return w;
   }
+  function stripQuantity(text){
+    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
+    return stripped.replace(/^\d+\s*/,"").trim();
+  }
+  function stripTrailingFor(text){
+    return String(text).replace(/\s+for\s+.+$/i,"").trim();
+  }
+  function stripMealNotes(text){
+    var original = String(text).replace(/\s+/g," ").trim();
+    if(!original) return "";
+    var words = original.split(/\s+/);
+    var lower = words.map(function(w){ return w.toLowerCase(); });
+    var keep = [];
+    for(var i=0;i<words.length;i++){
+      if(lower[i] === "for" && keep.length){
+        var j = i + 1;
+        while(j < words.length && longestProductEnd(lower, j) === -1) j++;
+        i = j - 1;
+        continue;
+      }
+      keep.push(words[i]);
+    }
+    return keep.join(" ");
+  }
+  function phraseVariants(phrase){
+    var parts = phrase.split(/\s+/).filter(Boolean);
+    if(!parts.length) return [];
+    var out = [parts.join(" ")];
+    var last = singularize(parts[parts.length - 1]);
+    if(last !== parts[parts.length - 1]){
+      parts[parts.length - 1] = last;
+      out.push(parts.join(" "));
+    }
+    return out;
+  }
+  function lookupKeyword(phrase){
+    var variants = phraseVariants(phrase);
+    for(var i=0;i<variants.length;i++){
+      if(WORD_TO_DEPT[variants[i]]) return WORD_TO_DEPT[variants[i]];
+    }
+    return null;
+  }
   function classify(rawText){
     var text = rawText.trim().toLowerCase();
     if(!text) return null;
     if(state.learned[text]) return state.learned[text];
-    if(WORD_TO_DEPT[text]) return WORD_TO_DEPT[text];
+    var withoutMeal = stripTrailingFor(text);
+    if(withoutMeal && withoutMeal !== text){
+      if(state.learned[withoutMeal]) return state.learned[withoutMeal];
+      text = withoutMeal;
+    }
+    if(lookupKeyword(text)) return lookupKeyword(text);
     // try phrase without leading quantity words / articles
-    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
-    stripped = stripped.replace(/^\d+\s*/,"").trim();
+    var stripped = stripQuantity(text);
     if(stripped && stripped !== text){
       if(state.learned[stripped]) return state.learned[stripped];
-      if(WORD_TO_DEPT[stripped]) return WORD_TO_DEPT[stripped];
+      if(lookupKeyword(stripped)) return lookupKeyword(stripped);
     }
-    // Prefer a two-word match (chili powder, baking powder) before a single word.
-    var words = stripped.split(/\s+/).filter(Boolean);
-    for(var j=0;j<words.length-1;j++){
-      var bigram = words[j]+" "+words[j+1];
-      if(WORD_TO_DEPT[bigram]) return WORD_TO_DEPT[bigram];
-    }
-    for(var i=0;i<words.length;i++){
-      var w = singularize(words[i]);
-      if(WORD_TO_DEPT[w]) return WORD_TO_DEPT[w];
+    // Prefer longer phrases over single words so "dish soap" stays Household, not Personal Care.
+    var words = (stripped || text).split(/\s+/).filter(Boolean);
+    var maxN = Math.min(words.length, 5);
+    for(var n=maxN; n>=1; n--){
+      for(var i=0; i<=words.length-n; i++){
+        var dept = lookupKeyword(words.slice(i, i+n).join(" "));
+        if(dept) return dept;
+      }
     }
     return "other";
   }
-  // Spices used to land in Baking. Move them to Pantry unless the shopper picked an aisle by hand.
-  (function moveSpicesToPantry(){
-    var changed = false;
-    function maybeMove(entry){
-      if(!entry || !entry.text) return;
-      var key = String(entry.text).trim().toLowerCase();
-      if(state.learned[key]) return;
-      if(entry.dept !== "baking" && entry.dept !== "other") return;
-      if(classify(entry.text) === "pantry"){
-        entry.dept = "pantry";
-        changed = true;
-      }
-    }
-    state.items.forEach(maybeMove);
-    Object.keys(state.regulars || {}).forEach(function(key){ maybeMove(state.regulars[key]); });
-    if(changed) saveState();
-  })();
 
+  function longestProductEnd(words, start){
+    var maxEnd = Math.min(words.length, start + 5);
+    for(var end=maxEnd; end>start; end--){
+      if(lookupKeyword(words.slice(start, end).join(" "))) return end;
+    }
+    return -1;
+  }
+  function splitRunOn(chunk){
+    var original = chunk.replace(/\s+/g," ").trim();
+    if(!original) return [];
+    var words = original.toLowerCase().split(/\s+/);
+    var originals = original.split(/\s+/);
+    if(words.length < 2) return [original];
+    var spans = [];
+    var i = 0;
+    while(i < words.length){
+      var end = longestProductEnd(words, i);
+      if(end === -1){
+        var found = -1;
+        for(var j=i+1; j<words.length; j++){
+          if(longestProductEnd(words, j) !== -1){ found = j; break; }
+        }
+        if(found === -1){
+          spans.push([i, words.length, false]);
+          break;
+        }
+        spans.push([i, found, false]);
+        i = found;
+        continue;
+      }
+      spans.push([i, end, true]);
+      i = end;
+    }
+    var parts = [];
+    var pending = "";
+    spans.forEach(function(span){
+      var text = originals.slice(span[0], span[1]).join(" ");
+      if(!span[2]){
+        pending = pending ? pending + " " + text : text;
+        return;
+      }
+      parts.push(pending ? pending + " " + text : text);
+      pending = "";
+    });
+    if(pending){
+      if(parts.length) parts[parts.length-1] += " " + pending;
+      else parts.push(pending);
+    }
+    return parts.filter(Boolean);
+  }
   function splitEntry(raw){
-    return raw.split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+    if(!raw) return [];
+    var chunks = String(raw).split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+    var out = [];
+    chunks.forEach(function(chunk){
+      var cleaned = stripMealNotes(chunk);
+      if(!cleaned) return;
+      splitRunOn(cleaned).forEach(function(part){ out.push(part); });
+    });
+    return out;
   }
 
   // ---------- Recurring items ----------
@@ -2073,6 +2408,12 @@
   // ---------- Rendering ----------
   var listArea = document.getElementById("listArea");
 
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c];
+    });
+  }
+
   function render(){
     listArea.innerHTML = "";
     var reordering = document.getElementById("reorderToggle").getAttribute("aria-pressed") === "true";
@@ -2081,7 +2422,7 @@
     if(!anyItems){
       var empty = document.createElement("div");
       empty.className = "empty";
-      empty.innerHTML = "Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.";
+      empty.innerHTML = '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
       listArea.appendChild(empty);
       return;
     }
@@ -2098,8 +2439,8 @@
       var head = document.createElement("div");
       head.className = "dept-head";
       head.innerHTML =
-        '<span class="dept-emoji" aria-hidden="true">'+dept.emoji+'</span>' +
-        '<span class="dept-name">'+dept.name+'</span>' +
+        '<span class="dept-emoji" aria-hidden="true">'+escapeHtml(dept.emoji)+'</span>' +
+        '<span class="dept-name">'+escapeHtml(dept.name)+'</span>' +
         '<span class="dept-count">'+itemsInDept.length+'</span>';
 
       var moveWrap = document.createElement("div");
@@ -2198,12 +2539,18 @@
   var assignTitle = document.getElementById("assignTitle");
   var currentAssignItem = null;
 
-  DEPARTMENTS.forEach(function(d){
-    var opt = document.createElement("option");
-    opt.value = d.id;
-    opt.textContent = d.emoji + " " + d.name;
-    assignSelect.appendChild(opt);
-  });
+  function refreshAssignOptions(){
+    assignSelect.innerHTML = "";
+    state.order.forEach(function(id){
+      var d = DEPT_BY_ID[id];
+      if(!d) return;
+      var opt = document.createElement("option");
+      opt.value = d.id;
+      opt.textContent = d.emoji + " " + d.name;
+      assignSelect.appendChild(opt);
+    });
+  }
+  refreshAssignOptions();
 
   function openAssign(item){
     currentAssignItem = item;
@@ -2623,6 +2970,75 @@
     }
     itemInput.focus();
   });
+
+  // ---------- More features menu ----------
+  // Button ids and tool handlers stay the same; only the home chrome moved.
+  // Menu-close fix: the Pro gate listens on document capture and calls
+  // stopPropagation, so a bubble-phase "click outside" closer never sees
+  // those taps and the menu stays open over the dialog. Close from a later
+  // capture listener, and defer the hide until this click finishes so the
+  // tool button still receives it. Ignore the ☰ toggle so opening does not
+  // immediately close.
+  var moreFeaturesBtn = document.getElementById("moreFeaturesBtn");
+  var moreFeaturesMenu = document.getElementById("moreFeaturesMenu");
+  function setMoreFeaturesOpen(open){
+    if(!moreFeaturesMenu || !moreFeaturesBtn) return;
+    moreFeaturesMenu.hidden = !open;
+    moreFeaturesBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  if(moreFeaturesBtn && moreFeaturesMenu){
+    moreFeaturesBtn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      setMoreFeaturesOpen(moreFeaturesMenu.hidden);
+    });
+    document.addEventListener("click", function(ev){
+      if(moreFeaturesMenu.hidden) return;
+      var t = ev.target;
+      if(t && t.closest && t.closest("#moreFeaturesBtn")) return;
+      setTimeout(function(){ setMoreFeaturesOpen(false); }, 0);
+    }, true);
+    document.addEventListener("keydown", function(ev){
+      if(ev.key === "Escape" && !moreFeaturesMenu.hidden){
+        setMoreFeaturesOpen(false);
+        moreFeaturesBtn.focus();
+      }
+    });
+  }
+
+  var addAisleBtn = document.getElementById("addAisleBtn");
+  var addAisleDialog = document.getElementById("addAisleDialog");
+  var addAisleName = document.getElementById("addAisleName");
+  var addAisleEmoji = document.getElementById("addAisleEmoji");
+  var addAisleHint = document.getElementById("addAisleHint");
+  if(addAisleBtn && addAisleDialog){
+    addAisleBtn.addEventListener("click", function(){
+      if(addAisleHint) addAisleHint.textContent = "It shows on your list once an item is in it. Tap any item to move it to this aisle.";
+      if(addAisleName) addAisleName.value = "";
+      if(addAisleEmoji) addAisleEmoji.value = "";
+      setMoreFeaturesOpen(false);
+      addAisleDialog.showModal();
+      if(addAisleName) addAisleName.focus();
+    });
+    document.getElementById("addAisleSave").addEventListener("click", function(){
+      var name = (addAisleName.value || "").replace(/\s+/g, " ").trim().slice(0, 40);
+      if(!name){
+        if(addAisleHint) addAisleHint.textContent = "Give the aisle a name first.";
+        addAisleName.focus();
+        return;
+      }
+      var emoji = (addAisleEmoji.value || "").trim().slice(0, 8) || "🛒";
+      var id = "aisle" + Date.now().toString(36);
+      state.customDepts.push({ id: id, name: name, emoji: emoji });
+      var otherIdx = state.order.indexOf("other");
+      if(otherIdx === -1) state.order.push(id);
+      else state.order.splice(otherIdx, 0, id);
+      rebuildDeptIndex();
+      refreshAssignOptions();
+      saveState();
+      addAisleDialog.close();
+      render();
+    });
+  }
 
   // ---------- Toolbar ----------
   var reorderToggle = document.getElementById("reorderToggle");
@@ -3066,7 +3482,7 @@
     // Refresh before the client-side gate so a stale accessSession never shows "Sign in"
     // to someone who is already logged in (or Upgrade when they're already subscribed).
     return refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Photo & AI");
         var denied = new Error(accessSession.authenticated
           ? "Photo & AI needs a subscription"
@@ -3358,7 +3774,7 @@
     // Refresh when opening What's My Stock so meal suggest / scan see a fresh session
     // (avoids stale authenticated:false showing Sign in to a logged-in user).
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("What's My Stock");
         return;
       }
@@ -3380,7 +3796,7 @@
 
   document.getElementById("dinnerScanBtn").addEventListener("click", function(){
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Scan Fridge & Pantry for Dinner Ideas");
         return;
       }
@@ -4391,7 +4807,7 @@
 
   document.getElementById("flyerBtn").addEventListener("click", function(){
     refreshSession().then(function(){
-      if(!accessSession.subscribed){
+      if(!hasProAccess()){
         openUpgradeGate("Flyer photo check (AI)");
         return;
       }
@@ -4471,6 +4887,47 @@
     });
   });
 
+  // Move saved Unsorted rows onto the aisle the dictionary now knows,
+  // and move spices that were filed under Baking into Pantry Isle
+  // (kidney beans and chili powder → Pantry Isle).
+  // classify() keeps a hand-picked aisle stored in state.learned.
+  function reclassifyUnsorted(){
+    var changed = false;
+    function nextDept(text, dept){
+      var next = classify(String(text || ""));
+      if(!next) return dept;
+      if(dept === "other" && next !== "other") return next;
+      if(dept === "baking" && next === "pantry") return next;
+      return dept;
+    }
+    state.items.forEach(function(it){
+      var next = nextDept(it.text, it.dept);
+      if(next === it.dept) return;
+      it.dept = next;
+      changed = true;
+    });
+    Object.keys(state.regulars).forEach(function(key){
+      var reg = state.regulars[key];
+      if(!reg) return;
+      var next = nextDept(reg.text || key, reg.dept);
+      if(next === reg.dept) return;
+      reg.dept = next;
+      changed = true;
+    });
+    state.events.forEach(function(ev){
+      if(!ev || !Array.isArray(ev.items)) return;
+      ev.items.forEach(function(it){
+        var next = nextDept(it.text, it.dept);
+        if(next === it.dept) return;
+        it.dept = next;
+        if(ev.date) it.earliestBuyDate = earliestBuyDate(next, ev.date);
+        changed = true;
+      });
+    });
+    if(changed) saveState();
+  }
+
+  reclassifyUnsorted();
   addRegularsThatAreDue();
   render();
 
