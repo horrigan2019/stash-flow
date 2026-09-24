@@ -695,6 +695,7 @@
             <div class="account-chip" id="accountChip" hidden>
               <span id="accountChipEmail"></span>
               <button type="button" id="manageSubBtn">Manage</button>
+              <button type="button" id="accountAuthBtn" hidden>Log in</button>
             </div>
           </div>
         </div>
@@ -788,7 +789,7 @@
         <button class="chip-btn" id="settingsManageBtn" type="button" hidden>Manage subscription</button>
         <button class="chip-btn" id="settingsMockCancelBtn" type="button" hidden>Clear mock Pro unlock</button>
         <button class="chip-btn" id="settingsLogoutBtn" type="button" hidden>Log out</button>
-        <button class="chip-btn" id="settingsOpenGateBtn" type="button">Upgrade to Pro</button>
+        <button class="chip-btn" id="settingsOpenGateBtn" type="button">Log in</button>
       </div>
     </div>
     <div class="field-row" id="installAppRow">
@@ -1130,7 +1131,7 @@
     <h2>Check A Flyer</h2>
     <div id="flyerUnavailable" class="hint" hidden>You can still take photos or paste ad text below. Flyer matching is temporarily unavailable — try again later.</div>
     <div id="flyerScanArea">
-      <div class="hint" style="margin-bottom:10px;">Snap a photo of a real weekly ad or flyer — from the store's app, website, email, or the paper one — and we'll check it against what's still on your list.</div>
+      <div class="hint" style="margin-bottom:10px;">Snap a photo, paste the ad text, or paste a link to that store's weekly ad. We'll check it against what's still on your list.</div>
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Which store is this?</label>
         <input type="text" id="flyerStoreName" placeholder="e.g. Kroger" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;margin-bottom:12px;">
@@ -1154,6 +1155,10 @@
           <img class="camera-tile-preview" id="flyerPreview2" hidden alt="Second flyer photo preview">
           <button type="button" class="camera-retake" id="flyerRetake2" hidden aria-label="Retake second flyer photo">✕</button>
         </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label for="flyerAdLink" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Or paste a link to the store's ad</label>
+        <input type="url" id="flyerAdLink" inputmode="url" autocomplete="off" placeholder="https://…" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
       </div>
       <div style="margin-top:12px;">
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Or paste text copied from an online ad — no photo needed</label>
@@ -1324,6 +1329,7 @@
       else chipEmail.textContent = "";
     }
     var manageSubBtnEl = document.getElementById("manageSubBtn");
+    var accountAuthBtnEl = document.getElementById("accountAuthBtn");
     if(manageSubBtnEl){
       if(isBetaTester() && !accessSession.subscribed){
         manageSubBtnEl.textContent = "Account";
@@ -1333,6 +1339,11 @@
         manageSubBtnEl.textContent = "Upgrade";
       }
     }
+    if(accountAuthBtnEl){
+      var betaOnly = isBetaTester() && !accessSession.subscribed;
+      accountAuthBtnEl.hidden = !betaOnly;
+      accountAuthBtnEl.textContent = accessSession.authenticated ? "Log out" : "Log in";
+    }
 
     var hint = document.getElementById("accountSettingsHint");
     var manageBtn = document.getElementById("settingsManageBtn");
@@ -1341,7 +1352,9 @@
     var openGate = document.getElementById("settingsOpenGateBtn");
     if(hint){
       if(isBetaTester() && !accessSession.subscribed){
-        hint.textContent = "Beta tester · All Pro features unlocked. No payment needed.";
+        hint.textContent = accessSession.authenticated
+          ? ((accessSession.email || "Signed in") + " · Beta tester · All Pro features unlocked. No payment needed.")
+          : "Beta tester · All Pro features unlocked. No payment needed. Log in when you want to check an account.";
       } else if(subscribed){
         hint.textContent = (accessSession.email || "Signed in") + " · Pro unlocked · " +
           (accessSession.isInTrial
@@ -1358,8 +1371,13 @@
     if(mockCancel) mockCancel.hidden = !(subscribed && accessSession.mockPayments);
     if(logoutBtn) logoutBtn.hidden = !accessSession.authenticated;
     if(openGate){
-      openGate.hidden = subscribed;
-      openGate.textContent = accessSession.authenticated ? "Upgrade to Pro" : "Sign up / Start free trial";
+      if(isBetaTester() && !accessSession.subscribed){
+        openGate.hidden = !!accessSession.authenticated;
+        openGate.textContent = "Log in";
+      } else {
+        openGate.hidden = subscribed;
+        openGate.textContent = accessSession.authenticated ? "Upgrade to Pro" : "Sign up / Start free trial";
+      }
     }
     updateTrialCta();
   }
@@ -1370,6 +1388,17 @@
     document.body.classList.remove("gated");
     setMsg(document.getElementById("authMsg"), "", null);
     setMsg(document.getElementById("checkoutMsg"), "", null);
+  }
+
+  function openLoginGate(){
+    var gate = document.getElementById("accessGate");
+    if(gate) gate.hidden = false;
+    document.body.classList.remove("gated");
+    applyAccessUI();
+    setAuthMode("login");
+    setMsg(document.getElementById("checkoutMsg"), "", null);
+    setMsg(document.getElementById("authMsg"),
+      "Log in to check this account. Your tester unlock stays on this phone.", null);
   }
 
   function openUpgradeGate(actionLabel){
@@ -1572,8 +1601,11 @@
       isInTrial: false, trialDaysRemaining: 0, plan: null,
       mockPayments: accessSession.mockPayments, storeBackend: accessSession.storeBackend
     };
+    applyBetaToSession();
     applyAccessUI();
-    setMsg(document.getElementById("authMsg"), "Logged out.", "ok");
+    setMsg(document.getElementById("authMsg"),
+      isBetaTester() ? "Logged out. Tester unlock is still on this phone." : "Logged out.",
+      "ok");
   }
 
   // Wire auth UI once DOM pieces exist
@@ -1704,7 +1736,15 @@
       settingsOpenGateBtn.addEventListener("click", function(){
         var dlg = document.getElementById("settingsDialog");
         if(dlg && dlg.open) dlg.close();
-        openUpgradeGate("Pro tools");
+        if(isBetaTester() && !accessSession.subscribed) openLoginGate();
+        else openUpgradeGate("Pro tools");
+      });
+    }
+    var accountAuthBtn = document.getElementById("accountAuthBtn");
+    if(accountAuthBtn){
+      accountAuthBtn.addEventListener("click", function(){
+        if(accessSession.authenticated) doLogout();
+        else openLoginGate();
       });
     }
     if(settingsMockCancelBtn){
@@ -4810,6 +4850,7 @@
   var flyerPhotoInput1 = document.getElementById("flyerPhotoInput1");
   var flyerPhotoInput2 = document.getElementById("flyerPhotoInput2");
   var flyerPastedText = document.getElementById("flyerPastedText");
+  var flyerAdLink = document.getElementById("flyerAdLink");
   var checkFlyerBtn = document.getElementById("checkFlyerBtn");
   var flyerStatus = document.getElementById("flyerStatus");
   var flyerResults = document.getElementById("flyerResults");
@@ -4833,69 +4874,147 @@
   });
   document.getElementById("closeFlyer").addEventListener("click", function(){ flyerDialog.close(); });
 
+  function priceFromSaleText(saleText){
+    var match = String(saleText || "").match(/\$\s*(\d+(?:\.\d{1,2})?)/);
+    if(!match) return null;
+    var price = parseFloat(match[1]);
+    return isNaN(price) ? null : price;
+  }
+
+  function storeForFlyerName(name){
+    var clean = String(name || "").trim();
+    if(!clean || clean.toLowerCase() === "this store") return null;
+    var found = (state.myStores || []).find(function(store){
+      return store.name.trim().toLowerCase() === clean.toLowerCase();
+    });
+    if(found) return found;
+    var created = {
+      id: "st"+Date.now()+Math.random().toString(16).slice(2),
+      name: clean,
+      membership: false
+    };
+    state.myStores.push(created);
+    return created;
+  }
+
+  function rememberFlyerPrice(itemText, storeName, saleText){
+    var price = priceFromSaleText(saleText);
+    if(price == null) return false;
+    var store = storeForFlyerName(storeName);
+    if(!store) return false;
+    var key = String(itemText || "").trim().toLowerCase();
+    if(!key) return false;
+    if(!state.priceEntries[key]) state.priceEntries[key] = {};
+    state.priceEntries[key][store.id] = price;
+    return true;
+  }
+
+  function fetchAdLinkText(url){
+    var headers = { "content-type": "application/json" };
+    if(isBetaTester()) headers["x-beta-code"] = BETA_CODE;
+    return fetch("/api/ad-link", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: headers,
+      body: JSON.stringify({ url: url })
+    }).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(data){
+        if(!res.ok){
+          var err = new Error(data.error || "Couldn't open that ad link.");
+          err.code = "ad_link";
+          throw err;
+        }
+        return String(data.text || "");
+      });
+    });
+  }
+
   checkFlyerBtn.addEventListener("click", function(){
     var files = [];
     if(flyerPhotoInput1.files[0]) files.push(flyerPhotoInput1.files[0]);
     if(flyerPhotoInput2.files[0]) files.push(flyerPhotoInput2.files[0]);
     var pastedText = flyerPastedText.value.trim();
+    var adLink = flyerAdLink ? flyerAdLink.value.trim() : "";
     if(files.length && !hasVisionAI()){ flyerStatus.textContent = needApiKeyMessage(); return; }
-    if(!files.length && !hasTextAI()){ flyerStatus.textContent = needApiKeyMessage(); return; }
+    if((!files.length) && (pastedText || adLink) && !hasTextAI()){ flyerStatus.textContent = needApiKeyMessage(); return; }
 
     var unchecked = state.items.filter(function(it){ return !it.done; });
     if(!unchecked.length){ flyerStatus.textContent = "Your list is empty — add items first."; return; }
-    if(!files.length && !pastedText){ flyerStatus.textContent = "Add a photo or paste some ad text first."; return; }
+    if(!files.length && !pastedText && !adLink){ flyerStatus.textContent = "Add a photo, paste the ad text, or paste a link to the store's ad."; return; }
 
     var storeName = flyerStoreName.value.trim() || "this store";
-    var listText = unchecked.map(function(it){ return it.text; }).join(", ");
-    var prompt = "Here is my current shopping list: " + listText + ".\n\n" +
-      (files.length ? "The attached photo(s) show a real weekly ad/flyer for " + storeName + "." : "") +
-      (pastedText ? (files.length ? " Also, here" : "Here") + " is text pasted from " + storeName + "'s online ad:\n\n" + pastedText : "") +
-      "\n\nCheck ONLY for items from my list above that are actually on sale according to this material. " +
-      "Reply with ONLY a JSON array of objects shaped like {\"item\": string, \"saleText\": string}, where \"item\" is copied EXACTLY as it appears in my list, " +
-      "and \"saleText\" is a short price/deal description (e.g. \"$2.99/dozen\"). Skip anything from my list that isn't mentioned. " +
-      "If nothing matches, reply with an empty JSON array.";
 
-    flyerStatus.textContent = "Checking…";
+    function runCheck(adText){
+      var listText = unchecked.map(function(it){ return it.text; }).join(", ");
+      var prompt = "Here is my current shopping list: " + listText + ".\n\n" +
+        (files.length ? "The attached photo(s) show a real weekly ad/flyer for " + storeName + "." : "") +
+        (adText ? (files.length ? " Also, here" : "Here") + " is text from " + storeName + "'s online ad:\n\n" + adText : "") +
+        "\n\nCheck ONLY for items from my list above that are actually on sale according to this material. " +
+        "Reply with ONLY a JSON array of objects shaped like {\"item\": string, \"saleText\": string}, where \"item\" is copied EXACTLY as it appears in my list, " +
+        "and \"saleText\" is a short price/deal description (e.g. \"$2.99/dozen\"). Skip anything from my list that isn't mentioned. " +
+        "If nothing matches, reply with an empty JSON array.";
+
+      flyerStatus.textContent = "Checking…";
+      var opts = { modelTier: "default" };
+      if(files.length) opts.images = files;
+
+      aiJson(prompt, opts).then(function(matches){
+        flyerStatus.textContent = "";
+        if(!Array.isArray(matches) || !matches.length){
+          flyerStatus.textContent = "Nothing on your list seems to be on sale there right now.";
+          return;
+        }
+        flyerResultList.innerHTML = "";
+        var priced = 0;
+        matches.forEach(function(m){
+          var matchedItem = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item||"").trim().toLowerCase(); });
+          var itemLabel = matchedItem ? matchedItem.text : m.item;
+          if(rememberFlyerPrice(itemLabel, storeName, m.saleText)) priced++;
+          var li = document.createElement("li");
+          var body = document.createElement("div");
+          body.style.flex = "1";
+          body.innerHTML = '<div class="meal-name">' + itemLabel + '</div><div class="meal-ing">' + (m.saleText || "") + ' at ' + storeName + '</div>';
+          li.appendChild(body);
+          if(matchedItem){
+            var noteBtn = document.createElement("button");
+            noteBtn.className = "chip-btn";
+            noteBtn.type = "button";
+            noteBtn.textContent = "📌 Note on my list";
+            noteBtn.addEventListener("click", function(){
+              matchedItem.saleNote = (m.saleText || "on sale") + " at " + storeName;
+              saveState();
+              render();
+              noteBtn.textContent = "✅ Noted";
+              noteBtn.disabled = true;
+            });
+            li.appendChild(noteBtn);
+          }
+          flyerResultList.appendChild(li);
+        });
+        if(priced){
+          saveState();
+          flyerStatus.textContent = "Saved " + priced + " sale price" + (priced === 1 ? "" : "s") + " for " + storeName + " in Compare Stores.";
+        }
+        flyerResults.hidden = false;
+      }).catch(function(e){
+        flyerStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
+      }).finally(function(){
+        checkFlyerBtn.disabled = false;
+      });
+    }
+
     checkFlyerBtn.disabled = true;
     flyerResults.hidden = true;
-
-    var opts = { modelTier: "default" };
-    if(files.length) opts.images = files;
-
-    aiJson(prompt, opts).then(function(matches){
-      flyerStatus.textContent = "";
-      if(!Array.isArray(matches) || !matches.length){
-        flyerStatus.textContent = "Nothing on your list seems to be on sale there right now.";
-        return;
-      }
-      flyerResultList.innerHTML = "";
-      matches.forEach(function(m){
-        var matchedItem = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item||"").trim().toLowerCase(); });
-        var li = document.createElement("li");
-        var body = document.createElement("div");
-        body.style.flex = "1";
-        body.innerHTML = '<div class="meal-name">' + (matchedItem ? matchedItem.text : m.item) + '</div><div class="meal-ing">' + (m.saleText || "") + ' at ' + storeName + '</div>';
-        li.appendChild(body);
-        if(matchedItem){
-          var noteBtn = document.createElement("button");
-          noteBtn.className = "chip-btn";
-          noteBtn.type = "button";
-          noteBtn.textContent = "📌 Note on my list";
-          noteBtn.addEventListener("click", function(){
-            matchedItem.saleNote = (m.saleText || "on sale") + " at " + storeName;
-            saveState();
-            render();
-            noteBtn.textContent = "✅ Noted";
-            noteBtn.disabled = true;
-          });
-          li.appendChild(noteBtn);
-        }
-        flyerResultList.appendChild(li);
-      });
-      flyerResults.hidden = false;
+    if(!adLink){
+      runCheck(pastedText);
+      return;
+    }
+    flyerStatus.textContent = "Opening that ad link…";
+    fetchAdLinkText(adLink).then(function(linkText){
+      var combined = pastedText ? (pastedText + "\n\n" + linkText) : linkText;
+      runCheck(combined);
     }).catch(function(e){
-      flyerStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
-    }).finally(function(){
+      flyerStatus.textContent = (e && e.message) ? e.message : "Couldn't open that ad link.";
       checkFlyerBtn.disabled = false;
     });
   });
