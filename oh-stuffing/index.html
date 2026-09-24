@@ -1682,7 +1682,8 @@
     { id:"dairy",     name:"Dairy & Eggs",          emoji:"🥛" },
     { id:"frozen",    name:"Frozen",                emoji:"🧊" },
     { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
-    { id:"baking",    name:"Baking + Pantry Isle",  emoji:"🧁" },
+    { id:"baking",    name:"Baking",                emoji:"🧁" },
+    { id:"pantry",    name:"Pantry Isle",           emoji:"🥫" },
     { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
     { id:"snacks",    name:"Snacks",                emoji:"🍪" },
     { id:"beverages", name:"Beverages",             emoji:"🥤" },
@@ -1704,7 +1705,8 @@
     dairy: ["milk","eggs","egg","cheese","cheddar","mozzarella","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","string cheese","parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
-    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice"],
+    pantry: ["canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
     beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice"],
@@ -1818,7 +1820,7 @@
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
-    breakfast: 30, baking: 60, pasta: 90,
+    breakfast: 30, baking: 60, pantry: 90, pasta: 90,
     snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, decorations: 30, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
@@ -1978,7 +1980,7 @@
     customDepts: []
   };
   // migrate: drop retired aisles, keep every current department, Unsorted stays last
-  var RETIRED_DEPT = { canned: "baking", condiments: "baking" };
+  var RETIRED_DEPT = { canned: "pantry", condiments: "pantry" };
   function remapRetiredDept(dept){
     return RETIRED_DEPT[dept] || dept;
   }
@@ -1986,6 +1988,10 @@
   state.order = state.order.filter(function(id){ return !RETIRED_DEPT[id]; });
   DEPARTMENTS.forEach(function(d){
     if(state.order.indexOf(d.id) !== -1) return;
+    if(d.id === "pantry"){
+      var bakeIdx = state.order.indexOf("baking");
+      if(bakeIdx !== -1){ state.order.splice(bakeIdx + 1, 0, d.id); return; }
+    }
     var otherIdx = state.order.indexOf("other");
     if(otherIdx === -1) state.order.push(d.id);
     else state.order.splice(otherIdx, 0, d.id);
@@ -2013,31 +2019,40 @@
   if(!Array.isArray(state.customDepts)) state.customDepts = [];
   state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
 
+  function keywordIsPantry(text){
+    var key = String(text || "").trim().toLowerCase();
+    if(!key) return false;
+    if(lookupKeyword(key) === "pantry") return true;
+    var stripped = stripQuantity(stripTrailingFor(key));
+    return !!(stripped && lookupKeyword(stripped) === "pantry");
+  }
   function remigrateAisles(){
     var changed = false;
-    function take(dept){
+    var splitBaking = state.pantrySplit !== 1;
+    function take(dept, text){
       var next = remapRetiredDept(dept);
+      if(splitBaking && next === "baking" && keywordIsPantry(text)) next = "pantry";
       if(next !== dept) changed = true;
       return next;
     }
     state.items.forEach(function(it){
       if(!it) return;
-      it.dept = take(it.dept);
+      it.dept = take(it.dept, it.text);
     });
     Object.keys(state.learned).forEach(function(key){
-      var next = take(state.learned[key]);
+      var next = take(state.learned[key], key);
       if(next !== state.learned[key]) state.learned[key] = next;
     });
     Object.keys(state.regulars || {}).forEach(function(key){
       var reg = state.regulars[key];
       if(!reg) return;
-      reg.dept = take(reg.dept);
+      reg.dept = take(reg.dept, reg.text || key);
     });
     (state.events || []).forEach(function(ev){
       if(!ev || !Array.isArray(ev.items)) return;
       ev.items.forEach(function(it){
         if(!it) return;
-        var next = take(it.dept);
+        var next = take(it.dept, it.text);
         if(next !== it.dept && ev.date){
           it.dept = next;
           it.earliestBuyDate = earliestBuyDate(next, ev.date);
@@ -2046,6 +2061,10 @@
         }
       });
     });
+    if(splitBaking){
+      state.pantrySplit = 1;
+      changed = true;
+    }
     if(changed) saveState();
   }
   function rebuildDeptIndex(){
@@ -4756,7 +4775,7 @@
   });
 
   // Move saved Unsorted rows onto the aisle the dictionary now knows
-  // (kidney beans and chili powder → Baking + Pantry Isle).
+  // (kidney beans → Pantry Isle, chili powder → Baking).
   // classify() keeps a manual Unsorted choice stored in state.learned.
   function reclassifyUnsorted(){
     var changed = false;
