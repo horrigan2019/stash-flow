@@ -159,6 +159,13 @@
     border-radius:var(--radius); border:1.5px solid var(--border);
     background:var(--surface); color:var(--ink);
   }
+  #itemInput{
+    border:2.5px solid #8A7F6A;
+    background:#FFFFFF;
+    color:#2B2620;
+    box-shadow:0 1px 4px rgba(43,38,32,.12);
+    min-height:52px;
+  }
   .mic-btn, .add-btn{
     flex:none; width:52px; height:52px; border-radius:999px; border:none;
     font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
@@ -1665,6 +1672,7 @@
     { id:"snacks",    name:"Snacks",                emoji:"🍪" },
     { id:"beverages", name:"Beverages",             emoji:"🥤" },
     { id:"household", name:"Household & Paper",     emoji:"🧻" },
+    { id:"pets",      name:"Pets",                  emoji:"🐾" },
     { id:"personal",  name:"Personal Care",         emoji:"🧴" },
     { id:"other",     name:"Unsorted",              emoji:"❓" }
   ];
@@ -1686,7 +1694,8 @@
     condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
     beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice"],
-    household: ["paper towels","toilet paper","napkins","aluminum foil","foil","plastic wrap","trash bags","dish soap","laundry detergent","sponges","ziploc bags","food storage bags","paper plates","cleaning spray"],
+    household: ["paper towels","paper towel","toilet paper","toilet tissues","napkins","aluminum foil","foil","plastic wrap","trash bags","garbage bags","dish soap","dishwasher soap","dishwasher pods","laundry detergent","laundry pods","laundry pod","dryer sheets","fabric softener","sponges","sponge","ziploc bags","food storage bags","paper plates","cleaning spray","swiffer","swiffer duster","swiffer pads","duster","dusters","disinfecting wipes","clorox wipes","all purpose cleaner","glass cleaner","bleach","windex","lysol"],
+    pets: ["cat food","cat litter","kitty litter","kitten litter","dog food","dog treats","dog treat","puppy food","puppy treats","kitten food","cat treats","pet food","pet treats","bird food","bird seed","fish food","dog bones","litter box","catnip","flea treatment"],
     personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"]
   };
   var WORD_TO_DEPT = {};
@@ -1795,7 +1804,7 @@
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
     breakfast: 30, baking: 60, canned: 90, pasta: 90, condiments: 60,
-    snacks: 30, beverages: 30, household: 90, personal: 90, other: 10
+    snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
     var lead = DEPT_LEAD_DAYS[dept] !== undefined ? DEPT_LEAD_DAYS[dept] : DEPT_LEAD_DAYS.other;
@@ -1986,33 +1995,109 @@
     if(w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0,-1);
     return w;
   }
+  function stripQuantity(text){
+    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
+    return stripped.replace(/^\d+\s*/,"").trim();
+  }
+  function phraseVariants(phrase){
+    var parts = phrase.split(/\s+/).filter(Boolean);
+    if(!parts.length) return [];
+    var out = [parts.join(" ")];
+    var last = singularize(parts[parts.length - 1]);
+    if(last !== parts[parts.length - 1]){
+      parts[parts.length - 1] = last;
+      out.push(parts.join(" "));
+    }
+    return out;
+  }
+  function lookupKeyword(phrase){
+    var variants = phraseVariants(phrase);
+    for(var i=0;i<variants.length;i++){
+      if(WORD_TO_DEPT[variants[i]]) return WORD_TO_DEPT[variants[i]];
+    }
+    return null;
+  }
   function classify(rawText){
     var text = rawText.trim().toLowerCase();
     if(!text) return null;
     if(state.learned[text]) return state.learned[text];
-    if(WORD_TO_DEPT[text]) return WORD_TO_DEPT[text];
+    if(lookupKeyword(text)) return lookupKeyword(text);
     // try phrase without leading quantity words / articles
-    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
-    stripped = stripped.replace(/^\d+\s*/,"").trim();
+    var stripped = stripQuantity(text);
     if(stripped && stripped !== text){
       if(state.learned[stripped]) return state.learned[stripped];
-      if(WORD_TO_DEPT[stripped]) return WORD_TO_DEPT[stripped];
+      if(lookupKeyword(stripped)) return lookupKeyword(stripped);
     }
-    // try each word / bigram against dictionary
-    var words = stripped.split(/\s+/).filter(Boolean);
-    for(var i=0;i<words.length;i++){
-      var w = singularize(words[i]);
-      if(WORD_TO_DEPT[w]) return WORD_TO_DEPT[w];
-    }
-    for(var j=0;j<words.length-1;j++){
-      var bigram = words[j]+" "+words[j+1];
-      if(WORD_TO_DEPT[bigram]) return WORD_TO_DEPT[bigram];
+    // Prefer longer phrases over single words so "dish soap" stays Household, not Personal Care.
+    var words = (stripped || text).split(/\s+/).filter(Boolean);
+    var maxN = Math.min(words.length, 5);
+    for(var n=maxN; n>=1; n--){
+      for(var i=0; i<=words.length-n; i++){
+        var dept = lookupKeyword(words.slice(i, i+n).join(" "));
+        if(dept) return dept;
+      }
     }
     return "other";
   }
 
+  function longestProductEnd(words, start){
+    var maxEnd = Math.min(words.length, start + 5);
+    for(var end=maxEnd; end>start; end--){
+      if(lookupKeyword(words.slice(start, end).join(" "))) return end;
+    }
+    return -1;
+  }
+  function splitRunOn(chunk){
+    var original = chunk.replace(/\s+/g," ").trim();
+    if(!original) return [];
+    var words = original.toLowerCase().split(/\s+/);
+    var originals = original.split(/\s+/);
+    if(words.length < 2) return [original];
+    var spans = [];
+    var i = 0;
+    while(i < words.length){
+      var end = longestProductEnd(words, i);
+      if(end === -1){
+        var found = -1;
+        for(var j=i+1; j<words.length; j++){
+          if(longestProductEnd(words, j) !== -1){ found = j; break; }
+        }
+        if(found === -1){
+          spans.push([i, words.length, false]);
+          break;
+        }
+        spans.push([i, found, false]);
+        i = found;
+        continue;
+      }
+      spans.push([i, end, true]);
+      i = end;
+    }
+    var parts = [];
+    var pending = "";
+    spans.forEach(function(span){
+      var text = originals.slice(span[0], span[1]).join(" ");
+      if(!span[2]){
+        pending = pending ? pending + " " + text : text;
+        return;
+      }
+      parts.push(pending ? pending + " " + text : text);
+      pending = "";
+    });
+    if(pending){
+      if(parts.length) parts[parts.length-1] += " " + pending;
+      else parts.push(pending);
+    }
+    return parts.filter(Boolean);
+  }
   function splitEntry(raw){
-    return raw.split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+    if(!raw) return [];
+    var chunks = String(raw).split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+    var out = [];
+    chunks.forEach(function(chunk){
+      splitRunOn(chunk).forEach(function(part){ out.push(part); });
+    });
+    return out;
   }
 
   // ---------- Recurring items ----------
