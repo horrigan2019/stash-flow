@@ -9,14 +9,27 @@ type AnthropicErrorBody = {
   error?: { message?: string; type?: string };
 };
 
+/** Same tester code the site accepts in the upgrade screen. */
+const BETA_CODE = "OHSTUFFINGBETA";
+
+function hasBetaUnlock(request: Request) {
+  const code = (request.headers.get("x-beta-code") || "").replace(/\s+/g, "").toUpperCase();
+  return code === BETA_CODE;
+}
+
 /**
  * CORS-safe proxy to Anthropic Messages API.
- * Paid feature: requires an authenticated, subscribed user.
+ * Paid feature: requires an authenticated, subscribed user, or a redeemed tester code.
  * Product path (like Fiona): set ANTHROPIC_API_KEY as a Vercel env var.
  * Optional: send x-api-key for local/dev when the server env is not set.
  * End users never need (or see) an API key.
  */
 export async function POST(request: Request) {
+  const betaUnlock = hasBetaUnlock(request);
+  if (betaUnlock) {
+    return proxyToAnthropic(request);
+  }
+
   const user = await getSessionUser();
   if (!user) {
     const hasCookie = Boolean(await readSessionToken());
@@ -60,6 +73,10 @@ export async function POST(request: Request) {
     );
   }
 
+  return proxyToAnthropic(request);
+}
+
+async function proxyToAnthropic(request: Request) {
   const envKey = (process.env.ANTHROPIC_API_KEY || "").trim();
   const headerKey = (request.headers.get("x-api-key") || "").trim();
   // Prefer server env; header is a local/dev fallback only when env is unset.
@@ -166,7 +183,7 @@ export async function OPTIONS() {
     headers: {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-api-key",
+      "access-control-allow-headers": "content-type, x-api-key, x-beta-code",
     },
   });
 }

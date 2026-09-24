@@ -3407,6 +3407,9 @@
     if(code === "images_unavailable") return "Photos aren't supported in this view.";
     if(code === "subscription_required") return "Pro needs a free trial or subscription — tap Upgrade ($1.99/wk or $39.99/yr after 7 days free).";
     if(code === "auth_required"){
+      if(isBetaTester()){
+        return "Tester unlock is on, but Photo AI still asked for a sign-in. Close this and try Get dinner ideas again.";
+      }
       // Don't tell a logged-in user to sign in — they need Upgrade (or a session refresh).
       if(accessSession.authenticated){
         return "Pro needs a free trial or subscription — tap Upgrade ($1.99/wk or $39.99/yr after 7 days free).";
@@ -3518,8 +3521,7 @@
             else if(res.status === 401) e.code = "session_unavailable";
             else e.code = "api_error";
             if(e.code === "subscription_required" || e.code === "auth_required"){
-              // Re-open the right CTA after a fresh session read.
-              requireAccess("Photo & AI");
+              if(!isBetaTester()) requireAccess("Photo & AI");
             }
             throw e;
           }
@@ -3543,10 +3545,12 @@
           max_tokens: 4096,
           messages: [{ role: "user", content: content }]
         });
+        var headers = { "content-type": "application/json" };
+        if(isBetaTester()) headers["x-beta-code"] = BETA_CODE;
         return fetch("/api/vision", {
           method: "POST",
           credentials: "same-origin",
-          headers: { "content-type": "application/json" },
+          headers: headers,
           body: payload
         }).then(function(res){
           if(res.status === 404 || res.status === 405){
