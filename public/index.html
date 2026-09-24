@@ -4637,6 +4637,44 @@
     });
   });
 
+  // Move saved Unsorted rows onto the aisle the dictionary now knows
+  // (kidney beans → Canned & Soup, chili powder → Baking & Pantry).
+  // classify() keeps a manual Unsorted choice stored in state.learned.
+  function reclassifyUnsorted(){
+    var changed = false;
+    function nextDept(text, dept){
+      if(dept !== "other") return dept;
+      var next = classify(String(text || ""));
+      return next && next !== "other" ? next : dept;
+    }
+    state.items.forEach(function(it){
+      var next = nextDept(it.text, it.dept);
+      if(next === it.dept) return;
+      it.dept = next;
+      changed = true;
+    });
+    Object.keys(state.regulars).forEach(function(key){
+      var reg = state.regulars[key];
+      if(!reg) return;
+      var next = nextDept(reg.text || key, reg.dept);
+      if(next === reg.dept) return;
+      reg.dept = next;
+      changed = true;
+    });
+    state.events.forEach(function(ev){
+      if(!ev || !Array.isArray(ev.items)) return;
+      ev.items.forEach(function(it){
+        var next = nextDept(it.text, it.dept);
+        if(next === it.dept) return;
+        it.dept = next;
+        if(ev.date) it.earliestBuyDate = earliestBuyDate(next, ev.date);
+        changed = true;
+      });
+    });
+    if(changed) saveState();
+  }
+
+  reclassifyUnsorted();
   addRegularsThatAreDue();
   render();
 
