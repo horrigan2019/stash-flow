@@ -1610,7 +1610,8 @@
     { id:"dairy",     name:"Dairy & Eggs",          emoji:"🥛" },
     { id:"frozen",    name:"Frozen",                emoji:"🧊" },
     { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
-    { id:"baking",    name:"Baking & Pantry",       emoji:"🧁" },
+    { id:"baking",    name:"Baking",                emoji:"🧁" },
+    { id:"pantry",    name:"Pantry",                emoji:"🧂" },
     { id:"canned",    name:"Canned & Soup",         emoji:"🥫" },
     { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
     { id:"condiments",name:"Condiments & Sauces",   emoji:"🍯" },
@@ -1633,6 +1634,7 @@
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
     baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
+    pantry: ["chili powder","cumin","ground cumin","paprika","smoked paprika","cinnamon","ground cinnamon","nutmeg","oregano","thyme","rosemary","bay leaves","turmeric","curry powder","garlic powder","onion powder","black pepper","ground pepper","peppercorns","cayenne","cayenne pepper","italian seasoning","taco seasoning","cloves","allspice","coriander","dill","sage","poultry seasoning","seasoned salt","garlic salt","onion salt","crushed red pepper","red pepper flakes","chili flakes","chili pepper","seasoning","spice","spices","salt","kosher salt","sea salt"],
     canned: ["canned beans","black beans","chickpeas","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
@@ -1746,7 +1748,7 @@
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
-    breakfast: 30, baking: 60, canned: 90, pasta: 90, condiments: 60,
+    breakfast: 30, baking: 60, pantry: 180, canned: 90, pasta: 90, condiments: 60,
     snacks: 30, beverages: 30, household: 90, personal: 90, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
@@ -1906,9 +1908,18 @@
   };
   // migrate: ensure every current department id is present in saved order
   if(!state.order || !Array.isArray(state.order)) state.order = DEPARTMENTS.map(function(d){ return d.id; });
+  var hadPantryAisle = state.order.indexOf("pantry") !== -1;
   DEPARTMENTS.forEach(function(d){
     if(state.order.indexOf(d.id) === -1) state.order.push(d.id);
   });
+  if(!hadPantryAisle){
+    var pantryOrderIdx = state.order.indexOf("pantry");
+    var bakingOrderIdx = state.order.indexOf("baking");
+    if(pantryOrderIdx !== -1 && bakingOrderIdx !== -1){
+      state.order.splice(pantryOrderIdx, 1);
+      state.order.splice(bakingOrderIdx + 1, 0, "pantry");
+    }
+  }
   if(!state.learned) state.learned = {};
   if(!state.items) state.items = [];
   if(!state.prefs) state.prefs = { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" };
@@ -1950,18 +1961,35 @@
       if(state.learned[stripped]) return state.learned[stripped];
       if(WORD_TO_DEPT[stripped]) return WORD_TO_DEPT[stripped];
     }
-    // try each word / bigram against dictionary
+    // Prefer a two-word match (chili powder, baking powder) before a single word.
     var words = stripped.split(/\s+/).filter(Boolean);
-    for(var i=0;i<words.length;i++){
-      var w = singularize(words[i]);
-      if(WORD_TO_DEPT[w]) return WORD_TO_DEPT[w];
-    }
     for(var j=0;j<words.length-1;j++){
       var bigram = words[j]+" "+words[j+1];
       if(WORD_TO_DEPT[bigram]) return WORD_TO_DEPT[bigram];
     }
+    for(var i=0;i<words.length;i++){
+      var w = singularize(words[i]);
+      if(WORD_TO_DEPT[w]) return WORD_TO_DEPT[w];
+    }
     return "other";
   }
+  // Spices used to land in Baking. Move them to Pantry unless the shopper picked an aisle by hand.
+  (function moveSpicesToPantry(){
+    var changed = false;
+    function maybeMove(entry){
+      if(!entry || !entry.text) return;
+      var key = String(entry.text).trim().toLowerCase();
+      if(state.learned[key]) return;
+      if(entry.dept !== "baking" && entry.dept !== "other") return;
+      if(classify(entry.text) === "pantry"){
+        entry.dept = "pantry";
+        changed = true;
+      }
+    }
+    state.items.forEach(maybeMove);
+    Object.keys(state.regulars || {}).forEach(function(key){ maybeMove(state.regulars[key]); });
+    if(changed) saveState();
+  })();
 
   function splitEntry(raw){
     return raw.split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
