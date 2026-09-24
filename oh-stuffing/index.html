@@ -676,6 +676,7 @@
       </div>
       <div id="moreFeaturesMenu" class="more-menu" hidden>
         <div class="more-menu-label">More features</div>
+        <button class="chip-btn" id="addAisleBtn" type="button">➕ Add aisle</button>
         <button class="chip-btn" id="mealPlanBtn" type="button">🍽️ Meal Planning</button>
         <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
         <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
@@ -795,6 +796,22 @@
       </div>
     </div>
     <button class="dialog-close" id="repeatSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="addAisleDialog">
+  <div class="dialog-inner">
+    <h2>Add an aisle</h2>
+    <div class="field-row">
+      <label for="addAisleName">Name</label>
+      <input type="text" id="addAisleName" maxlength="40" placeholder="e.g. Party, Baby, Outdoor" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+    </div>
+    <div class="field-row">
+      <label for="addAisleEmoji">Emoji (optional)</label>
+      <input type="text" id="addAisleEmoji" maxlength="8" placeholder="🛒" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+    </div>
+    <div class="hint" id="addAisleHint" style="margin-bottom:14px;">It shows on your list once an item is in it. Tap any item to move it to this aisle.</div>
+    <button class="dialog-close" id="addAisleSave" type="button">Add aisle</button>
   </div>
 </dialog>
 
@@ -1665,15 +1682,14 @@
     { id:"dairy",     name:"Dairy & Eggs",          emoji:"🥛" },
     { id:"frozen",    name:"Frozen",                emoji:"🧊" },
     { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
-    { id:"baking",    name:"Baking & Pantry",       emoji:"🧁" },
-    { id:"canned",    name:"Canned & Soup",         emoji:"🥫" },
+    { id:"baking",    name:"Baking + Pantry Isle",  emoji:"🧁" },
     { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
-    { id:"condiments",name:"Condiments & Sauces",   emoji:"🍯" },
     { id:"snacks",    name:"Snacks",                emoji:"🍪" },
     { id:"beverages", name:"Beverages",             emoji:"🥤" },
     { id:"household", name:"Household & Paper",     emoji:"🧻" },
     { id:"pets",      name:"Pets",                  emoji:"🐾" },
     { id:"personal",  name:"Personal Care",         emoji:"🧴" },
+    { id:"decorations", name:"Decorations & Gifts", emoji:"🎁" },
     { id:"other",     name:"Unsorted",              emoji:"❓" }
   ];
   var DEPT_BY_ID = {};
@@ -1688,15 +1704,14 @@
     dairy: ["milk","eggs","egg","cheese","cheddar","mozzarella","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","string cheese","parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
-    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice"],
-    canned: ["canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
-    condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips"],
     beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice"],
     household: ["paper towels","paper towel","toilet paper","toilet tissues","napkins","aluminum foil","foil","plastic wrap","trash bags","garbage bags","dish soap","dishwasher soap","dishwasher pods","laundry detergent","laundry pods","laundry pod","dryer sheets","fabric softener","sponges","sponge","ziploc bags","food storage bags","paper plates","cleaning spray","swiffer","swiffer duster","swiffer pads","duster","dusters","disinfecting wipes","clorox wipes","all purpose cleaner","glass cleaner","bleach","windex","lysol"],
     pets: ["cat food","cat litter","kitty litter","kitten litter","dog food","dog treats","dog treat","puppy food","puppy treats","kitten food","cat treats","pet food","pet treats","bird food","bird seed","fish food","dog bones","litter box","catnip","flea treatment"],
-    personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"]
+    personal: ["shampoo","conditioner","soap","toothpaste","toothbrush","deodorant","razors","body wash","lotion","tissues","cotton balls","floss"],
+    decorations: ["balloons","balloon","wrapping paper","gift bag","gift wrap","gift bags","greeting card","birthday card","candle","candles","party plates","streamers","ribbon","gift bow","gift bows","tissue paper","decorations","party decorations","halloween decorations","christmas decorations","ornament","ornaments","string lights","fairy lights","gift card","wrapping","bow"]
   };
   var WORD_TO_DEPT = {};
   Object.keys(KEYWORDS).forEach(function(dept){
@@ -1803,8 +1818,8 @@
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
-    breakfast: 30, baking: 60, canned: 90, pasta: 90, condiments: 60,
-    snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, other: 10
+    breakfast: 30, baking: 60, pasta: 90,
+    snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, decorations: 30, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
     var lead = DEPT_LEAD_DAYS[dept] !== undefined ? DEPT_LEAD_DAYS[dept] : DEPT_LEAD_DAYS.other;
@@ -1959,12 +1974,21 @@
     learnedEvents: {}, // eventName(lowercase) -> [item,...], taught by the user's own edits
     myStores: [],      // {id, name, membership:boolean}
     priceEntries: {},  // itemText(lowercase) -> { storeId: price }
-    prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" }
+    prefs: { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" },
+    customDepts: []
   };
-  // migrate: ensure every current department id is present in saved order
+  // migrate: drop retired aisles, keep every current department, Unsorted stays last
+  var RETIRED_DEPT = { canned: "baking", condiments: "baking" };
+  function remapRetiredDept(dept){
+    return RETIRED_DEPT[dept] || dept;
+  }
   if(!state.order || !Array.isArray(state.order)) state.order = DEPARTMENTS.map(function(d){ return d.id; });
+  state.order = state.order.filter(function(id){ return !RETIRED_DEPT[id]; });
   DEPARTMENTS.forEach(function(d){
-    if(state.order.indexOf(d.id) === -1) state.order.push(d.id);
+    if(state.order.indexOf(d.id) !== -1) return;
+    var otherIdx = state.order.indexOf("other");
+    if(otherIdx === -1) state.order.push(d.id);
+    else state.order.splice(otherIdx, 0, d.id);
   });
   if(!state.learned) state.learned = {};
   if(!state.items) state.items = [];
@@ -1986,7 +2010,54 @@
   if(!state.learnedEvents) state.learnedEvents = {};
   if(!state.myStores) state.myStores = [];
   if(!state.priceEntries) state.priceEntries = {};
+  if(!Array.isArray(state.customDepts)) state.customDepts = [];
   state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
+
+  function remigrateAisles(){
+    var changed = false;
+    function take(dept){
+      var next = remapRetiredDept(dept);
+      if(next !== dept) changed = true;
+      return next;
+    }
+    state.items.forEach(function(it){
+      if(!it) return;
+      it.dept = take(it.dept);
+    });
+    Object.keys(state.learned).forEach(function(key){
+      var next = take(state.learned[key]);
+      if(next !== state.learned[key]) state.learned[key] = next;
+    });
+    Object.keys(state.regulars || {}).forEach(function(key){
+      var reg = state.regulars[key];
+      if(!reg) return;
+      reg.dept = take(reg.dept);
+    });
+    (state.events || []).forEach(function(ev){
+      if(!ev || !Array.isArray(ev.items)) return;
+      ev.items.forEach(function(it){
+        if(!it) return;
+        var next = take(it.dept);
+        if(next !== it.dept && ev.date){
+          it.dept = next;
+          it.earliestBuyDate = earliestBuyDate(next, ev.date);
+        } else {
+          it.dept = next;
+        }
+      });
+    });
+    if(changed) saveState();
+  }
+  function rebuildDeptIndex(){
+    DEPT_BY_ID = {};
+    DEPARTMENTS.forEach(function(d){ DEPT_BY_ID[d.id] = d; });
+    state.customDepts.forEach(function(d){
+      if(!d || !d.id || !d.name) return;
+      DEPT_BY_ID[d.id] = { id: d.id, name: String(d.name).slice(0, 40), emoji: d.emoji || "🛒", custom: true };
+    });
+  }
+  remigrateAisles();
+  rebuildDeptIndex();
 
   // ---------- Categorizer ----------
   function singularize(w){
@@ -2205,6 +2276,12 @@
   // ---------- Rendering ----------
   var listArea = document.getElementById("listArea");
 
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c];
+    });
+  }
+
   function render(){
     listArea.innerHTML = "";
     var reordering = document.getElementById("reorderToggle").getAttribute("aria-pressed") === "true";
@@ -2230,8 +2307,8 @@
       var head = document.createElement("div");
       head.className = "dept-head";
       head.innerHTML =
-        '<span class="dept-emoji" aria-hidden="true">'+dept.emoji+'</span>' +
-        '<span class="dept-name">'+dept.name+'</span>' +
+        '<span class="dept-emoji" aria-hidden="true">'+escapeHtml(dept.emoji)+'</span>' +
+        '<span class="dept-name">'+escapeHtml(dept.name)+'</span>' +
         '<span class="dept-count">'+itemsInDept.length+'</span>';
 
       var moveWrap = document.createElement("div");
@@ -2330,12 +2407,18 @@
   var assignTitle = document.getElementById("assignTitle");
   var currentAssignItem = null;
 
-  DEPARTMENTS.forEach(function(d){
-    var opt = document.createElement("option");
-    opt.value = d.id;
-    opt.textContent = d.emoji + " " + d.name;
-    assignSelect.appendChild(opt);
-  });
+  function refreshAssignOptions(){
+    assignSelect.innerHTML = "";
+    state.order.forEach(function(id){
+      var d = DEPT_BY_ID[id];
+      if(!d) return;
+      var opt = document.createElement("option");
+      opt.value = d.id;
+      opt.textContent = d.emoji + " " + d.name;
+      assignSelect.appendChild(opt);
+    });
+  }
+  refreshAssignOptions();
 
   function openAssign(item){
     currentAssignItem = item;
@@ -2787,6 +2870,41 @@
         setMoreFeaturesOpen(false);
         moreFeaturesBtn.focus();
       }
+    });
+  }
+
+  var addAisleBtn = document.getElementById("addAisleBtn");
+  var addAisleDialog = document.getElementById("addAisleDialog");
+  var addAisleName = document.getElementById("addAisleName");
+  var addAisleEmoji = document.getElementById("addAisleEmoji");
+  var addAisleHint = document.getElementById("addAisleHint");
+  if(addAisleBtn && addAisleDialog){
+    addAisleBtn.addEventListener("click", function(){
+      if(addAisleHint) addAisleHint.textContent = "It shows on your list once an item is in it. Tap any item to move it to this aisle.";
+      if(addAisleName) addAisleName.value = "";
+      if(addAisleEmoji) addAisleEmoji.value = "";
+      setMoreFeaturesOpen(false);
+      addAisleDialog.showModal();
+      if(addAisleName) addAisleName.focus();
+    });
+    document.getElementById("addAisleSave").addEventListener("click", function(){
+      var name = (addAisleName.value || "").replace(/\s+/g, " ").trim().slice(0, 40);
+      if(!name){
+        if(addAisleHint) addAisleHint.textContent = "Give the aisle a name first.";
+        addAisleName.focus();
+        return;
+      }
+      var emoji = (addAisleEmoji.value || "").trim().slice(0, 8) || "🛒";
+      var id = "aisle" + Date.now().toString(36);
+      state.customDepts.push({ id: id, name: name, emoji: emoji });
+      var otherIdx = state.order.indexOf("other");
+      if(otherIdx === -1) state.order.push(id);
+      else state.order.splice(otherIdx, 0, id);
+      rebuildDeptIndex();
+      refreshAssignOptions();
+      saveState();
+      addAisleDialog.close();
+      render();
     });
   }
 
@@ -4638,7 +4756,7 @@
   });
 
   // Move saved Unsorted rows onto the aisle the dictionary now knows
-  // (kidney beans → Canned & Soup, chili powder → Baking & Pantry).
+  // (kidney beans and chili powder → Baking + Pantry Isle).
   // classify() keeps a manual Unsorted choice stored in state.learned.
   function reclassifyUnsorted(){
     var changed = false;
