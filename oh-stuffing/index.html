@@ -424,8 +424,11 @@
   .produce-lookup{ margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
   .produce-lookup h3{ font-size:.95rem; margin-bottom:8px; }
   .produce-tip-box{
-    margin-top:8px; padding:10px 12px; border-radius:10px; background:var(--surface-2); font-size:.9rem; min-height:20px;
+    margin-top:8px; padding:10px 12px; border-radius:10px; background:var(--surface-2); color:var(--ink);
+    font-size:.9rem; line-height:1.45; min-height:20px; white-space:pre-wrap;
   }
+  .shop-tools{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 2px; }
+  .shop-tools .chip-btn[aria-pressed="true"]{ background:var(--accent); color:#fff; border-color:var(--accent); }
 
   /* Paid access gate */
   .access-gate{
@@ -713,6 +716,7 @@
         <button class="chip-btn" id="sendStoreBtn" type="button">🛒 Send to my store</button>
         <button class="chip-btn" id="shareBtn" type="button">📤 Share list</button>
         <button class="chip-btn" id="wasteBtn" type="button">⏳ Countdown</button>
+        <button class="chip-btn" id="uploadListBtn" type="button">📄 Upload a list</button>
         <button class="chip-btn" id="pantryBtn" type="button">📷 What's My Stock</button>
         <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
         <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
@@ -734,6 +738,12 @@
       <button type="button" class="mic-btn" id="micBtn" aria-label="Add items by voice" aria-pressed="false">🎤</button>
       <button type="submit" class="add-btn" aria-label="Add to list">+</button>
     </form>
+    <div class="shop-tools">
+      <button type="button" class="chip-btn" id="shoppingModeBtn" aria-pressed="false">🛒 Shopping mode</button>
+      <button type="button" class="chip-btn" id="uploadListHomeBtn">📄 Upload a list</button>
+    </div>
+    <div class="hint" id="shoppingModeNote" hidden>Shopping mode keeps the screen awake.</div>
+    <div class="hint" id="reminderBanner" hidden></div>
     <div class="hint" id="micHint">Tip: tap the mic, say "flour, eggs, and bananas," then tap again to stop. Works in Chrome, Edge, and Safari once Oh Stuffing is live on its own site (blocked in this preview) — not a "hey Oh Stuffing" wake word, just tap-to-talk.</div>
     <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
   </header>
@@ -883,10 +893,26 @@
   </div>
 </dialog>
 
+<dialog id="uploadListDialog">
+  <div class="dialog-inner">
+    <h2>Upload a list</h2>
+    <div class="hint" style="margin-bottom:10px;">Photo of a list, a text file, or pasted lines. Oh Stuffing adds each item and sorts it into an aisle.</div>
+    <label class="chip-btn" for="uploadListPhoto" style="display:inline-block;">📷 Photo of a list</label>
+    <input type="file" id="uploadListPhoto" accept="image/*" capture="environment" hidden>
+    <div class="hint" id="uploadListPhotoName" style="margin-top:6px;"></div>
+    <label class="chip-btn" for="uploadListFile" style="display:inline-block;margin-top:8px;">📄 Text file</label>
+    <input type="file" id="uploadListFile" accept=".txt,.csv,text/plain" hidden>
+    <textarea id="uploadListText" rows="4" placeholder="Or paste the list here, one item per line" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;resize:vertical;"></textarea>
+    <button type="button" class="dialog-close" id="uploadListRunBtn" style="margin-top:12px;">Sort onto my list</button>
+    <div class="hint" id="uploadListStatus" style="margin-top:8px;"></div>
+    <button type="button" class="dialog-close" id="closeUploadList" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
 <dialog id="wasteDialog">
   <div class="dialog-inner">
     <h2>Countdown</h2>
-    <div class="hint" style="margin-bottom:12px;">Leftovers and opened jars or bottles — tracked so nothing quietly goes bad.</div>
+    <div class="hint" style="margin-bottom:12px;">Leftovers and opened jars or bottles — tracked so nothing quietly goes bad. After you start the clock, Oh Stuffing asks if you want a reminder to throw it out.</div>
     <div class="waste-stats">
       <div class="waste-stat"><b id="statEaten">0</b><span>used in time</span></div>
       <div class="waste-stat"><b id="statTossed">0</b><span>tossed</span></div>
@@ -909,13 +935,24 @@
       </div>
       <button type="submit">Start the clock</button>
     </form>
+    <div id="wasteRemindAsk" hidden style="margin-top:12px;">
+      <div class="hint" id="wasteRemindText"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        <button type="button" class="chip-btn" id="wasteRemindYes">Yes, remind me</button>
+        <button type="button" class="chip-btn" id="wasteRemindNo">No thanks</button>
+      </div>
+    </div>
     <ul class="waste-list" id="wasteList"></ul>
     <div class="waste-empty" id="wasteEmpty" hidden>Nothing being tracked. Add a leftover or an opened item above and Oh Stuffing will tell you how long it's good for.</div>
 
     <div class="produce-lookup">
       <h3>🥬 How should I store this?</h3>
-      <input type="text" id="produceLookupInput" placeholder="e.g. tomatoes, berries, potatoes" autocomplete="off" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
-      <div class="produce-tip-box" id="produceTipBox"></div>
+      <div class="hint" style="margin-bottom:8px;">Type a food — hard-boiled eggs, cooked chicken, berries — and get where to keep it and how long.</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="produceLookupInput" placeholder="e.g. hard boiled eggs" autocomplete="off" style="flex:1;min-width:0;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;box-sizing:border-box;">
+        <button type="button" class="chip-btn" id="produceLookupBtn">Look up</button>
+      </div>
+      <div class="produce-tip-box" id="produceTipBox" hidden></div>
     </div>
 
     <button class="dialog-close" id="closeWaste" type="button" style="margin-top:16px;">Done</button>
@@ -1100,7 +1137,19 @@
 <dialog id="storeCompareDialog">
   <div class="dialog-inner" style="max-width:520px;">
     <h2>Compare Stores</h2>
-    <div class="hint" style="margin-bottom:14px;">There's no live feed of what's on sale where — so type in prices as you see them (an app, a flyer, memory), from the stores you actually shop at, and this works out the cheapest way to split your list.</div>
+    <div class="hint" style="margin-bottom:14px;">Upload a flyer photo or paste the store's ad link and we'll fill in prices for what's on your list. You can still type or fix any price. Then we'll suggest the cheapest split and the faster one-stop trip.</div>
+
+    <div class="event-section-label" style="margin-top:0;">Fill prices from a flyer</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <input type="text" id="compareStoreForAd" placeholder="Which store is this ad? e.g. Meijer" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+      <label class="chip-btn" for="compareFlyerPhoto" style="display:inline-block;width:fit-content;">📷 Upload flyer photo</label>
+      <input type="file" id="compareFlyerPhoto" accept="image/*" capture="environment" hidden>
+      <div class="hint" id="compareFlyerName"></div>
+      <input type="url" id="compareAdLink" inputmode="url" autocomplete="off" placeholder="Or paste the ad link, https://…" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+      <textarea id="compareAdText" rows="2" placeholder="Or paste the sale text if the link has no prices" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;resize:vertical;"></textarea>
+      <button type="button" class="chip-btn" id="compareFillPricesBtn">Read prices onto my list</button>
+      <div class="hint" id="compareFillStatus"></div>
+    </div>
 
     <div class="event-section-label" style="margin-top:0;">My stores</div>
     <div id="myStoresChips" class="hint" style="margin-bottom:8px;"></div>
@@ -1831,6 +1880,8 @@
     var paidFeatureIds = {
       pantryBtn: { label: "What's My Stock", allowFreeScan: true },
       dinnerScanBtn: { label: "Scan Fridge & Pantry for Dinner Ideas", allowFreeScan: true },
+      uploadListBtn: { label: "Upload a list", allowFreeScan: true },
+      uploadListHomeBtn: { label: "Upload a list", allowFreeScan: true },
       flyerBtn: { label: "Check A Flyer", allowFreeScan: false },
       storeCompareBtn: { label: "Compare Stores", allowFreeScan: false },
       wasteBtn: { label: "Countdown (leftover & expiry alerts)", allowFreeScan: false }
@@ -2009,6 +2060,42 @@
     "corn":"Fridge, in the husk, and use within a couple of days for best sweetness.",
     "grapes":"Fridge, unwashed, in their original bag or a loosely sealed container."
   };
+  // USDA FoodKeeper-style estimates. Not a safety guarantee.
+  var FOOD_STORAGE = {
+    "hard boiled eggs":"Fridge. Use within 7 days. Refrigerate within 2 hours of cooking. Don't leave them out on the counter.",
+    "hard boiled egg":"Fridge. Use within 7 days. Refrigerate within 2 hours of cooking. Don't leave them out on the counter.",
+    "hard cooked eggs":"Fridge. Use within 7 days. Refrigerate within 2 hours of cooking. Don't leave them out on the counter.",
+    "boiled eggs":"Fridge. Use within 7 days. Refrigerate within 2 hours of cooking. Don't leave them out on the counter.",
+    "eggs":"Fridge, in the carton. Raw eggs in the shell keep 3 to 5 weeks. Don't wash them until you're ready to use them.",
+    "egg":"Fridge, in the carton. Raw eggs in the shell keep 3 to 5 weeks.",
+    "egg salad":"Fridge. Use within 3 to 4 days. Don't leave it out more than 2 hours.",
+    "deviled eggs":"Fridge. Use within 3 to 4 days, and only about 2 hours if they sit out.",
+    "cooked chicken":"Fridge. Use within 3 to 4 days, or freeze. Refrigerate within 2 hours of cooking.",
+    "chicken":"Raw chicken: fridge and cook within 1 to 2 days, or freeze. Cooked chicken: fridge 3 to 4 days.",
+    "raw chicken":"Fridge. Cook or freeze within 1 to 2 days. Keep it on the bottom shelf so juices don't drip.",
+    "ground beef":"Fridge. Cook or freeze within 1 to 2 days.",
+    "ground turkey":"Fridge. Cook or freeze within 1 to 2 days.",
+    "steak":"Fridge. Cook or freeze within 3 to 5 days.",
+    "pork chops":"Fridge. Cook or freeze within 3 to 5 days.",
+    "bacon":"Fridge. An opened pack is best within 7 days. Follow the package date if it's unopened.",
+    "deli meat":"Fridge. An opened pack is best within 3 to 5 days.",
+    "lunch meat":"Fridge. An opened pack is best within 3 to 5 days.",
+    "hot dogs":"Fridge. An opened pack is best within 1 week.",
+    "leftovers":"Fridge. Most cooked leftovers are best within 3 to 4 days. Refrigerate within 2 hours.",
+    "cooked rice":"Fridge. Use within 3 to 4 days. Cool and refrigerate within 2 hours — rice left warm can make people sick.",
+    "rice":"Dry rice: pantry, sealed. Cooked rice: fridge, and use within 3 to 4 days.",
+    "pasta":"Dry pasta: pantry. Cooked pasta: fridge, and use within 3 to 4 days.",
+    "soup":"Fridge. Use within 3 to 4 days. Refrigerate within 2 hours of cooking.",
+    "pizza":"Fridge. Leftover pizza is best within 3 to 4 days.",
+    "milk":"Fridge. Keep it cold and use it within about 7 days of opening, or by the date on the carton — whichever comes first.",
+    "yogurt":"Fridge. Follow the date. An opened tub is usually fine for 1 to 2 weeks if it still smells and looks right.",
+    "butter":"Fridge. An opened pack keeps 1 to 3 months. It can sit out for a day or two if the room is cool.",
+    "cheese":"Fridge. Soft cheese, about a week after opening. Hard cheese, several weeks. If you see mold on hard cheese, cut it off with an inch to spare.",
+    "bread":"Counter for a few days in a bag, or freeze for longer. The fridge dries it out.",
+    "fish":"Raw fish: fridge and cook within 1 to 2 days, or freeze. Cooked fish: fridge 3 to 4 days.",
+    "shrimp":"Raw shrimp: fridge and cook within 1 to 2 days, or freeze. Cooked shrimp: fridge 3 to 4 days.",
+    "opened canned food":"Move leftovers out of the can into a covered container. Fridge, and use within 3 to 4 days."
+  };
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
@@ -2022,6 +2109,28 @@
     return earliest < today ? today : earliest;
   }
 
+  function normFood(name){
+    return String(name || "").toLowerCase().replace(/-/g, " ").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function hasFoodPhrase(hay, needle){
+    return (" " + hay + " ").indexOf(" " + needle + " ") !== -1;
+  }
+  function storageAdvice(name){
+    var key = normFood(name);
+    if(!key) return null;
+    if(FOOD_STORAGE[key]) return FOOD_STORAGE[key];
+    var foodKeys = Object.keys(FOOD_STORAGE).sort(function(a, b){ return b.length - a.length; });
+    for(var i = 0; i < foodKeys.length; i++){
+      if(hasFoodPhrase(key, foodKeys[i])) return FOOD_STORAGE[foodKeys[i]];
+    }
+    if(PRODUCE_STORAGE[key]) return PRODUCE_STORAGE[key];
+    var produceKeys = Object.keys(PRODUCE_STORAGE).sort(function(a, b){ return b.length - a.length; });
+    for(var j = 0; j < produceKeys.length; j++){
+      if(hasFoodPhrase(key, produceKeys[j]) || hasFoodPhrase(key, singularize(produceKeys[j]))) return PRODUCE_STORAGE[produceKeys[j]];
+    }
+    var loose = lookupInDict(key, PRODUCE_STORAGE);
+    return loose || null;
+  }
   function lookupInDict(name, dict){
     var key = name.trim().toLowerCase();
     if(!key) return null;
@@ -2825,9 +2934,55 @@
     refreshWasteFormMode();
     produceLookupInput.value = "";
     produceTipBox.textContent = "";
+    produceTipBox.hidden = true;
+    wasteRemindAsk.hidden = true;
     wasteDialog.showModal();
   });
-  document.getElementById("closeWaste").addEventListener("click", function(){ wasteDialog.close(); });
+
+  var pendingWaste = null;
+  var wasteRemindAsk = document.getElementById("wasteRemindAsk");
+  var wasteRemindText = document.getElementById("wasteRemindText");
+
+  function commitWaste(remind){
+    if(!pendingWaste) return;
+    pendingWaste.remind = !!remind;
+    pendingWaste.reminded = false;
+    state.tracked.push(pendingWaste);
+    pendingWaste = null;
+    wasteRemindAsk.hidden = true;
+    saveState();
+    wasteNameInput.value = "";
+    wasteMealSelect.value = "";
+    refreshWasteFormMode();
+    renderWasteList();
+    if(remind && window.Notification && Notification.permission === "default"){
+      Notification.requestPermission().catch(function(){});
+    }
+  }
+
+  function checkDueReminders(){
+    var today = todayStr();
+    var notes = [];
+    (state.tracked || []).forEach(function(t){
+      if(!t.remind || t.reminded) return;
+      if(t.goodUntil > today) return;
+      t.reminded = true;
+      notes.push("Throw out " + t.text + " — it was good until " + formatDate(t.goodUntil) + ".");
+    });
+    if(!notes.length) return;
+    saveState();
+    var msg = notes.join(" ");
+    var banner = document.getElementById("reminderBanner");
+    if(banner){
+      banner.hidden = false;
+      banner.textContent = msg + " If it looks, smells, or feels off, toss it.";
+    }
+    if(window.Notification && Notification.permission === "granted"){
+      notes.forEach(function(note){
+        try{ new Notification("Oh Stuffing", { body: note }); }catch(err){}
+      });
+    }
+  }
 
   wasteForm.addEventListener("submit", function(e){
     e.preventDefault();
@@ -2841,15 +2996,19 @@
     if(!name) return;
     var days = kind === "leftover" ? LEFTOVER_DAYS_DEFAULT : (lookupInDict(name, OPENED_SHELF_LIFE_DAYS) || OPENED_DAYS_FALLBACK);
     var today = todayStr();
-    state.tracked.push({
+    var goodUntil = addDays(today, days);
+    pendingWaste = {
       id: "w"+Date.now()+Math.random().toString(16).slice(2),
-      text: name, kind: kind, addedDate: today, goodUntil: addDays(today, days)
-    });
-    saveState();
-    wasteNameInput.value = "";
-    wasteMealSelect.value = "";
-    refreshWasteFormMode();
-    renderWasteList();
+      text: name, kind: kind, addedDate: today, goodUntil: goodUntil
+    };
+    wasteRemindText.textContent = "Remind you on " + formatDate(goodUntil) + " to throw out " + name + "?";
+    wasteRemindAsk.hidden = false;
+  });
+  document.getElementById("wasteRemindYes").addEventListener("click", function(){ commitWaste(true); });
+  document.getElementById("wasteRemindNo").addEventListener("click", function(){ commitWaste(false); });
+  document.getElementById("closeWaste").addEventListener("click", function(){
+    if(pendingWaste) commitWaste(false);
+    wasteDialog.close();
   });
 
   function renderWasteList(){
@@ -2874,7 +3033,8 @@
       nameEl.textContent = (t.kind === "leftover" ? "🥡 " : "🍯 ") + t.text;
       var whenEl = document.createElement("div");
       whenEl.className = "waste-when";
-      whenEl.innerHTML = 'Good until ' + formatDate(t.goodUntil) + ' &nbsp; <span class="badge ' + badgeClass + '">' + badgeText + '</span>';
+      whenEl.innerHTML = 'Good until ' + formatDate(t.goodUntil) + ' &nbsp; <span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
+        (t.remind ? ' · Reminder on' : '');
       body.appendChild(nameEl);
       body.appendChild(whenEl);
 
@@ -2903,9 +3063,51 @@
     });
   }
 
-  produceLookupInput.addEventListener("input", function(){
-    var tip = lookupInDict(produceLookupInput.value, PRODUCE_STORAGE);
-    produceTipBox.textContent = tip || (produceLookupInput.value.trim() ? "Don't have a tip for that one yet — as a rule, most fridge produce keeps best loosely wrapped, and most counter produce likes to stay dry and out of direct sun." : "");
+  var storageLookupToken = 0;
+  function showStorageTip(allowAi){
+    var q = produceLookupInput.value.trim();
+    if(!q){
+      produceTipBox.hidden = true;
+      produceTipBox.textContent = "";
+      return;
+    }
+    var local = storageAdvice(q);
+    if(local){
+      produceTipBox.hidden = false;
+      produceTipBox.textContent = local + "\n\nGeneral estimate, not a guarantee — if it looks, smells, or feels off, toss it.";
+      return;
+    }
+    if(!allowAi){
+      produceTipBox.hidden = false;
+      produceTipBox.textContent = "Tap Look up for how to store " + q + ".";
+      return;
+    }
+    var token = ++storageLookupToken;
+    produceTipBox.hidden = false;
+    produceTipBox.textContent = "Looking up how to store " + q + "…";
+    var prompt = "Using USDA FoodKeeper-style guidance, say how to store this food. " +
+      "Reply in 2 to 4 short sentences: where to keep it (fridge, freezer, counter, or pantry), about how long, and one handling tip. " +
+      "If you are not confident of a day count, say to follow the package date instead of inventing one. " +
+      "Do not give a recipe. Food: " + q;
+    anthropicMessages(prompt, { modelTier: "quick" }).then(function(res){
+      if(token !== storageLookupToken) return;
+      var text = (res && res.text || "").trim();
+      produceTipBox.textContent = (text || "Keep cooked food in the fridge and use it within 3 to 4 days. Follow the package date on anything sealed.") +
+        "\n\nGeneral estimate, not a guarantee — if it looks, smells, or feels off, toss it.";
+    }).catch(function(){
+      if(token !== storageLookupToken) return;
+      produceTipBox.textContent = "No saved tip for that one. Keep cooked food in the fridge and use it within 3 to 4 days, and follow the package date on anything sealed.\n\nIf it looks, smells, or feels off, toss it.";
+    });
+  }
+  produceLookupInput.addEventListener("input", function(){ showStorageTip(false); });
+  produceLookupInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); showStorageTip(true); }
+  });
+  document.getElementById("produceLookupBtn").addEventListener("click", function(){ showStorageTip(true); });
+  checkDueReminders();
+  setInterval(checkDueReminders, 60000);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible") checkDueReminders();
   });
 
   // ---------- Meal plan ----------
@@ -3048,6 +3250,108 @@
       itemInput.value = "";
     }
     itemInput.focus();
+  });
+
+  var shoppingModeBtn = document.getElementById("shoppingModeBtn");
+  var shoppingModeNote = document.getElementById("shoppingModeNote");
+  var shoppingWakeLock = null;
+  function setShoppingMode(on){
+    if(!on){
+      if(shoppingWakeLock){
+        shoppingWakeLock.release().catch(function(){});
+        shoppingWakeLock = null;
+      }
+      shoppingModeBtn.setAttribute("aria-pressed", "false");
+      shoppingModeBtn.textContent = "🛒 Shopping mode";
+      shoppingModeNote.hidden = true;
+      return;
+    }
+    if(!navigator.wakeLock || !navigator.wakeLock.request){
+      shoppingModeBtn.setAttribute("aria-pressed", "false");
+      shoppingModeNote.hidden = false;
+      shoppingModeNote.textContent = "This browser can't keep the screen on from the app. Turn off Auto-Lock in the phone's settings while you shop.";
+      return;
+    }
+    navigator.wakeLock.request("screen").then(function(lock){
+      shoppingWakeLock = lock;
+      shoppingModeBtn.setAttribute("aria-pressed", "true");
+      shoppingModeBtn.textContent = "🛒 Shopping mode on";
+      shoppingModeNote.hidden = false;
+      shoppingModeNote.textContent = "Screen stays on while you shop. Tap Shopping mode again when you're done.";
+      lock.addEventListener("release", function(){
+        shoppingWakeLock = null;
+      });
+    }).catch(function(){
+      shoppingModeBtn.setAttribute("aria-pressed", "false");
+      shoppingModeNote.hidden = false;
+      shoppingModeNote.textContent = "Couldn't keep the screen on. Turn off Auto-Lock in the phone's settings while you shop.";
+    });
+  }
+  shoppingModeBtn.addEventListener("click", function(){
+    setShoppingMode(shoppingModeBtn.getAttribute("aria-pressed") !== "true");
+  });
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible" && shoppingModeBtn.getAttribute("aria-pressed") === "true" && !shoppingWakeLock){
+      setShoppingMode(true);
+    }
+  });
+
+  var uploadListDialog = document.getElementById("uploadListDialog");
+  var uploadListPhoto = document.getElementById("uploadListPhoto");
+  var uploadListFile = document.getElementById("uploadListFile");
+  var uploadListText = document.getElementById("uploadListText");
+  var uploadListStatus = document.getElementById("uploadListStatus");
+  function openUploadList(){
+    uploadListStatus.textContent = "";
+    uploadListDialog.showModal();
+  }
+  document.getElementById("uploadListBtn").addEventListener("click", openUploadList);
+  document.getElementById("uploadListHomeBtn").addEventListener("click", openUploadList);
+  document.getElementById("closeUploadList").addEventListener("click", function(){ uploadListDialog.close(); });
+  uploadListPhoto.addEventListener("change", function(){
+    document.getElementById("uploadListPhotoName").textContent = uploadListPhoto.files[0] ? uploadListPhoto.files[0].name : "";
+  });
+  uploadListFile.addEventListener("change", function(){
+    var file = uploadListFile.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      uploadListText.value = String(reader.result || "");
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById("uploadListRunBtn").addEventListener("click", function(){
+    var photo = uploadListPhoto.files[0];
+    var pasted = uploadListText.value.trim();
+    if(!photo && !pasted){
+      uploadListStatus.textContent = "Add a photo, a text file, or paste the list.";
+      return;
+    }
+    var runBtn = document.getElementById("uploadListRunBtn");
+    runBtn.disabled = true;
+    uploadListStatus.textContent = "Reading the list…";
+    var prompt = "This is a grocery list. Extract each food or household item. " +
+      "Reply with ONLY a JSON array of strings, one item name each. Keep a quantity in the name if it is written (like \"2% milk\"). " +
+      "Skip store names, prices, and headings. If there are no items, reply with [].";
+    if(pasted) prompt += "\n\nList text:\n" + pasted;
+    var opts = { modelTier: "quick" };
+    if(photo) opts.images = [photo];
+    aiJson(prompt, opts).then(function(items){
+      if(!Array.isArray(items) || !items.length){
+        uploadListStatus.textContent = "Couldn't find items on that list. Try a clearer photo, or paste the items.";
+        return;
+      }
+      var names = items.map(function(item){ return String(item || "").trim(); }).filter(Boolean);
+      addItems(names.join("\n"));
+      uploadListStatus.textContent = "Added " + names.length + " item" + (names.length === 1 ? "" : "s") + ", sorted into aisles.";
+      uploadListText.value = "";
+      uploadListPhoto.value = "";
+      document.getElementById("uploadListPhotoName").textContent = "";
+    }).catch(function(e){
+      uploadListStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
+    }).finally(function(){
+      runBtn.disabled = false;
+    });
   });
 
   // ---------- More features menu ----------
@@ -4799,6 +5103,28 @@
     planResults.hidden = false;
     planResults.innerHTML = "";
 
+    function namesFor(planWrap){
+      return planWrap.plan.stores.map(function(id){
+        var store = state.myStores.find(function(s){ return s.id === id; });
+        return store ? store.name : "store";
+      }).join(" and ");
+    }
+    var timePlan = plans[0];
+    var summary = document.createElement("p");
+    summary.className = "hint";
+    if(recommended.k === 1){
+      summary.textContent = "One stop is the cheapest and the fastest with these prices: " + namesFor(recommended) + " for $" + recommended.plan.total.toFixed(2) + ".";
+    } else {
+      var extra = timePlan.plan.total - recommended.plan.total;
+      summary.textContent = "Most money saved: " + recommended.k + " stops (" + namesFor(recommended) + ") for $" + recommended.plan.total.toFixed(2) +
+        ". Fastest: 1 stop at " + namesFor(timePlan) + " for $" + timePlan.plan.total.toFixed(2) +
+        (extra > 0.009 ? " — $" + extra.toFixed(2) + " more, and you skip the extra trip." : ".");
+      if(timePlan.plan.covered < pricedKeys.length){
+        summary.textContent += " That one stop only covers " + timePlan.plan.covered + " of " + pricedKeys.length + " priced items.";
+      }
+    }
+    planResults.appendChild(summary);
+
     var heading = document.createElement("div");
     heading.className = "event-section-label";
     heading.style.marginTop = "0";
@@ -4869,6 +5195,66 @@
     document.getElementById("showPlanDetailBtn").addEventListener("click", function(){
       var k = parseInt(document.getElementById("pickStops").value, 10);
       if(k >= 1 && k <= maxStops) showDetail(k);
+    });
+  });
+
+  var compareFlyerPhoto = document.getElementById("compareFlyerPhoto");
+  var compareFillStatus = document.getElementById("compareFillStatus");
+  compareFlyerPhoto.addEventListener("change", function(){
+    document.getElementById("compareFlyerName").textContent = compareFlyerPhoto.files[0] ? compareFlyerPhoto.files[0].name : "";
+  });
+  document.getElementById("compareFillPricesBtn").addEventListener("click", function(){
+    var storeName = document.getElementById("compareStoreForAd").value.trim();
+    var adLink = document.getElementById("compareAdLink").value.trim();
+    var pasted = document.getElementById("compareAdText").value.trim();
+    var photo = compareFlyerPhoto.files[0];
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    if(!storeName){ compareFillStatus.textContent = "Type which store this ad is from."; return; }
+    if(!unchecked.length){ compareFillStatus.textContent = "Add items to your list first, then read the ad."; return; }
+    if(!photo && !adLink && !pasted){ compareFillStatus.textContent = "Upload a flyer photo, paste the ad link, or paste the sale text."; return; }
+    var fillBtn = document.getElementById("compareFillPricesBtn");
+    fillBtn.disabled = true;
+    function applyAd(adText){
+      var listText = unchecked.map(function(it){ return it.text; }).join(", ");
+      var prompt = "Here is my shopping list: " + listText + ".\n\n" +
+        (photo ? "The attached photo is a weekly ad for " + storeName + ". " : "") +
+        (adText ? "Ad text from " + storeName + ":\n" + adText + "\n\n" : "") +
+        "Find items from my list that have a price in this ad. Reply with ONLY a JSON array of {\"item\": string, \"saleText\": string}. " +
+        "\"item\" must be copied exactly from my list. \"saleText\" must include the dollar price, like \"$2.99\". Skip items with no price. If none, reply [].";
+      var opts = { modelTier: "default" };
+      if(photo) opts.images = [photo];
+      compareFillStatus.textContent = "Reading prices…";
+      aiJson(prompt, opts).then(function(matches){
+        var priced = 0;
+        (Array.isArray(matches) ? matches : []).forEach(function(m){
+          var matched = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item || "").trim().toLowerCase(); });
+          var label = matched ? matched.text : m.item;
+          if(rememberFlyerPrice(label, storeName, m.saleText)) priced++;
+        });
+        saveState();
+        renderStoreCompareDialog();
+        if(!priced){
+          compareFillStatus.textContent = "No prices from that ad matched your list. You can still type prices below, or paste the sale text.";
+          return;
+        }
+        compareFillStatus.textContent = "Filled " + priced + " price" + (priced === 1 ? "" : "s") + " for " + storeName + ". You can still edit any box. The plan below compares money and an extra stop.";
+        document.getElementById("findPlanBtn").click();
+      }).catch(function(e){
+        compareFillStatus.textContent = sampleErrorMessage(e && e.code, e && e.message);
+      }).finally(function(){
+        fillBtn.disabled = false;
+      });
+    }
+    if(!adLink){
+      applyAd(pasted);
+      return;
+    }
+    compareFillStatus.textContent = "Opening that ad link…";
+    fetchAdLinkText(adLink).then(function(linkText){
+      applyAd(pasted ? (pasted + "\n\n" + linkText) : linkText);
+    }).catch(function(e){
+      compareFillStatus.textContent = (e && e.message) ? e.message : "Couldn't open that ad link. Paste the sale text instead.";
+      fillBtn.disabled = false;
     });
   });
 
