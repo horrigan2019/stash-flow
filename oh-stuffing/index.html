@@ -896,12 +896,12 @@
 <dialog id="uploadListDialog">
   <div class="dialog-inner">
     <h2>Upload a list</h2>
-    <div class="hint" style="margin-bottom:10px;">Photo of a list, a text file, or pasted lines. Oh Stuffing adds each item and sorts it into an aisle.</div>
-    <label class="chip-btn" for="uploadListPhoto" style="display:inline-block;">📷 Photo of a list</label>
+    <div class="hint" style="margin-bottom:10px;">A photo of a handwritten or printed list, a Word document (.docx), a text file, or pasted lines. Oh Stuffing adds each item and sorts it into an aisle.</div>
+    <label class="chip-btn" for="uploadListPhoto" style="display:inline-block;">📷 Photo or handwritten list</label>
     <input type="file" id="uploadListPhoto" accept="image/*" capture="environment" hidden>
     <div class="hint" id="uploadListPhotoName" style="margin-top:6px;"></div>
-    <label class="chip-btn" for="uploadListFile" style="display:inline-block;margin-top:8px;">📄 Text file</label>
-    <input type="file" id="uploadListFile" accept=".txt,.csv,text/plain" hidden>
+    <label class="chip-btn" for="uploadListFile" style="display:inline-block;margin-top:8px;">📄 Word doc or text file</label>
+    <input type="file" id="uploadListFile" accept=".docx,.txt,.csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/*" hidden>
     <textarea id="uploadListText" rows="4" placeholder="Or paste the list here, one item per line" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;resize:vertical;"></textarea>
     <button type="button" class="dialog-close" id="uploadListRunBtn" style="margin-top:12px;">Sort onto my list</button>
     <div class="hint" id="uploadListStatus" style="margin-top:8px;"></div>
@@ -3308,42 +3308,185 @@
   document.getElementById("uploadListBtn").addEventListener("click", openUploadList);
   document.getElementById("uploadListHomeBtn").addEventListener("click", openUploadList);
   document.getElementById("closeUploadList").addEventListener("click", function(){ uploadListDialog.close(); });
+  function looksLikeZipDump(text){
+    return text.indexOf("[Content_Types]") !== -1 || text.indexOf("word/document.xml") !== -1 || /^\s*PK/.test(text);
+  }
+  function decodeXmlText(s){
+    return String(s || "")
+      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  }
+  function tidyUploadedList(text){
+    var lines = String(text || "").split(/\r?\n/);
+    var out = [];
+    lines.forEach(function(line){
+      var trimmed = line.replace(/\s+/g, " ").trim();
+      if(!trimmed) return;
+      if(out.length && /^[a-z0-9]/.test(trimmed) && trimmed.length < 24){
+        out[out.length - 1] = (out[out.length - 1] + " " + trimmed).replace(/\s+/g, " ").trim();
+      } else {
+        out.push(trimmed);
+      }
+    });
+    return out.join("\n");
+  }
+  function docxXmlToText(xml){
+    var chunks = String(xml || "").split(/<w:p[\s>]/);
+    var lines = [];
+    chunks.forEach(function(part){
+      var bits = [];
+      var re = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:br\s*\/>|<w:tab\s*\/>/g;
+      var match;
+      while((match = re.exec(part))){
+        if(match[0].indexOf("<w:br") === 0) bits.push("\n");
+        else if(match[0].indexOf("<w:tab") === 0) bits.push(" ");
+        else bits.push(decodeXmlText(match[1]));
+      }
+      var line = bits.join("").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n").trim();
+      if(line) lines.push(line);
+    });
+    return tidyUploadedList(lines.join("\n"));
+  }
+  function readZipEntry(buffer, wanted){
+    var bytes = new Uint8Array(buffer);
+    var view = new DataView(buffer);
+    function u16(o){ return view.getUint16(o, true); }
+    function u32(o){ return view.getUint32(o, true); }
+    var eocd = -1;
+    var scanFrom = Math.max(0, bytes.length - 22 - 65536);
+    for(var i = bytes.length - 22; i >= scanFrom; i--){
+      if(u32(i) === 0x06054b50){ eocd = i; break; }
+    }
+    if(eocd < 0) return Promise.reject(new Error("That file isn't a Word document this app can read."));
+    var pos = u32(eocd + 16);
+    var cdEnd = pos + u32(eocd + 12);
+    var found = null;
+    while(pos + 46 <= cdEnd && pos + 46 <= bytes.length){
+      if(u32(pos) !== 0x02014b50) break;
+      var method = u16(pos + 10);
+      var compSize = u32(pos + 20);
+      var nameLen = u16(pos + 28);
+      var extraLen = u16(pos + 30);
+      var commentLen = u16(pos + 32);
+      var localOff = u32(pos + 42);
+      var name = new TextDecoder("utf-8").decode(bytes.subarray(pos + 46, pos + 46 + nameLen));
+      if(name.replace(/\\/g, "/") === wanted){
+        found = { method: method, compSize: compSize, localOff: localOff };
+        break;
+      }
+      pos += 46 + nameLen + extraLen + commentLen;
+    }
+    if(!found) return Promise.reject(new Error("Couldn't find the list inside that Word document."));
+    var dataOff = found.localOff + 30 + u16(found.localOff + 26) + u16(found.localOff + 28);
+    var slice = bytes.subarray(dataOff, dataOff + found.compSize);
+    if(found.method === 0) return Promise.resolve(slice);
+    if(found.method !== 8 || typeof DecompressionStream === "undefined"){
+      return Promise.reject(new Error("This phone can't open Word files in the app. Take a photo of the page instead."));
+    }
+    var stream = new Blob([slice]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return new Response(stream).arrayBuffer().then(function(buf){ return new Uint8Array(buf); });
+  }
+  function readUploadedFile(file){
+    var name = (file && file.name) || "";
+    if(/\.doc$/i.test(name) && !/\.docx$/i.test(name)){
+      return Promise.reject(new Error("Save that Word file as .docx (File → Save As), or take a photo of the page."));
+    }
+    if(/^image\//.test(file.type) || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(name)){
+      return Promise.resolve({ kind: "photo", file: file });
+    }
+    if(/\.docx$/i.test(name) || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"){
+      return new Promise(function(resolve, reject){
+        var reader = new FileReader();
+        reader.onload = function(){
+          readZipEntry(reader.result, "word/document.xml").then(function(entryBytes){
+            var xml = new TextDecoder("utf-8").decode(entryBytes);
+            var text = docxXmlToText(xml);
+            if(!text) reject(new Error("That Word document didn't have a list in it."));
+            else resolve({ kind: "text", text: text });
+          }).catch(reject);
+        };
+        reader.onerror = function(){ reject(new Error("Couldn't open that Word document.")); };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var text = tidyUploadedList(String(reader.result || ""));
+        if(looksLikeZipDump(text)){
+          reject(new Error("That looks like a Word file. Choose the .docx again — it will be read as a list, not as computer code."));
+          return;
+        }
+        resolve({ kind: "text", text: text });
+      };
+      reader.onerror = function(){ reject(new Error("Couldn't read that file.")); };
+      reader.readAsText(file);
+    });
+  }
+  function placeUploadedList(result){
+    if(result.kind === "photo"){
+      document.getElementById("uploadListPhotoName").textContent = result.file.name || "Photo ready";
+      uploadListStatus.textContent = "Photo ready. Tap Sort onto my list.";
+      return;
+    }
+    uploadListText.value = result.text;
+    var count = result.text.split("\n").filter(Boolean).length;
+    uploadListStatus.textContent = "Read " + count + " line" + (count === 1 ? "" : "s") + ". Check them, then tap Sort onto my list.";
+  }
   uploadListPhoto.addEventListener("change", function(){
-    document.getElementById("uploadListPhotoName").textContent = uploadListPhoto.files[0] ? uploadListPhoto.files[0].name : "";
+    var file = uploadListPhoto.files[0];
+    document.getElementById("uploadListPhotoName").textContent = file ? file.name : "";
+    if(file) uploadListStatus.textContent = "Photo ready. Tap Sort onto my list.";
   });
   uploadListFile.addEventListener("change", function(){
     var file = uploadListFile.files[0];
     if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(){
-      uploadListText.value = String(reader.result || "");
-    };
-    reader.readAsText(file);
+    uploadListStatus.textContent = "Reading " + file.name + "…";
+    readUploadedFile(file).then(placeUploadedList).catch(function(err){
+      uploadListText.value = "";
+      uploadListStatus.textContent = err && err.message ? err.message : "Couldn't read that file.";
+    });
   });
   document.getElementById("uploadListRunBtn").addEventListener("click", function(){
     var photo = uploadListPhoto.files[0];
     var pasted = uploadListText.value.trim();
+    if(looksLikeZipDump(pasted)){
+      uploadListText.value = "";
+      uploadListStatus.textContent = "That box had the inside of a Word file, not the list. Choose the .docx again.";
+      return;
+    }
     if(!photo && !pasted){
-      uploadListStatus.textContent = "Add a photo, a text file, or paste the list.";
+      uploadListStatus.textContent = "Add a photo, a Word doc, or paste the list.";
       return;
     }
     var runBtn = document.getElementById("uploadListRunBtn");
+    if(!photo){
+      var before = state.items.length;
+      addItems(pasted);
+      var added = state.items.length - before;
+      uploadListStatus.textContent = added
+        ? ("Added " + added + " item" + (added === 1 ? "" : "s") + ", sorted into aisles.")
+        : "Those items are already on your list.";
+      uploadListText.value = "";
+      uploadListFile.value = "";
+      return;
+    }
     runBtn.disabled = true;
-    uploadListStatus.textContent = "Reading the list…";
-    var prompt = "This is a grocery list. Extract each food or household item. " +
-      "Reply with ONLY a JSON array of strings, one item name each. Keep a quantity in the name if it is written (like \"2% milk\"). " +
-      "Skip store names, prices, and headings. If there are no items, reply with [].";
-    if(pasted) prompt += "\n\nList text:\n" + pasted;
-    var opts = { modelTier: "quick" };
-    if(photo) opts.images = [photo];
-    aiJson(prompt, opts).then(function(items){
+    uploadListStatus.textContent = "Reading the photo…";
+    var prompt = "This image is a grocery list. It may be handwritten, printed, or a photo of a screen. " +
+      "Read every item you can, including messy handwriting. Reply with ONLY a JSON array of strings, one item name each. " +
+      "Keep a quantity in the name if it is written (like \"2% milk\"). Skip store names, prices, and headings. If there are no items, reply with [].";
+    if(pasted) prompt += "\n\nAlso include these typed items if they are not already in the photo:\n" + pasted;
+    aiJson(prompt, { modelTier: "quick", images: [photo] }).then(function(items){
       if(!Array.isArray(items) || !items.length){
-        uploadListStatus.textContent = "Couldn't find items on that list. Try a clearer photo, or paste the items.";
+        uploadListStatus.textContent = "Couldn't read items in that photo. Retake it in brighter light, or paste the list.";
         return;
       }
       var names = items.map(function(item){ return String(item || "").trim(); }).filter(Boolean);
+      var before = state.items.length;
       addItems(names.join("\n"));
-      uploadListStatus.textContent = "Added " + names.length + " item" + (names.length === 1 ? "" : "s") + ", sorted into aisles.";
+      var added = state.items.length - before;
+      uploadListStatus.textContent = "Added " + added + " item" + (added === 1 ? "" : "s") + ", sorted into aisles.";
       uploadListText.value = "";
       uploadListPhoto.value = "";
       document.getElementById("uploadListPhotoName").textContent = "";
