@@ -431,6 +431,33 @@
   }
   .shop-tools{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 2px; }
   .shop-tools .chip-btn[aria-pressed="true"]{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .shopping-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    position:sticky; top:0; z-index:20; margin:0 0 8px; padding:8px 2px;
+    background:var(--bg);
+  }
+  .shopping-bar[hidden]{ display:none !important; }
+  .shopping-bar span{ font-family:"Fraunces",serif; font-weight:600; font-size:1.35rem; }
+  .shopping-bar button{
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:999px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer;
+  }
+  body.shopping-mode .brand-bar,
+  body.shopping-mode .dinner-cta,
+  body.shopping-mode .add,
+  body.shopping-mode .shop-tools,
+  body.shopping-mode #shoppingModeNote,
+  body.shopping-mode #reminderBanner,
+  body.shopping-mode #micHint,
+  body.shopping-mode #listenBanner,
+  body.shopping-mode .footer-actions,
+  body.shopping-mode .move-btn,
+  body.shopping-mode .reorder-btns,
+  body.shopping-mode .item-meta{ display:none !important; }
+  body.shopping-mode .dept-name{ font-size:1.35rem; }
+  body.shopping-mode ul.items li{ padding:16px 10px; gap:14px; }
+  body.shopping-mode ul.items li input[type=checkbox]{ width:32px; height:32px; }
+  body.shopping-mode .item-text{ font-size:1.45rem; line-height:1.25; }
 
   /* Paid access gate */
   .access-gate{
@@ -691,6 +718,10 @@
 
 <div class="wrap">
   <header class="top">
+    <div class="shopping-bar" id="shoppingBar" hidden>
+      <span>Shopping</span>
+      <button type="button" id="shoppingDoneBtn">Done</button>
+    </div>
     <div class="brand-bar">
       <div class="brand">
         <div class="brand-id">
@@ -2612,10 +2643,15 @@
     if(!anyItems){
       var empty = document.createElement("div");
       empty.className = "empty";
-      empty.innerHTML = '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
+      var shoppingNow = document.body.classList.contains("shopping-mode");
+      empty.innerHTML = shoppingNow
+        ? "Nothing on the list yet."
+        : '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
       listArea.appendChild(empty);
       return;
     }
+
+    var shopping = document.body.classList.contains("shopping-mode");
 
     state.order.forEach(function(deptId, idx){
       var dept = DEPT_BY_ID[deptId];
@@ -2669,9 +2705,23 @@
           if(it.meals && it.meals.length) metaParts.push("for " + it.meals.join(", "));
           if(it.saleNote) metaParts.push("🏷️ " + it.saleNote);
           var metaStr = metaParts.join(" · ");
-          textWrap.setAttribute("aria-label", it.text + (metaStr ? ", " + metaStr : "") + ", in " + dept.name + ". Activate to move to a different aisle.");
-          textWrap.addEventListener("click", function(){ openAssign(it); });
-          textWrap.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openAssign(it); } });
+          textWrap.setAttribute("aria-label", it.text + (metaStr ? ", " + metaStr : "") + ", in " + dept.name + (shopping ? ". Activate to check it off." : ". Activate to move to a different aisle."));
+          textWrap.addEventListener("click", function(){
+            if(shopping){
+              it.done = !it.done;
+              saveState();
+              render();
+              return;
+            }
+            openAssign(it);
+          });
+          textWrap.addEventListener("keydown", function(e){
+            if(e.key==="Enter"||e.key===" "){
+              e.preventDefault();
+              if(shopping){ it.done = !it.done; saveState(); render(); }
+              else openAssign(it);
+            }
+          });
           var mainLine = document.createElement("span");
           mainLine.textContent = it.text;
           textWrap.appendChild(mainLine);
@@ -3258,39 +3308,37 @@
   var shoppingModeNote = document.getElementById("shoppingModeNote");
   var shoppingWakeLock = null;
   function setShoppingMode(on){
+    var bar = document.getElementById("shoppingBar");
     if(!on){
       if(shoppingWakeLock){
         shoppingWakeLock.release().catch(function(){});
         shoppingWakeLock = null;
       }
+      document.body.classList.remove("shopping-mode");
+      if(bar) bar.hidden = true;
       shoppingModeBtn.setAttribute("aria-pressed", "false");
       shoppingModeBtn.textContent = "🛒 Shopping mode";
       shoppingModeNote.hidden = true;
+      render();
       return;
     }
-    if(!navigator.wakeLock || !navigator.wakeLock.request){
-      shoppingModeBtn.setAttribute("aria-pressed", "false");
-      shoppingModeNote.hidden = false;
-      shoppingModeNote.textContent = "This browser can't keep the screen on from the app. Turn off Auto-Lock in the phone's settings while you shop.";
-      return;
-    }
+    document.body.classList.add("shopping-mode");
+    if(bar) bar.hidden = false;
+    shoppingModeBtn.setAttribute("aria-pressed", "true");
+    shoppingModeBtn.textContent = "🛒 Shopping mode on";
+    shoppingModeNote.hidden = true;
+    render();
+    if(!navigator.wakeLock || !navigator.wakeLock.request) return;
     navigator.wakeLock.request("screen").then(function(lock){
       shoppingWakeLock = lock;
-      shoppingModeBtn.setAttribute("aria-pressed", "true");
-      shoppingModeBtn.textContent = "🛒 Shopping mode on";
-      shoppingModeNote.hidden = false;
-      shoppingModeNote.textContent = "Screen stays on while you shop. Tap Shopping mode again when you're done.";
-      lock.addEventListener("release", function(){
-        shoppingWakeLock = null;
-      });
-    }).catch(function(){
-      shoppingModeBtn.setAttribute("aria-pressed", "false");
-      shoppingModeNote.hidden = false;
-      shoppingModeNote.textContent = "Couldn't keep the screen on. Turn off Auto-Lock in the phone's settings while you shop.";
-    });
+      lock.addEventListener("release", function(){ shoppingWakeLock = null; });
+    }).catch(function(){});
   }
   shoppingModeBtn.addEventListener("click", function(){
     setShoppingMode(shoppingModeBtn.getAttribute("aria-pressed") !== "true");
+  });
+  document.getElementById("shoppingDoneBtn").addEventListener("click", function(){
+    setShoppingMode(false);
   });
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState === "visible" && shoppingModeBtn.getAttribute("aria-pressed") === "true" && !shoppingWakeLock){
