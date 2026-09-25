@@ -177,11 +177,13 @@
   @media (prefers-reduced-motion:reduce){ .mic-btn[data-listening="true"]{ animation:none; } }
 
   .hint{ color:var(--muted); font-size:.82rem; margin-top:8px; }
+  .hint[hidden]{ display:none !important; }
   .listen-banner{
     margin-top:10px; padding:10px 12px; border-radius:12px;
     background:var(--surface-2); color:var(--ink); font-size:.9rem;
     display:flex; align-items:center; gap:8px;
   }
+  .listen-banner[hidden]{ display:none !important; }
   .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-2); flex:none; }
 
   .toolbar{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
@@ -744,7 +746,7 @@
     </div>
     <div class="hint" id="shoppingModeNote" hidden>Shopping mode keeps the screen awake.</div>
     <div class="hint" id="reminderBanner" hidden></div>
-    <div class="hint" id="micHint">Tip: tap the mic, say "flour, eggs, and bananas," then tap again to stop. Works in Chrome, Edge, and Safari once Oh Stuffing is live on its own site (blocked in this preview) — not a "hey Oh Stuffing" wake word, just tap-to-talk.</div>
+    <div class="hint" id="micHint" hidden></div>
     <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
   </header>
 
@@ -3673,7 +3675,8 @@
   if(!SpeechRec){
     micBtn.disabled = true;
     micBtn.style.opacity = "0.4";
-    micHint.textContent = "Voice input isn't supported in this browser (try Chrome, Edge, or Safari) — just type your items above for now.";
+    micHint.hidden = false;
+    micHint.textContent = "Voice isn't available in this browser. Type the items instead.";
   } else {
     recognition = new SpeechRec();
     recognition.continuous = true;
@@ -3696,7 +3699,7 @@
     };
     recognition.onerror = function(e){
       if(e.error === "not-allowed" || e.error === "service-not-allowed"){
-        listenText.textContent = "Voice input is blocked in this preview — it'll work in Chrome, Edge, or Safari once Oh Stuffing is live on its own site. Just type for now.";
+        listenText.textContent = "Voice isn't allowed on this phone yet. You can type the items instead.";
       } else if(e.error === "no-speech"){
         listenText.textContent = "Didn't hear anything — try again, or type it in.";
       } else {
@@ -4343,6 +4346,13 @@
     });
   });
   document.getElementById("closeDinnerScan").addEventListener("click", function(){
+    if(recognition && recognizing){
+      try{ recognition.stop(); }catch(e){}
+    }
+    recognizing = false;
+    listenBanner.hidden = true;
+    micBtn.setAttribute("aria-pressed", "false");
+    micBtn.setAttribute("data-listening", "false");
     dinnerScanDialog.close();
   });
 
