@@ -75,8 +75,8 @@
     font-family:"Karla","Trebuchet MS",sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  body[data-textsize="large"]{ font-size:118%; }
-  body[data-textsize="xl"]{ font-size:138%; }
+  html[data-textsize="large"]{ font-size:118%; }
+  html[data-textsize="xl"]{ font-size:138%; }
   body[data-contrast="high"]{
     --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#EFEFEF;
     --ink:#000000; --muted:#2A2A2A; --border:#000000;
@@ -3604,7 +3604,12 @@
       });
     });
   }
-  function applyTextSize(v){ document.body.setAttribute("data-textsize", v === "normal" ? "" : v); }
+  function applyTextSize(v){
+    var root = document.documentElement;
+    if(!v || v === "normal") root.removeAttribute("data-textsize");
+    else root.setAttribute("data-textsize", v);
+    document.body.removeAttribute("data-textsize");
+  }
   function applyContrast(v){ document.body.setAttribute("data-contrast", v); }
   function applyTheme(v){
     if(v === "system") document.documentElement.removeAttribute("data-theme");
