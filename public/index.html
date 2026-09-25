@@ -77,28 +77,25 @@
   }
   html[data-textsize="large"]{ font-size:118%; }
   html[data-textsize="xl"]{ font-size:138%; }
+  html[data-theme="light"]{ color-scheme:light; }
+  html[data-theme="dark"]{ color-scheme:dark; }
   body[data-contrast="high"]{
     --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#EFEFEF;
-    --ink:#000000; --muted:#2A2A2A; --border:#000000;
-    --accent:#1F5C2E; --accent-ink:#FFFFFF;
-    --accent-2:#A6420F; --accent-2-ink:#FFFFFF;
-  }
-  body[data-contrast="high"][data-theme="dark"],
-  body[data-contrast="high"]:not([data-theme="light"]){
+    --ink:#000000; --muted:#1A1A1A; --border:#000000;
   }
   @media (prefers-color-scheme:dark){
-    body[data-contrast="high"]:not([data-theme="light"]){
+    html:not([data-theme="light"]) body[data-contrast="high"]{
       --bg:#000000; --surface:#000000; --surface-2:#141414;
       --ink:#FFFFFF; --muted:#DDDDDD; --border:#FFFFFF;
-      --accent:#7FE39B; --accent-ink:#00230D;
-      --accent-2:#FFB58A; --accent-2-ink:#3A1A08;
     }
   }
-  body[data-contrast="high"][data-theme="dark"]{
+  html[data-theme="dark"] body[data-contrast="high"]{
     --bg:#000000; --surface:#000000; --surface-2:#141414;
     --ink:#FFFFFF; --muted:#DDDDDD; --border:#FFFFFF;
-    --accent:#7FE39B; --accent-ink:#00230D;
-    --accent-2:#FFB58A; --accent-2-ink:#3A1A08;
+  }
+  html[data-theme="light"] body[data-contrast="high"]{
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#EFEFEF;
+    --ink:#000000; --muted:#1A1A1A; --border:#000000;
   }
 
   h1,h2,h3{ font-family:"Fraunces","Georgia",serif; font-weight:600; margin:0; text-wrap:balance; }
@@ -3662,8 +3659,14 @@
   }
   function applyContrast(v){ document.body.setAttribute("data-contrast", v); }
   function applyTheme(v){
-    if(v === "system") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", v);
+    var root = document.documentElement;
+    if(v === "system"){
+      root.removeAttribute("data-theme");
+      document.body.removeAttribute("data-theme");
+    } else {
+      root.setAttribute("data-theme", v);
+      document.body.setAttribute("data-theme", v);
+    }
   }
 
   // ---------- App color (accent) presets ----------
