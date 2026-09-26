@@ -913,6 +913,17 @@
   </div>
 </dialog>
 
+<dialog id="aisleAskDialog">
+  <div class="dialog-inner">
+    <h2>Which aisle?</h2>
+    <p class="hint" id="aisleAskText" style="margin-bottom:14px;"></p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="dialog-close" id="aisleAskA" type="button" style="background:var(--accent);color:var(--accent-ink);"></button>
+      <button class="dialog-close" id="aisleAskB" type="button"></button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="didYouMeanDialog">
   <div class="dialog-inner">
     <h2>Did you mean this?</h2>
@@ -2014,7 +2025,7 @@
     deli: ["deli meat","turkey slices","ham slices","salami","prosciutto","sliced cheese","deli cheese","rotisserie chicken","pepperoni sliced","sub sandwich"],
     meat: ["chicken","chicken breast","chicken thighs","beef","ground beef","steak","pork","pork chops","bacon","sausage","sausages","turkey","ham","lamb","shrimp","salmon","fish","tilapia","cod","tuna steak","ground turkey","hot dogs","meatballs","ribs","pork ribs","beef ribs","baby back ribs","spare ribs","short ribs"],
     dairy: ["milk","eggs","egg","huevos","cheese","cheddar","mozzarella","fresh mozzarella","gouda","mexican cheese","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","whip cream","string cheese","parmesan","shredded parmesan"],
-    frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
+    frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","chicken tenders","chicken tender","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
     baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
     pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
@@ -2747,18 +2758,20 @@
         meals: mealName ? [mealName] : []
       };
       state.items.push(item);
-      added.push({ item: item, typed: typed });
+      added.push({ item: item, typed: typed, key: key });
     });
     saveState();
     render();
-    if(!opts.silent && !mealName){
-      added.forEach(function(entry){
-        if(entry.typed.toLowerCase() === entry.item.text.toLowerCase()){
-          var guess = closestKnownItem(entry.typed);
-          if(guess) enqueueDidYouMean(entry.item, guess);
-        }
-      });
-    }
+    added.forEach(function(entry){
+      if(!state.learned[entry.key] && aisleChoiceFor(entry.item.text)){
+        enqueueAisleAsk(entry.item);
+        return;
+      }
+      if(!opts.silent && !mealName && entry.typed.toLowerCase() === entry.item.text.toLowerCase()){
+        var guess = closestKnownItem(entry.typed);
+        if(guess) enqueueDidYouMean(entry.item, guess);
+      }
+    });
   }
 
   // ---------- Rendering ----------
@@ -2967,6 +2980,52 @@
   document.getElementById("didYouMeanNo").addEventListener("click", function(){
     finishDidYouMean();
   });
+
+  var AISLE_CHOICE = {
+    "chicken tenders": { options: ["frozen","meat"], prompt: "Chicken tenders are usually in the freezer. Keep them in Frozen, or put them in Meat & Seafood?" },
+    "chicken tender": { options: ["frozen","meat"], prompt: "Chicken tenders are usually in the freezer. Keep them in Frozen, or put them in Meat & Seafood?" }
+  };
+  var aisleAskDialog = document.getElementById("aisleAskDialog");
+  var aisleAskText = document.getElementById("aisleAskText");
+  var aisleAskA = document.getElementById("aisleAskA");
+  var aisleAskB = document.getElementById("aisleAskB");
+  var aisleAskQueue = [];
+  var aisleAskCurrent = null;
+  function aisleChoiceFor(text){
+    return AISLE_CHOICE[String(text || "").trim().toLowerCase()] || null;
+  }
+  function showNextAisleAsk(){
+    if(aisleAskCurrent || !aisleAskQueue.length || !aisleAskDialog) return;
+    aisleAskCurrent = aisleAskQueue.shift();
+    var choice = aisleAskCurrent && aisleChoiceFor(aisleAskCurrent.text);
+    if(!aisleAskCurrent || !choice){ aisleAskCurrent = null; showNextAisleAsk(); return; }
+    var a = DEPT_BY_ID[choice.options[0]];
+    var b = DEPT_BY_ID[choice.options[1]];
+    aisleAskText.textContent = choice.prompt;
+    aisleAskA.textContent = a ? (a.emoji + " " + a.name) : "Frozen";
+    aisleAskA.setAttribute("data-dept", choice.options[0]);
+    aisleAskB.textContent = b ? (b.emoji + " " + b.name) : "Meat & Seafood";
+    aisleAskB.setAttribute("data-dept", choice.options[1]);
+    aisleAskDialog.showModal();
+  }
+  function enqueueAisleAsk(item){
+    if(!item || state.learned[item.text.trim().toLowerCase()]) return;
+    aisleAskQueue.push(item);
+    showNextAisleAsk();
+  }
+  function pickAisleAsk(dept){
+    if(aisleAskCurrent && dept){
+      aisleAskCurrent.dept = dept;
+      state.learned[aisleAskCurrent.text.trim().toLowerCase()] = dept;
+      saveState();
+    }
+    aisleAskCurrent = null;
+    if(aisleAskDialog) aisleAskDialog.close();
+    render();
+    showNextAisleAsk();
+  }
+  aisleAskA.addEventListener("click", function(){ pickAisleAsk(aisleAskA.getAttribute("data-dept")); });
+  aisleAskB.addEventListener("click", function(){ pickAisleAsk(aisleAskB.getAttribute("data-dept")); });
 
   function openAssign(item){
     currentAssignItem = item;
