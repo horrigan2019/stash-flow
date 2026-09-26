@@ -913,6 +913,17 @@
   </div>
 </dialog>
 
+<dialog id="didYouMeanDialog">
+  <div class="dialog-inner">
+    <h2>Did you mean this?</h2>
+    <p class="hint" id="didYouMeanText" style="margin-bottom:14px;"></p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="dialog-close" id="didYouMeanYes" type="button" style="background:var(--accent);color:var(--accent-ink);">Yes, use that</button>
+      <button class="dialog-close" id="didYouMeanNo" type="button">Keep what I typed</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="assignDialog">
   <div class="dialog-inner">
     <h2 id="assignTitle">Where does this go?</h2>
@@ -1983,6 +1994,7 @@
     { id:"breakfast", name:"Breakfast & Cereal",    emoji:"🥣" },
     { id:"baking",    name:"Baking",                emoji:"🧁" },
     { id:"pantry",    name:"Pantry Isle",           emoji:"🥫" },
+    { id:"condiments", name:"Condiments",           emoji:"🧂" },
     { id:"pasta",     name:"Pasta, Rice & Grains",  emoji:"🍚" },
     { id:"snacks",    name:"Snacks",                emoji:"🍪" },
     { id:"beverages", name:"Beverages",             emoji:"🥤" },
@@ -2005,7 +2017,8 @@
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
     baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    pantry: ["canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","salad dressing","olive oil","vegetable oil","vinegar","bbq sauce","salsa","peanut butter","jelly","jam","honey","relish","worcestershire","sriracha","ranch","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
+    pantry: ["applesauce","apple sauce","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
+    condiments: ["ketchup","mustard","mayo","mayonnaise","hot sauce","soy sauce","oyster sauce","fish sauce","hoisin","hoisin sauce","teriyaki","teriyaki sauce","steak sauce","salad dressing","bbq sauce","barbecue sauce","salsa","relish","worcestershire","worcestershire sauce","sriracha","ranch","chili sauce","sweet chili sauce","cocktail sauce","tartar sauce","aioli"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips","pita chips","corn chips","kettle chips","potato chips","kettle potato chips"],
     beverages: ["water","soda","juice","coffee","tea","sparkling water","beer","wine","lemonade","energy drink","kombucha","apple juice","orange juice","malta"],
@@ -2155,7 +2168,7 @@
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
     produce: 2, bakery: 2, deli: 2, meat: 3, dairy: 5, frozen: 21,
-    breakfast: 30, baking: 60, pantry: 90, pasta: 90,
+    breakfast: 30, baking: 60, pantry: 90, condiments: 90, pasta: 90,
     snacks: 30, beverages: 30, household: 90, pets: 60, personal: 90, decorations: 30, other: 10
   };
   function earliestBuyDate(dept, eventDateStr){
@@ -2337,7 +2350,7 @@
     customDepts: []
   };
   // migrate: drop retired aisles, keep every current department, Unsorted stays last
-  var RETIRED_DEPT = { canned: "pantry", condiments: "pantry" };
+  var RETIRED_DEPT = { canned: "pantry" };
   function remapRetiredDept(dept){
     return RETIRED_DEPT[dept] || dept;
   }
@@ -2348,6 +2361,10 @@
     if(d.id === "pantry"){
       var bakeIdx = state.order.indexOf("baking");
       if(bakeIdx !== -1){ state.order.splice(bakeIdx + 1, 0, d.id); return; }
+    }
+    if(d.id === "condiments"){
+      var pantryIdx = state.order.indexOf("pantry");
+      if(pantryIdx !== -1){ state.order.splice(pantryIdx + 1, 0, d.id); return; }
     }
     var otherIdx = state.order.indexOf("other");
     if(otherIdx === -1) state.order.push(d.id);
@@ -2389,6 +2406,12 @@
     function take(dept, text){
       var next = remapRetiredDept(dept);
       if(splitBaking && next === "baking" && keywordIsPantry(text)) next = "pantry";
+      var key = String(text || "").trim().toLowerCase();
+      if(key && !state.learned[key]){
+        var looked = lookupKeyword(key) || lookupKeyword(key.replace(/[\s-]+/g,""));
+        if(looked === "condiments" && (next === "pantry" || next === "other")) next = "condiments";
+        if(looked === "pantry" && next === "other") next = "pantry";
+      }
       if(next !== dept) changed = true;
       return next;
     }
@@ -2494,6 +2517,8 @@
       text = withoutMeal;
     }
     if(lookupKeyword(text)) return lookupKeyword(text);
+    var compact = text.replace(/[\s-]+/g,"");
+    if(compact !== text && lookupKeyword(compact)) return lookupKeyword(compact);
     // try phrase without leading quantity words / articles
     var stripped = stripQuantity(text);
     if(stripped && stripped !== text){
@@ -2586,6 +2611,8 @@
     var lower = text.toLowerCase();
     if(/^(sq\.?|s q\.?)$/i.test(lower)) return "";
     if(/^pauau$/i.test(lower)) return "";
+    if(/applesauce|apple\s*sauce/i.test(lower)) return "applesauce";
+    if(/oyster\s*sauce/i.test(lower)) return "oyster sauce";
     if(/whip/i.test(lower) && /crea/i.test(lower)) return "whipped cream";
     if(/(drier|dryer|deli)\s*sheet/i.test(lower)) return "dryer sheets";
     if(/tooth/i.test(lower)) return "children's toothpaste";
@@ -2653,11 +2680,54 @@
     if(changed) saveState();
   }
 
-  function addItems(raw, mealName){
+  function editDistance(a, b){
+    a = String(a || "").toLowerCase();
+    b = String(b || "").toLowerCase();
+    if(a === b) return 0;
+    var rows = [];
+    var i, j;
+    for(i=0;i<=a.length;i++) rows[i] = [i];
+    for(j=0;j<=b.length;j++) rows[0][j] = j;
+    for(i=1;i<=a.length;i++){
+      for(j=1;j<=b.length;j++){
+        var cost = a.charAt(i-1) === b.charAt(j-1) ? 0 : 1;
+        rows[i][j] = Math.min(rows[i-1][j]+1, rows[i][j-1]+1, rows[i-1][j-1]+cost);
+      }
+    }
+    return rows[a.length][b.length];
+  }
+  function canonicalItemName(text){
+    var spaced = String(text || "").replace(/\s+/g," ").trim();
+    var lower = spaced.toLowerCase();
+    var compact = lower.replace(/[\s-]+/g,"");
+    if(WORD_TO_DEPT[compact]) return compact === lower ? spaced : compact;
+    if(WORD_TO_DEPT[lower]) return spaced;
+    return spaced;
+  }
+  function closestKnownItem(text){
+    var lower = String(text || "").replace(/\s+/g," ").trim().toLowerCase();
+    if(!lower || WORD_TO_DEPT[lower] || WORD_TO_DEPT[lower.replace(/[\s-]+/g,"")]) return "";
+    var best = "";
+    var bestDist = 99;
+    Object.keys(WORD_TO_DEPT).forEach(function(term){
+      if(term.length < 4) return;
+      var dist = editDistance(lower, term);
+      var allowed = term.length >= 10 ? 2 : 1;
+      if(dist > 0 && dist <= allowed && dist < bestDist){
+        best = term;
+        bestDist = dist;
+      }
+    });
+    return best;
+  }
+  function addItems(raw, mealName, opts){
+    opts = opts || {};
     var parts = splitEntry(raw);
+    var added = [];
     parts.forEach(function(p){
-      var text = p.replace(/\s+/g," ").trim();
-      if(!text) return;
+      var typed = p.replace(/\s+/g," ").trim();
+      if(!typed) return;
+      var text = canonicalItemName(typed);
       var key = text.toLowerCase();
       var existing = state.items.find(function(it){
         return !it.done && it.text.trim().toLowerCase() === key;
@@ -2667,16 +2737,26 @@
         return;
       }
       var dept = classify(text);
-      state.items.push({
+      var item = {
         id: "i"+Date.now()+Math.random().toString(16).slice(2),
         text: text,
         dept: dept,
         done: false,
         meals: mealName ? [mealName] : []
-      });
+      };
+      state.items.push(item);
+      added.push({ item: item, typed: typed });
     });
     saveState();
     render();
+    if(!opts.silent && !mealName){
+      added.forEach(function(entry){
+        if(entry.typed.toLowerCase() === entry.item.text.toLowerCase()){
+          var guess = closestKnownItem(entry.typed);
+          if(guess) enqueueDidYouMean(entry.item, guess);
+        }
+      });
+    }
   }
 
   // ---------- Rendering ----------
@@ -2849,6 +2929,42 @@
     });
   }
   refreshAssignOptions();
+
+  var didYouMeanDialog = document.getElementById("didYouMeanDialog");
+  var didYouMeanText = document.getElementById("didYouMeanText");
+  var didYouMeanQueue = [];
+  var didYouMeanCurrent = null;
+  function showNextDidYouMean(){
+    if(didYouMeanCurrent || !didYouMeanQueue.length || !didYouMeanDialog) return;
+    didYouMeanCurrent = didYouMeanQueue.shift();
+    if(!didYouMeanCurrent || !didYouMeanCurrent.item){ didYouMeanCurrent = null; showNextDidYouMean(); return; }
+    didYouMeanText.textContent = 'You added "' + didYouMeanCurrent.item.text + '". Did you mean "' + didYouMeanCurrent.suggestion + '"?';
+    didYouMeanDialog.showModal();
+  }
+  function enqueueDidYouMean(item, suggestion){
+    if(!item || !suggestion) return;
+    if(String(item.text).trim().toLowerCase() === String(suggestion).trim().toLowerCase()) return;
+    didYouMeanQueue.push({ item: item, suggestion: suggestion });
+    showNextDidYouMean();
+  }
+  function finishDidYouMean(){
+    didYouMeanCurrent = null;
+    if(didYouMeanDialog) didYouMeanDialog.close();
+    render();
+    showNextDidYouMean();
+  }
+  document.getElementById("didYouMeanYes").addEventListener("click", function(){
+    if(didYouMeanCurrent && didYouMeanCurrent.item){
+      var next = canonicalItemName(didYouMeanCurrent.suggestion);
+      didYouMeanCurrent.item.text = next;
+      didYouMeanCurrent.item.dept = classify(next);
+      saveState();
+    }
+    finishDidYouMean();
+  });
+  document.getElementById("didYouMeanNo").addEventListener("click", function(){
+    finishDidYouMean();
+  });
 
   function openAssign(item){
     currentAssignItem = item;
@@ -3647,7 +3763,7 @@
         return;
       }
       var before = state.items.length;
-      addItems(names.join("\n"));
+      addItems(names.join("\n"), null, { silent: true });
       var added = state.items.length - before;
       uploadListStatus.textContent = "Added " + added + " item" + (added === 1 ? "" : "s") + ", sorted into aisles.";
       uploadListText.value = "";
