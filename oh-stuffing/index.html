@@ -786,6 +786,7 @@
         <button class="chip-btn" id="recipeVaultBtn" type="button">📖 Recipe vault</button>
         <button class="chip-btn" id="eventBtn" type="button">🎉 Holidays &amp; Event Plans</button>
         <button class="chip-btn" id="storeCompareBtn" type="button">🏬 Compare Stores</button>
+        <button class="chip-btn" id="storeListsBtn" type="button">📋 Store Lists</button>
         <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
         <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
         <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
@@ -1229,6 +1230,17 @@
     <div class="meal-empty" id="eventEmpty" hidden>No events yet — plan one above and we'll spread out what to buy when.</div>
     <div class="hint" style="margin-top:14px;">Heads up: this shows what's ready to buy whenever you open the app — it can't send you a push notification on its own yet.</div>
     <button class="dialog-close" id="closeEvent" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
+<dialog id="storeListsDialog">
+  <div class="dialog-inner" style="max-width:520px;">
+    <h2>Store Lists</h2>
+    <p class="hint" style="margin-bottom:12px;">Flyer prices you saved for each store. Tap a list — Meijer List, Walmart List, or whatever you saved — to see what's on sale there.</p>
+    <div id="storeListsChips" class="deal-banner-actions" style="margin-bottom:12px;" hidden></div>
+    <div class="meal-empty" id="storeListsEmpty" hidden>No store lists yet. Check a flyer and save it as Meijer List or Walmart List, then it shows up here.</div>
+    <div id="storeListsDetail"></div>
+    <button class="dialog-close" id="closeStoreLists" type="button" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -6180,6 +6192,136 @@
         ? "Next time, tap " + storeListLabel(clean) + " — no need to type the store name."
         : "Save this flyer as " + storeListLabel(clean) + " so you can tap it next time.";
     }
+  }
+
+  var storeListsDialog = document.getElementById("storeListsDialog");
+  var selectedStoreListId = "";
+
+  function itemsForStoreList(store){
+    var rows = [];
+    if(!store) return rows;
+    (state.items || []).filter(function(it){ return !it.done; }).forEach(function(it){
+      var key = it.text.trim().toLowerCase();
+      var entries = state.priceEntries[key];
+      var price = entries && entries[store.id];
+      if(price === undefined || price === null || isNaN(price)) return;
+      rows.push({ text: it.text, price: price });
+    });
+    return rows;
+  }
+
+  function renderStoreListsDialog(){
+    var chips = document.getElementById("storeListsChips");
+    var empty = document.getElementById("storeListsEmpty");
+    var detail = document.getElementById("storeListsDetail");
+    var stores = (state.myStores || []).slice().sort(function(a,b){
+      return (b.lastFlyerAt || 0) - (a.lastFlyerAt || 0);
+    });
+    if(!chips || !detail) return;
+    chips.innerHTML = "";
+    if(!stores.length){
+      if(empty) empty.hidden = false;
+      chips.hidden = true;
+      detail.innerHTML = "";
+      return;
+    }
+    if(empty) empty.hidden = true;
+    chips.hidden = false;
+    if(!selectedStoreListId || !stores.some(function(s){ return s.id === selectedStoreListId; })){
+      var last = state.lastFlyerStore
+        ? stores.find(function(s){ return s.name.trim().toLowerCase() === String(state.lastFlyerStore).trim().toLowerCase(); })
+        : null;
+      selectedStoreListId = (last || stores[0]).id;
+    }
+    stores.forEach(function(s){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip-btn";
+      btn.textContent = storeListLabel(s.name);
+      btn.setAttribute("aria-pressed", s.id === selectedStoreListId ? "true" : "false");
+      btn.addEventListener("click", function(){
+        selectedStoreListId = s.id;
+        renderStoreListsDialog();
+      });
+      chips.appendChild(btn);
+    });
+    var store = stores.find(function(s){ return s.id === selectedStoreListId; });
+    detail.innerHTML = "";
+    if(!store) return;
+    var box = document.createElement("div");
+    box.className = "plan-detail-store";
+    var h = document.createElement("h4");
+    h.textContent = storeListLabel(store.name);
+    box.appendChild(h);
+    var rows = itemsForStoreList(store);
+    if(!rows.length){
+      var hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = "No flyer prices on your current list for this store yet. Check a flyer to add some.";
+      box.appendChild(hint);
+    } else {
+      rows.forEach(function(row){
+        var line = document.createElement("div");
+        line.style.cssText = "display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;gap:10px;";
+        var n = document.createElement("span");
+        n.textContent = row.text;
+        var p = document.createElement("span");
+        p.textContent = formatDealMoney(row.price);
+        line.appendChild(n);
+        line.appendChild(p);
+        box.appendChild(line);
+      });
+    }
+    detail.appendChild(box);
+    var actions = document.createElement("div");
+    actions.className = "deal-banner-actions";
+    actions.style.marginTop = "12px";
+    var checkBtn = document.createElement("button");
+    checkBtn.type = "button";
+    checkBtn.className = "chip-btn";
+    checkBtn.textContent = "Check a " + store.name + " flyer";
+    checkBtn.addEventListener("click", function(){
+      state.lastFlyerStore = store.name;
+      if(flyerStoreName) flyerStoreName.value = store.name;
+      saveState();
+      if(storeListsDialog) storeListsDialog.close();
+      var flyerBtnEl = document.getElementById("flyerBtn");
+      if(flyerBtnEl) flyerBtnEl.click();
+    });
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "chip-btn";
+    removeBtn.textContent = "Remove " + storeListLabel(store.name);
+    removeBtn.addEventListener("click", function(){
+      state.myStores = (state.myStores || []).filter(function(s){ return s.id !== store.id; });
+      Object.keys(state.priceEntries || {}).forEach(function(key){
+        if(state.priceEntries[key]) delete state.priceEntries[key][store.id];
+      });
+      if(state.lastFlyerStore && state.lastFlyerStore.trim().toLowerCase() === store.name.trim().toLowerCase()){
+        state.lastFlyerStore = "";
+      }
+      selectedStoreListId = "";
+      saveState();
+      render();
+      renderStoreListsDialog();
+    });
+    actions.appendChild(checkBtn);
+    actions.appendChild(removeBtn);
+    detail.appendChild(actions);
+  }
+
+  var storeListsBtn = document.getElementById("storeListsBtn");
+  if(storeListsBtn && storeListsDialog){
+    storeListsBtn.addEventListener("click", function(){
+      if(typeof setMoreFeaturesOpen === "function") setMoreFeaturesOpen(false);
+      selectedStoreListId = "";
+      renderStoreListsDialog();
+      storeListsDialog.showModal();
+    });
+  }
+  var closeStoreLists = document.getElementById("closeStoreLists");
+  if(closeStoreLists && storeListsDialog){
+    closeStoreLists.addEventListener("click", function(){ storeListsDialog.close(); });
   }
 
   function rememberFlyerPrice(itemText, storeName, saleText){
