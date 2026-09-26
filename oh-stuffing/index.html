@@ -2538,12 +2538,13 @@
   }
   function splitEntry(raw){
     if(!raw) return [];
-    var chunks = String(raw).split(/,| and |\n|;/i).map(function(s){ return s.trim(); }).filter(Boolean);
+    // Only commas and line breaks delimit items — never whitespace inside a name
+    // so "Banana Peppers", "Green Onions", and "Sour Cream" stay one entry.
+    var chunks = String(raw).split(/,|\r\n|\n|\r/).map(function(s){ return s.trim(); }).filter(Boolean);
     var out = [];
     chunks.forEach(function(chunk){
       var cleaned = stripMealNotes(chunk);
-      if(!cleaned) return;
-      splitRunOn(cleaned).forEach(function(part){ out.push(part); });
+      if(cleaned) out.push(cleaned);
     });
     return out;
   }
@@ -3722,6 +3723,25 @@
   var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   var recognizing = false;
   var recognition = null;
+  var micStream = null;
+  var isMobileVoice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  function stopMicTracks(){
+    if(!micStream) return;
+    try{
+      micStream.getTracks().forEach(function(track){ try{ track.stop(); }catch(err){} });
+    }catch(e){}
+    micStream = null;
+  }
+
+  function abortVoiceSession(){
+    recognizing = false;
+    if(recognition){
+      try{ recognition.abort(); }catch(e){}
+    }
+    stopMicTracks();
+  }
 
   if(!SpeechRec){
     micBtn.disabled = true;
@@ -3730,7 +3750,7 @@
     micHint.textContent = "Voice isn't available in this browser. Type the items instead.";
   } else {
     recognition = new SpeechRec();
-    recognition.continuous = true;
+    recognition.continuous = !isMobileVoice;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
@@ -3749,16 +3769,21 @@
       listenText.textContent = "Heard: " + (finalBuffer + interim || "…");
     };
     recognition.onerror = function(e){
+      recognizing = false;
+      stopMicTracks();
+      micBtn.setAttribute("data-listening","false");
+      micBtn.setAttribute("aria-pressed","false");
       if(e.error === "not-allowed" || e.error === "service-not-allowed"){
         listenText.textContent = "Voice isn't allowed on this phone yet. You can type the items instead.";
       } else if(e.error === "no-speech"){
         listenText.textContent = "Didn't hear anything — try again, or type it in.";
-      } else {
+      } else if(e.error !== "aborted"){
         listenText.textContent = "Didn't catch that — try again, or type it in.";
       }
     };
     recognition.onend = function(){
       recognizing = false;
+      stopMicTracks();
       micBtn.setAttribute("data-listening","false");
       micBtn.setAttribute("aria-pressed","false");
       listenBanner.hidden = true;
@@ -3770,9 +3795,12 @@
 
     micBtn.addEventListener("click", function(){
       if(recognizing){
-        recognition.stop();
+        recognizing = false;
+        try{ recognition.stop(); }catch(e){}
+        stopMicTracks();
         return;
       }
+      abortVoiceSession();
       finalBuffer = "";
       listenText.textContent = "Listening…";
       listenBanner.hidden = false;
@@ -3780,7 +3808,7 @@
       micBtn.setAttribute("aria-pressed","true");
       recognizing = true;
       try{ recognition.start(); }
-      catch(e){ recognizing = false; listenBanner.hidden = true; }
+      catch(e){ recognizing = false; listenBanner.hidden = true; stopMicTracks(); }
     });
   }
 
@@ -4194,7 +4222,19 @@
   }
 
   function renderScanResults(items){
-    pendingScanItems = items.filter(Boolean).map(function(t){ return { text: String(t).trim(), checked: true }; });
+    var list = items;
+    if(!Array.isArray(list) && list && typeof list === "object"){
+      if(Array.isArray(list.items)) list = list.items;
+      else if(Array.isArray(list.detected)) list = list.detected;
+      else if(Array.isArray(list.foods)) list = list.foods;
+    }
+    if(!Array.isArray(list)) list = [];
+    pendingScanItems = list.map(function(t){
+      var text = (t && typeof t === "object")
+        ? String(t.text || t.name || t.item || "").trim()
+        : String(t == null ? "" : t).trim();
+      return { text: text, checked: true };
+    }).filter(function(entry){ return entry.text; });
     drawScanResultList();
     pantryResultsEl.hidden = pendingScanItems.length === 0;
     if(pendingScanItems.length === 0){
@@ -4397,10 +4437,7 @@
     });
   });
   document.getElementById("closeDinnerScan").addEventListener("click", function(){
-    if(recognition && recognizing){
-      try{ recognition.stop(); }catch(e){}
-    }
-    recognizing = false;
+    abortVoiceSession();
     listenBanner.hidden = true;
     micBtn.setAttribute("aria-pressed", "false");
     micBtn.setAttribute("data-listening", "false");
