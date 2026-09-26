@@ -439,6 +439,11 @@
     border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
     border-radius:999px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer;
   }
+  .list-bar-actions{ display:flex; gap:8px; flex:none; }
+  .shopping-bar .list-save-btn{
+    background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+  }
+  body.shopping-mode #listBar,
   body.shopping-mode .brand-bar,
   body.shopping-mode .dinner-cta,
   body.shopping-mode .add,
@@ -455,6 +460,19 @@
   body.shopping-mode ul.items li{ padding:16px 10px; gap:14px; }
   body.shopping-mode ul.items li input[type=checkbox]{ width:32px; height:32px; }
   body.shopping-mode .item-text{ font-size:1.45rem; line-height:1.25; }
+
+  body.list-mode .brand-bar,
+  body.list-mode .dinner-cta,
+  body.list-mode .shop-tools,
+  body.list-mode #shoppingModeNote,
+  body.list-mode #shoppingBar,
+  body.list-mode #reminderBanner,
+  body.list-mode #micHint,
+  body.list-mode .footer-actions,
+  body.list-mode .move-btn,
+  body.list-mode .reorder-btns,
+  body.list-mode .item-meta{ display:none !important; }
+  body.list-mode form.add{ margin-top:4px; }
 
   /* Paid access gate */
   .access-gate{
@@ -719,6 +737,13 @@
       <span>Shopping</span>
       <button type="button" id="shoppingDoneBtn">Done</button>
     </div>
+    <div class="shopping-bar" id="listBar" hidden>
+      <span>List</span>
+      <div class="list-bar-actions">
+        <button type="button" id="listModeCloseBtn">Close</button>
+        <button type="button" id="listModeSaveBtn" class="list-save-btn">Save</button>
+      </div>
+    </div>
     <div class="brand-bar">
       <div class="brand">
         <div class="brand-id">
@@ -770,6 +795,7 @@
     </form>
     <div class="shop-tools">
       <button type="button" class="chip-btn" id="shoppingModeBtn" aria-pressed="false">🛒 Shopping mode</button>
+      <button type="button" class="chip-btn" id="listModeBtn" aria-pressed="false">📝 List mode</button>
       <button type="button" class="chip-btn" id="uploadListHomeBtn">📄 Upload a list</button>
     </div>
     <div class="hint" id="shoppingModeNote" hidden>Shopping mode keeps the screen awake.</div>
@@ -2642,14 +2668,18 @@
       var empty = document.createElement("div");
       empty.className = "empty";
       var shoppingNow = document.body.classList.contains("shopping-mode");
+      var listNow = document.body.classList.contains("list-mode");
       empty.innerHTML = shoppingNow
         ? "Nothing on the list yet."
-        : '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
+        : listNow
+          ? "Nothing on the list yet.<br>Type or say what you need above."
+          : '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
       listArea.appendChild(empty);
       return;
     }
 
     var shopping = document.body.classList.contains("shopping-mode");
+    var listView = document.body.classList.contains("list-mode");
 
     state.order.forEach(function(deptId, idx){
       var dept = DEPT_BY_ID[deptId];
@@ -2703,7 +2733,7 @@
           if(it.meals && it.meals.length) metaParts.push("for " + it.meals.join(", "));
           if(it.saleNote) metaParts.push("🏷️ " + it.saleNote);
           var metaStr = metaParts.join(" · ");
-          textWrap.setAttribute("aria-label", it.text + (metaStr ? ", " + metaStr : "") + ", in " + dept.name + (shopping ? ". Activate to check it off." : ". Activate to move to a different aisle."));
+          textWrap.setAttribute("aria-label", it.text + (metaStr ? ", " + metaStr : "") + ", in " + dept.name + (shopping ? ". Activate to check it off." : listView ? "." : ". Activate to move to a different aisle."));
           textWrap.addEventListener("click", function(){
             if(shopping){
               it.done = !it.done;
@@ -2711,13 +2741,14 @@
               render();
               return;
             }
+            if(listView) return;
             openAssign(it);
           });
           textWrap.addEventListener("keydown", function(e){
             if(e.key==="Enter"||e.key===" "){
               e.preventDefault();
               if(shopping){ it.done = !it.done; saveState(); render(); }
-              else openAssign(it);
+              else if(!listView) openAssign(it);
             }
           });
           var mainLine = document.createElement("span");
@@ -3304,6 +3335,7 @@
 
   var shoppingModeBtn = document.getElementById("shoppingModeBtn");
   var shoppingModeNote = document.getElementById("shoppingModeNote");
+  var listModeBtn = document.getElementById("listModeBtn");
   var shoppingWakeLock = null;
   function setShoppingMode(on){
     var bar = document.getElementById("shoppingBar");
@@ -3320,6 +3352,7 @@
       render();
       return;
     }
+    if(document.body.classList.contains("list-mode")) setListMode(false);
     document.body.classList.add("shopping-mode");
     if(bar) bar.hidden = false;
     shoppingModeBtn.setAttribute("aria-pressed", "true");
@@ -3332,11 +3365,47 @@
       lock.addEventListener("release", function(){ shoppingWakeLock = null; });
     }).catch(function(){});
   }
+  function setListMode(on){
+    var bar = document.getElementById("listBar");
+    if(!on){
+      document.body.classList.remove("list-mode");
+      if(bar) bar.hidden = true;
+      listModeBtn.setAttribute("aria-pressed", "false");
+      listModeBtn.textContent = "📝 List mode";
+      render();
+      return;
+    }
+    if(document.body.classList.contains("shopping-mode")) setShoppingMode(false);
+    document.body.classList.add("list-mode");
+    if(bar) bar.hidden = false;
+    listModeBtn.setAttribute("aria-pressed", "true");
+    listModeBtn.textContent = "📝 List mode on";
+    render();
+    itemInput.focus();
+  }
+  function exitListMode(saveTyped){
+    if(saveTyped && itemInput.value.trim()){
+      addItems(itemInput.value);
+    }
+    itemInput.value = "";
+    if(typeof abortVoiceSession === "function") abortVoiceSession();
+    listenBanner.hidden = true;
+    setListMode(false);
+  }
   shoppingModeBtn.addEventListener("click", function(){
     setShoppingMode(shoppingModeBtn.getAttribute("aria-pressed") !== "true");
   });
+  listModeBtn.addEventListener("click", function(){
+    setListMode(listModeBtn.getAttribute("aria-pressed") !== "true");
+  });
   document.getElementById("shoppingDoneBtn").addEventListener("click", function(){
     setShoppingMode(false);
+  });
+  document.getElementById("listModeCloseBtn").addEventListener("click", function(){
+    exitListMode(false);
+  });
+  document.getElementById("listModeSaveBtn").addEventListener("click", function(){
+    exitListMode(true);
   });
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState === "visible" && shoppingModeBtn.getAttribute("aria-pressed") === "true" && !shoppingWakeLock){
