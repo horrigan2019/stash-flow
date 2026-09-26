@@ -181,6 +181,17 @@
     display:flex; align-items:center; gap:8px;
   }
   .listen-banner[hidden]{ display:none !important; }
+  .deal-banner{
+    margin-top:10px; padding:12px 14px; border-radius:14px;
+    background:var(--surface-2); border:1.5px solid var(--border);
+  }
+  .deal-banner[hidden]{ display:none !important; }
+  .deal-banner-title{ font-family:"Fraunces",serif; font-weight:600; font-size:1.05rem; margin-bottom:4px; }
+  .deal-banner-body{ font-size:.88rem; color:var(--muted); margin-bottom:10px; line-height:1.4; }
+  .deal-banner-body > div{ margin-bottom:6px; }
+  .deal-banner-body > div:last-child{ margin-bottom:0; }
+  .deal-banner-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+  body.shopping-mode #dealBanner{ display:none !important; }
   .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-2); flex:none; }
 
   .toolbar{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
@@ -470,8 +481,7 @@
   body.list-mode #micHint,
   body.list-mode .footer-actions,
   body.list-mode .move-btn,
-  body.list-mode .reorder-btns,
-  body.list-mode .item-meta{ display:none !important; }
+  body.list-mode .reorder-btns{ display:none !important; }
   body.list-mode form.add{ margin-top:4px; }
 
   /* Paid access gate */
@@ -802,6 +812,16 @@
     <div class="hint" id="reminderBanner" hidden></div>
     <div class="hint" id="micHint" hidden></div>
     <div class="listen-banner" id="listenBanner" hidden><span class="dot"></span><span id="listenText">Listening…</span></div>
+    <div class="deal-banner" id="dealBanner" hidden>
+      <div class="deal-banner-title" id="dealBannerTitle">Flyer prices on your list</div>
+      <div class="deal-banner-body" id="dealBannerBody"></div>
+      <div class="deal-banner-actions">
+        <button type="button" class="chip-btn" id="dealMoneyBtn">Save the most money</button>
+        <button type="button" class="chip-btn" id="dealTimeBtn">Fewest stops</button>
+        <button type="button" class="chip-btn" id="dealMixBtn">Best mix</button>
+        <button type="button" class="chip-btn" id="dealBannerDismiss">Not now</button>
+      </div>
+    </div>
   </header>
 
   <main id="listArea"></main>
@@ -1212,6 +1232,15 @@
   </div>
 </dialog>
 
+<dialog id="dealPlanDialog">
+  <div class="dialog-inner" style="max-width:520px;">
+    <h2 id="dealPlanTitle">Your shopping plan</h2>
+    <p class="hint" id="dealPlanSummary" style="margin-bottom:12px;"></p>
+    <div id="dealPlanDetail"></div>
+    <button class="dialog-close" id="closeDealPlan" type="button" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+  </div>
+</dialog>
+
 <dialog id="storeCompareDialog">
   <div class="dialog-inner" style="max-width:520px;">
     <h2>Compare Stores</h2>
@@ -1219,6 +1248,7 @@
 
     <div class="event-section-label" style="margin-top:0;">Fill prices from a flyer</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <div id="compareStoreListChips" class="deal-banner-actions" hidden></div>
       <input type="text" id="compareStoreForAd" placeholder="Which store is this ad? e.g. Meijer" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
       <label class="chip-btn" for="compareFlyerPhoto" style="display:inline-block;width:fit-content;">📷 Upload flyer photo</label>
       <input type="file" id="compareFlyerPhoto" accept="image/*" capture="environment" hidden>
@@ -1263,6 +1293,8 @@
       <div class="hint" style="margin-bottom:10px;">Snap a photo, paste the ad text, or paste a link to that store's weekly ad. We'll check it against what's still on your list.</div>
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Which store is this?</label>
+        <div class="hint" id="flyerStoreListHint" style="margin-bottom:6px;">Tap a saved store list, or type a new name.</div>
+        <div id="flyerStoreListChips" class="deal-banner-actions" style="margin-bottom:8px;" hidden></div>
         <input type="text" id="flyerStoreName" placeholder="e.g. Kroger" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;margin-bottom:12px;">
       </div>
       <div class="camera-row">
@@ -1300,6 +1332,10 @@
     <div id="flyerResults" hidden style="margin-top:16px;">
       <div class="event-section-label" style="margin-top:0;">On sale, from what you photographed</div>
       <ul class="meal-list" id="flyerResultList" style="border-top:none;"></ul>
+    </div>
+    <div id="flyerSaveStoreWrap" hidden style="margin-top:12px;">
+      <button type="button" class="dialog-close" id="saveFlyerStoreBtn">Save to store list</button>
+      <div class="hint" id="flyerSaveStoreStatus" style="margin-top:8px;"></div>
     </div>
 
     <button class="dialog-close" id="closeFlyer" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
@@ -2401,6 +2437,8 @@
   if(!state.learnedEvents) state.learnedEvents = {};
   if(!state.myStores) state.myStores = [];
   if(!state.priceEntries) state.priceEntries = {};
+  if(state.hideDealBanner === undefined) state.hideDealBanner = false;
+  if(state.lastFlyerStore === undefined) state.lastFlyerStore = "";
   if(!Array.isArray(state.customDepts)) state.customDepts = [];
   state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
 
@@ -2913,6 +2951,7 @@
 
       listArea.appendChild(section);
     });
+    if(typeof renderDealBanner === "function") renderDealBanner();
   }
 
   function moveDept(deptId, dir){
@@ -5474,7 +5513,12 @@
   var planResults = document.getElementById("planResults");
 
   document.getElementById("storeCompareBtn").addEventListener("click", function(){
+    var compareStore = document.getElementById("compareStoreForAd");
+    if(compareStore && !compareStore.value.trim() && state.lastFlyerStore){
+      compareStore.value = state.lastFlyerStore;
+    }
     renderStoreCompareDialog();
+    renderFlyerStoreChips();
     storeCompareDialog.showModal();
   });
   document.getElementById("closeStoreCompare").addEventListener("click", function(){ storeCompareDialog.close(); });
@@ -5614,6 +5658,181 @@
     });
     return best;
   }
+
+  function formatDealMoney(n){
+    return "$" + Number(n).toFixed(2);
+  }
+
+  function namesForDealPlan(plan){
+    return (plan.stores || []).map(function(id){
+      var store = (state.myStores || []).find(function(s){ return s.id === id; });
+      return store ? store.name : "store";
+    }).join(" and ");
+  }
+
+  function pickMoneyPlan(plans, pricedCount){
+    var fully = plans.filter(function(p){ return p.plan.covered === pricedCount; });
+    return (fully.length ? fully : plans).reduce(function(a,b){
+      return b.plan.total < a.plan.total ? b : a;
+    });
+  }
+
+  function pickMixPlan(plans, pricedCount){
+    var time = plans[0];
+    var money = pickMoneyPlan(plans, pricedCount);
+    if(!time || money.k <= 1) return money;
+    var maxSave = time.plan.total - money.plan.total;
+    if(maxSave <= 0.009) return time;
+    var target = maxSave * 0.6;
+    var mix = money;
+    plans.forEach(function(p){
+      var saved = time.plan.total - p.plan.total;
+      if(p.k < mix.k && saved + 0.001 >= target && p.plan.covered >= time.plan.covered){
+        mix = p;
+      }
+    });
+    return mix;
+  }
+
+  function fillDealPlanDetail(plan, unchecked){
+    var detail = document.getElementById("dealPlanDetail");
+    if(!detail) return;
+    detail.innerHTML = "";
+    (plan.stores || []).forEach(function(storeId){
+      var store = (state.myStores || []).find(function(s){ return s.id === storeId; });
+      var box = document.createElement("div");
+      box.className = "plan-detail-store";
+      var h = document.createElement("h4");
+      h.textContent = store ? store.name : "Store";
+      box.appendChild(h);
+      var keys = Object.keys(plan.assignment || {}).filter(function(key){
+        return plan.assignment[key].storeId === storeId;
+      });
+      if(!keys.length){
+        var empty = document.createElement("div");
+        empty.className = "hint";
+        empty.textContent = "Nothing assigned here.";
+        box.appendChild(empty);
+      } else {
+        keys.forEach(function(key){
+          var a = plan.assignment[key];
+          var itemObj = unchecked.find(function(it){ return it.text.trim().toLowerCase() === key; });
+          var row = document.createElement("div");
+          row.style.cssText = "display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;";
+          var n = document.createElement("span");
+          n.textContent = itemObj ? itemObj.text : key;
+          var p = document.createElement("span");
+          p.textContent = formatDealMoney(a.price);
+          row.appendChild(n);
+          row.appendChild(p);
+          box.appendChild(row);
+        });
+      }
+      detail.appendChild(box);
+    });
+  }
+
+  function renderDealBanner(){
+    var banner = document.getElementById("dealBanner");
+    var body = document.getElementById("dealBannerBody");
+    if(!banner || !body) return;
+    if(document.body.classList.contains("shopping-mode") || state.hideDealBanner){
+      banner.hidden = true;
+      return;
+    }
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    var stores = state.myStores || [];
+    if(!unchecked.length || !stores.length){
+      banner.hidden = true;
+      return;
+    }
+    var byStore = {};
+    var pricedCount = 0;
+    unchecked.forEach(function(it){
+      var key = it.text.trim().toLowerCase();
+      var entries = state.priceEntries[key];
+      if(!entries) return;
+      var any = false;
+      stores.forEach(function(s){
+        var p = entries[s.id];
+        if(p === undefined || p === null || isNaN(p)) return;
+        if(!byStore[s.id]) byStore[s.id] = { name: s.name, lines: [] };
+        byStore[s.id].lines.push(it.text + " " + formatDealMoney(p));
+        any = true;
+      });
+      if(any) pricedCount++;
+    });
+    var storeIds = Object.keys(byStore);
+    if(!pricedCount || !storeIds.length){
+      banner.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    body.innerHTML = "";
+    storeIds.forEach(function(id){
+      var row = document.createElement("div");
+      var strong = document.createElement("strong");
+      strong.textContent = byStore[id].name + ": ";
+      row.appendChild(strong);
+      row.appendChild(document.createTextNode(byStore[id].lines.join(" · ")));
+      body.appendChild(row);
+    });
+  }
+
+  function openDealPlan(kind){
+    var storeIds = (state.myStores || []).map(function(s){ return s.id; });
+    var unchecked = state.items.filter(function(it){ return !it.done; });
+    var pricedKeys = unchecked.map(function(it){ return it.text.trim().toLowerCase(); })
+      .filter(function(k){ return state.priceEntries[k] && Object.keys(state.priceEntries[k]).length; });
+    var dialog = document.getElementById("dealPlanDialog");
+    if(!dialog || !pricedKeys.length || !storeIds.length) return;
+    var plans = [];
+    for(var k = 1; k <= storeIds.length; k++){
+      plans.push({ k: k, plan: bestPlanForStops(storeIds, pricedKeys, state.priceEntries, k) });
+    }
+    var time = plans[0];
+    var money = pickMoneyPlan(plans, pricedKeys.length);
+    var mix = pickMixPlan(plans, pricedKeys.length);
+    var chosen = kind === "time" ? time : kind === "mix" ? mix : money;
+    var titleEl = document.getElementById("dealPlanTitle");
+    var summaryEl = document.getElementById("dealPlanSummary");
+    if(kind === "time"){
+      titleEl.textContent = "Fewest stops";
+      summaryEl.textContent = "One stop at " + namesForDealPlan(chosen.plan) + " for " + formatDealMoney(chosen.plan.total) +
+        (chosen.plan.covered < pricedKeys.length ? " — covers " + chosen.plan.covered + " of " + pricedKeys.length + " priced items." : ".");
+    } else if(kind === "mix"){
+      titleEl.textContent = "Best mix";
+      var savedMix = time.plan.total - chosen.plan.total;
+      summaryEl.textContent = chosen.k + " stop" + (chosen.k === 1 ? "" : "s") + " (" + namesForDealPlan(chosen.plan) + ") for " + formatDealMoney(chosen.plan.total) +
+        (savedMix > 0.009 ? " — saves " + formatDealMoney(savedMix) + " versus one stop" : "") +
+        (chosen.k < money.k ? ", without all " + money.k + " stores." : ".");
+    } else {
+      titleEl.textContent = "Save the most money";
+      var vsTime = time.plan.total - chosen.plan.total;
+      summaryEl.textContent = chosen.k + " stop" + (chosen.k === 1 ? "" : "s") + " at " + namesForDealPlan(chosen.plan) + " for " + formatDealMoney(chosen.plan.total) +
+        (vsTime > 0.009 ? " — " + formatDealMoney(vsTime) + " less than one stop." : ".");
+    }
+    fillDealPlanDetail(chosen.plan, unchecked);
+    dialog.showModal();
+  }
+
+  var dealMoneyBtn = document.getElementById("dealMoneyBtn");
+  var dealTimeBtn = document.getElementById("dealTimeBtn");
+  var dealMixBtn = document.getElementById("dealMixBtn");
+  var dealBannerDismiss = document.getElementById("dealBannerDismiss");
+  var closeDealPlan = document.getElementById("closeDealPlan");
+  if(dealMoneyBtn) dealMoneyBtn.addEventListener("click", function(){ openDealPlan("money"); });
+  if(dealTimeBtn) dealTimeBtn.addEventListener("click", function(){ openDealPlan("time"); });
+  if(dealMixBtn) dealMixBtn.addEventListener("click", function(){ openDealPlan("mix"); });
+  if(dealBannerDismiss) dealBannerDismiss.addEventListener("click", function(){
+    state.hideDealBanner = true;
+    saveState();
+    renderDealBanner();
+  });
+  if(closeDealPlan) closeDealPlan.addEventListener("click", function(){
+    var dialog = document.getElementById("dealPlanDialog");
+    if(dialog) dialog.close();
+  });
 
   document.getElementById("findPlanBtn").addEventListener("click", function(){
     var storeIds = state.myStores.map(function(s){ return s.id; });
@@ -5767,10 +5986,17 @@
         (Array.isArray(matches) ? matches : []).forEach(function(m){
           var matched = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item || "").trim().toLowerCase(); });
           var label = matched ? matched.text : m.item;
-          if(rememberFlyerPrice(label, storeName, m.saleText)) priced++;
+          if(rememberFlyerPrice(label, storeName, m.saleText)){
+            priced++;
+            if(matched) matched.saleNote = (m.saleText || "on sale") + " at " + storeName;
+          }
         });
+        if(priced) state.hideDealBanner = false;
+        if(isNamedFlyerStore(storeName)) saveFlyerStoreList(storeName);
         saveState();
         renderStoreCompareDialog();
+        renderFlyerStoreChips();
+        render();
         if(!priced){
           compareFillStatus.textContent = "No prices from that ad matched your list. You can still type prices below, or paste the sale text.";
           return;
@@ -5823,10 +6049,35 @@
       flyerScanArea.hidden = false;
       flyerResults.hidden = true;
       flyerStatus.textContent = "";
+      var saveWrap = document.getElementById("flyerSaveStoreWrap");
+      if(saveWrap) saveWrap.hidden = true;
+      if(flyerStoreName && !flyerStoreName.value.trim() && state.lastFlyerStore){
+        flyerStoreName.value = state.lastFlyerStore;
+      }
+      renderFlyerStoreChips();
       flyerDialog.showModal();
     });
   });
   document.getElementById("closeFlyer").addEventListener("click", function(){ flyerDialog.close(); });
+  flyerStoreName.addEventListener("input", function(){
+    renderFlyerStoreChips();
+    var wrap = document.getElementById("flyerSaveStoreWrap");
+    if(wrap && !wrap.hidden) updateFlyerSaveButton(flyerStoreName.value);
+  });
+  var saveFlyerStoreBtn = document.getElementById("saveFlyerStoreBtn");
+  if(saveFlyerStoreBtn){
+    saveFlyerStoreBtn.addEventListener("click", function(){
+      var store = saveFlyerStoreList(flyerStoreName.value);
+      if(!store){
+        updateFlyerSaveButton(flyerStoreName.value);
+        return;
+      }
+      renderFlyerStoreChips();
+      updateFlyerSaveButton(store.name);
+      var status = document.getElementById("flyerSaveStoreStatus");
+      if(status) status.textContent = "Saved as " + storeListLabel(store.name) + ". Next flyer check, tap it instead of typing.";
+    });
+  }
 
   function priceFromSaleText(saleText){
     var match = String(saleText || "").match(/\$\s*(\d+(?:\.\d{1,2})?)/);
@@ -5851,6 +6102,86 @@
     return created;
   }
 
+  function storeListLabel(name){
+    var n = String(name || "").trim();
+    if(!n) return "Store List";
+    return / list$/i.test(n) ? n : n + " List";
+  }
+
+  function isNamedFlyerStore(name){
+    var clean = String(name || "").trim();
+    return !!(clean && clean.toLowerCase() !== "this store");
+  }
+
+  function saveFlyerStoreList(name){
+    if(!isNamedFlyerStore(name)) return null;
+    var store = storeForFlyerName(name);
+    if(!store) return null;
+    state.lastFlyerStore = store.name;
+    store.lastFlyerAt = Date.now();
+    saveState();
+    return store;
+  }
+
+  function renderStoreListChips(container, inputEl){
+    if(!container) return;
+    container.innerHTML = "";
+    var stores = (state.myStores || []).slice().sort(function(a,b){
+      return (b.lastFlyerAt || 0) - (a.lastFlyerAt || 0);
+    });
+    if(!stores.length){
+      container.hidden = true;
+      return;
+    }
+    container.hidden = false;
+    var current = inputEl ? inputEl.value.trim().toLowerCase() : "";
+    stores.forEach(function(s){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip-btn";
+      btn.textContent = storeListLabel(s.name);
+      btn.setAttribute("aria-pressed", current && current === s.name.trim().toLowerCase() ? "true" : "false");
+      btn.addEventListener("click", function(){
+        if(inputEl) inputEl.value = s.name;
+        state.lastFlyerStore = s.name;
+        saveState();
+        renderStoreListChips(container, inputEl);
+        updateFlyerSaveButton(s.name);
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderFlyerStoreChips(){
+    renderStoreListChips(document.getElementById("flyerStoreListChips"), flyerStoreName);
+    renderStoreListChips(document.getElementById("compareStoreListChips"), document.getElementById("compareStoreForAd"));
+  }
+
+  function updateFlyerSaveButton(name){
+    var wrap = document.getElementById("flyerSaveStoreWrap");
+    var btn = document.getElementById("saveFlyerStoreBtn");
+    var status = document.getElementById("flyerSaveStoreStatus");
+    if(!wrap || !btn) return;
+    var clean = String(name || (flyerStoreName && flyerStoreName.value) || "").trim();
+    wrap.hidden = false;
+    if(!isNamedFlyerStore(clean)){
+      btn.disabled = true;
+      btn.textContent = "Save to a store list";
+      if(status) status.textContent = "Type the store name above to save it as a list, like Meijer List or Walmart List.";
+      return;
+    }
+    var exists = (state.myStores || []).some(function(s){
+      return s.name.trim().toLowerCase() === clean.toLowerCase();
+    });
+    btn.disabled = false;
+    btn.textContent = exists ? "Saved as " + storeListLabel(clean) : "Save to " + storeListLabel(clean);
+    if(status){
+      status.textContent = exists
+        ? "Next time, tap " + storeListLabel(clean) + " — no need to type the store name."
+        : "Save this flyer as " + storeListLabel(clean) + " so you can tap it next time.";
+    }
+  }
+
   function rememberFlyerPrice(itemText, storeName, saleText){
     var price = priceFromSaleText(saleText);
     if(price == null) return false;
@@ -5860,6 +6191,7 @@
     if(!key) return false;
     if(!state.priceEntries[key]) state.priceEntries[key] = {};
     state.priceEntries[key][store.id] = price;
+    state.hideDealBanner = false;
     return true;
   }
 
@@ -5916,6 +6248,9 @@
         flyerStatus.textContent = "";
         if(!Array.isArray(matches) || !matches.length){
           flyerStatus.textContent = "Nothing on your list seems to be on sale there right now.";
+          if(isNamedFlyerStore(storeName)) saveFlyerStoreList(storeName);
+          renderFlyerStoreChips();
+          updateFlyerSaveButton(storeName);
           return;
         }
         flyerResultList.innerHTML = "";
@@ -5924,30 +6259,23 @@
           var matchedItem = unchecked.find(function(it){ return it.text.trim().toLowerCase() === String(m.item||"").trim().toLowerCase(); });
           var itemLabel = matchedItem ? matchedItem.text : m.item;
           if(rememberFlyerPrice(itemLabel, storeName, m.saleText)) priced++;
+          if(matchedItem){
+            matchedItem.saleNote = (m.saleText || "on sale") + " at " + storeName;
+          }
           var li = document.createElement("li");
           var body = document.createElement("div");
           body.style.flex = "1";
           body.innerHTML = '<div class="meal-name">' + itemLabel + '</div><div class="meal-ing">' + (m.saleText || "") + ' at ' + storeName + '</div>';
           li.appendChild(body);
-          if(matchedItem){
-            var noteBtn = document.createElement("button");
-            noteBtn.className = "chip-btn";
-            noteBtn.type = "button";
-            noteBtn.textContent = "📌 Note on my list";
-            noteBtn.addEventListener("click", function(){
-              matchedItem.saleNote = (m.saleText || "on sale") + " at " + storeName;
-              saveState();
-              render();
-              noteBtn.textContent = "✅ Noted";
-              noteBtn.disabled = true;
-            });
-            li.appendChild(noteBtn);
-          }
           flyerResultList.appendChild(li);
         });
+        if(isNamedFlyerStore(storeName)) saveFlyerStoreList(storeName);
+        saveState();
+        render();
+        renderFlyerStoreChips();
+        updateFlyerSaveButton(storeName);
         if(priced){
-          saveState();
-          flyerStatus.textContent = "Saved " + priced + " sale price" + (priced === 1 ? "" : "s") + " for " + storeName + " in Compare Stores.";
+          flyerStatus.textContent = "Saved " + priced + " sale price" + (priced === 1 ? "" : "s") + " for " + storeName + ". See the alert on your list for a money, time, or mix plan.";
         }
         flyerResults.hidden = false;
       }).catch(function(e){
