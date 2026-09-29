@@ -2087,8 +2087,8 @@
     dairy: ["milk","eggs","egg","huevos","cheese","cheddar","mozzarella","fresh mozzarella","gouda","mexican cheese","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","whip cream","string cheese","parmesan","shredded parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","chicken tenders","chicken tender","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
-    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","chocolate chip","choc chips","choc chip","choco chips","cake mix","cupcake mix","cupcake mixes","cocoa","cocoa powder","cinnamon","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
+    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
     condiments: ["ketchup","mustard","honey mustard","mayo","mayonnaise","hot sauce","soy sauce","oyster sauce","fish sauce","hoisin","hoisin sauce","teriyaki","teriyaki sauce","steak sauce","salad dressing","bbq sauce","barbecue sauce","salsa","relish","worcestershire","worcestershire sauce","sriracha","ranch","chili sauce","sweet chili sauce","cocktail sauce","tartar sauce","aioli"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips","pita chips","corn chips","kettle chips","potato chips","kettle potato chips"],
@@ -6552,9 +6552,10 @@
     });
   });
 
-  // Move saved Unsorted rows onto the aisle the dictionary now knows,
-  // and move spices that were filed under Baking into Pantry Isle
-  // (kidney beans and chili powder → Pantry Isle).
+  // Move saved Unsorted rows onto the aisle the dictionary now knows.
+  // Spices such as chili powder stay in Pantry Isle. Baking ingredients
+  // (cupcake mix, flour, cinnamon, cocoa, chocolate chips) stay in Baking,
+  // and finished cupcakes stay in Bakery.
   // classify() keeps a hand-picked aisle stored in state.learned.
   function reclassifyUnsorted(){
     var changed = false;
@@ -6563,6 +6564,7 @@
       if(!next) return dept;
       if(dept === "other" && next !== "other") return next;
       if((dept === "baking" || dept === "bakery") && next === "pantry") return next;
+      if((dept === "pantry" || dept === "bakery") && next === "baking") return next;
       return dept;
     }
     state.items.forEach(function(it){
