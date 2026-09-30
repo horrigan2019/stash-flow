@@ -327,9 +327,10 @@
 
   .waste-form{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .waste-form-row{ display:flex; gap:8px; }
-  .waste-form input[type=text]{
+  .waste-form input[type=text],
+  .waste-form input[type=date]{
     flex:1; min-width:0; font-size:.95rem; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border);
-    background:var(--surface); color:var(--ink);
+    background:var(--surface); color:var(--ink); width:100%; box-sizing:border-box;
   }
   .waste-form select{
     font-size:.9rem; padding:10px; border-radius:10px; border:1.5px solid var(--border);
@@ -339,6 +340,10 @@
     padding:11px; border-radius:10px; border:none; background:var(--accent); color:var(--accent-ink);
     font-size:.95rem; cursor:pointer;
   }
+  #wasteAskBtn{
+    background:var(--surface); color:var(--ink); border:1.5px solid var(--border);
+  }
+  #wasteDialog .dialog-inner{ max-height:calc(100vh - 48px); overflow:auto; }
 
   .waste-list{ list-style:none; margin:0; padding:0; border-top:1px solid var(--border); }
   .waste-list li{
@@ -1011,7 +1016,7 @@
 <dialog id="wasteDialog">
   <div class="dialog-inner">
     <h2>Countdown</h2>
-    <div class="hint" style="margin-bottom:12px;">Leftovers and opened jars or bottles — tracked so nothing quietly goes bad. After you start the clock, Oh Stuffing asks if you want a reminder to throw it out.</div>
+    <div class="hint" style="margin-bottom:12px;">Leftovers, opened jars, or takeout and food you made — even if it was never on the list. Ask how long it's good, then add it. Oh Stuffing can remind you when to throw it out.</div>
     <div class="waste-stats">
       <div class="waste-stat"><b id="statEaten">0</b><span>used in time</span></div>
       <div class="waste-stat"><b id="statTossed">0</b><span>tossed</span></div>
@@ -1023,6 +1028,7 @@
         <select id="wasteKind" style="width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
           <option value="leftover">Cooked leftover</option>
           <option value="opened">Opened jar/bottle</option>
+          <option value="made">Takeout or something I made</option>
         </select>
       </div>
       <div id="wasteMealRow">
@@ -1032,7 +1038,13 @@
       <div id="wasteNameRow">
         <input type="text" id="wasteName" placeholder="e.g. Cream cheese" autocomplete="off" style="width:100%;box-sizing:border-box;">
       </div>
-      <button type="submit">Start the clock</button>
+      <div id="wasteMadeRow" hidden>
+        <label for="wasteMadeDate" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">When did you get or make it?</label>
+        <input type="date" id="wasteMadeDate">
+        <button type="button" id="wasteAskBtn">Ask how long it's good</button>
+        <p class="hint" id="wasteAskAnswer" hidden style="margin:0;"></p>
+      </div>
+      <button type="submit" id="wasteSubmitBtn">Start the clock</button>
     </form>
     <div id="wasteRemindAsk" hidden style="margin-top:12px;">
       <div class="hint" id="wasteRemindText"></div>
@@ -1042,7 +1054,7 @@
       </div>
     </div>
     <ul class="waste-list" id="wasteList"></ul>
-    <div class="waste-empty" id="wasteEmpty" hidden>Nothing being tracked. Add a leftover or an opened item above and Oh Stuffing will tell you how long it's good for.</div>
+    <div class="waste-empty" id="wasteEmpty" hidden>Nothing being tracked. Add a leftover, an opened jar, or takeout and food you made.</div>
 
     <div class="produce-lookup">
       <h3>🥬 How should I store this?</h3>
@@ -2069,14 +2081,14 @@
   // ---------- Keyword dictionary: many everyday items -> department id ----------
   var KEYWORDS = {
     produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish","plantain","plantains","platano","platanos","green plantains","jackfruit","jackfruits","jack fruit","kiwi","kiwis","kiwifruit","kiwi fruit"],
-    bakery: ["bread","baguette","bagel","bagels","bun","buns","roll","rolls","muffin","muffins","croissant","croissants","pita","donut","donuts","cake","dinner rolls","sourdough","hamburger buns","hot dog buns","biscuit","biscuits","buscuits"],
+    bakery: ["bread","baguette","bagel","bagels","bun","buns","roll","rolls","muffin","muffins","croissant","croissants","pita","donut","donuts","cake","cupcake","cupcakes","dinner rolls","sourdough","hamburger buns","hot dog buns","biscuit","biscuits","buscuits"],
     deli: ["deli meat","turkey slices","ham slices","salami","prosciutto","sliced cheese","deli cheese","rotisserie chicken","pepperoni sliced","sub sandwich"],
     meat: ["chicken","chicken breast","chicken thighs","beef","ground beef","steak","pork","pork chops","bacon","sausage","sausages","turkey","ham","lamb","shrimp","salmon","fish","tilapia","cod","tuna steak","ground turkey","hot dogs","meatballs","ribs","pork ribs","beef ribs","baby back ribs","spare ribs","short ribs"],
     dairy: ["milk","eggs","egg","huevos","cheese","cheddar","mozzarella","fresh mozzarella","gouda","mexican cheese","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","whip cream","string cheese","parmesan","shredded parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","chicken tenders","chicken tender","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
-    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla extract","chocolate chips","cake mix","cocoa powder","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","cinnamon","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
+    baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla","vanilla extract","chocolate chips","chocolate chip","choc chips","choc chip","choco chips","cake mix","cupcake mix","cupcake mixes","cocoa","cocoa powder","cinnamon","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
+    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
     condiments: ["ketchup","mustard","honey mustard","mayo","mayonnaise","hot sauce","soy sauce","oyster sauce","fish sauce","hoisin","hoisin sauce","teriyaki","teriyaki sauce","steak sauce","salad dressing","bbq sauce","barbecue sauce","salsa","relish","worcestershire","worcestershire sauce","sriracha","ranch","chili sauce","sweet chili sauce","cocktail sauce","tartar sauce","aioli"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips","pita chips","corn chips","kettle chips","potato chips","kettle potato chips"],
@@ -2222,7 +2234,10 @@
     "bread":"Counter for a few days in a bag, or freeze for longer. The fridge dries it out.",
     "fish":"Raw fish: fridge and cook within 1 to 2 days, or freeze. Cooked fish: fridge 3 to 4 days.",
     "shrimp":"Raw shrimp: fridge and cook within 1 to 2 days, or freeze. Cooked shrimp: fridge 3 to 4 days.",
-    "opened canned food":"Move leftovers out of the can into a covered container. Fridge, and use within 3 to 4 days."
+    "opened canned food":"Move leftovers out of the can into a covered container. Fridge, and use within 3 to 4 days.",
+    "takeout":"Fridge. Use within 3 to 4 days. Refrigerate within 2 hours of pickup.",
+    "take out":"Fridge. Use within 3 to 4 days. Refrigerate within 2 hours of pickup.",
+    "leftover takeout":"Fridge. Use within 3 to 4 days. Refrigerate within 2 hours of pickup."
   };
   // ---------- Holiday & event planning: how many days ahead of the event each department is safe to buy ----------
   var DEPT_LEAD_DAYS = {
@@ -3261,6 +3276,38 @@
   var wasteNameRow = document.getElementById("wasteNameRow");
   var produceLookupInput = document.getElementById("produceLookupInput");
   var produceTipBox = document.getElementById("produceTipBox");
+  var wasteMadeRow = document.getElementById("wasteMadeRow");
+  var wasteMadeDate = document.getElementById("wasteMadeDate");
+  var wasteAskBtn = document.getElementById("wasteAskBtn");
+  var wasteAskAnswer = document.getElementById("wasteAskAnswer");
+  var wasteSubmitBtn = document.getElementById("wasteSubmitBtn");
+  var wasteAsked = null;
+
+  function daysFromAdvice(text){
+    var src = String(text || "");
+    var range = src.match(/(\d+)\s+to\s+(\d+)\s+days/i);
+    if(range) return parseInt(range[2], 10);
+    var within = src.match(/within\s+(\d+)\s+days/i);
+    if(within) return parseInt(within[1], 10);
+    return null;
+  }
+  function madeShelfAnswer(name, dateStr){
+    var advice = storageAdvice(name);
+    var days = daysFromAdvice(advice) || LEFTOVER_DAYS_DEFAULT;
+    var until = addDays(dateStr, days);
+    var lead = advice
+      ? advice
+      : (name + " is generally good about " + days + " days in the fridge.");
+    return {
+      days: days,
+      until: until,
+      text: name + ": " + lead + " From " + formatDate(dateStr) + ", use it by " + formatDate(until) + "."
+    };
+  }
+  function showMadeAnswer(text){
+    wasteAskAnswer.hidden = !text;
+    wasteAskAnswer.textContent = text || "";
+  }
 
   function populateWasteMealSelect(){
     var prev = wasteMealSelect.value;
@@ -3285,15 +3332,48 @@
     }
   }
   function refreshWasteFormMode(){
-    var isLeftover = wasteKindSelect.value === "leftover";
+    var kind = wasteKindSelect.value;
+    var isLeftover = kind === "leftover";
+    var isMade = kind === "made";
     wasteMealRow.hidden = !isLeftover;
+    wasteMadeRow.hidden = !isMade;
     var pickedRealMeal = isLeftover && wasteMealSelect.value && wasteMealSelect.value !== "__custom__";
     wasteNameRow.hidden = pickedRealMeal;
-    if(!isLeftover) wasteNameInput.placeholder = "e.g. Cream cheese, Ketchup, Salsa";
+    if(isMade) wasteNameInput.placeholder = "e.g. Saturday takeout, homemade lasagna";
+    else if(!isLeftover) wasteNameInput.placeholder = "e.g. Cream cheese, Ketchup, Salsa";
     else wasteNameInput.placeholder = "Type the leftover's name";
+    wasteSubmitBtn.textContent = isMade ? "Add to countdown" : "Start the clock";
+    if(!isMade){
+      wasteAsked = null;
+      showMadeAnswer("");
+    }
   }
   wasteKindSelect.addEventListener("change", function(){ populateWasteMealSelect(); refreshWasteFormMode(); });
   wasteMealSelect.addEventListener("change", refreshWasteFormMode);
+  wasteNameInput.addEventListener("input", function(){ if(wasteKindSelect.value === "made") wasteAsked = null; });
+  wasteMadeDate.addEventListener("change", function(){ if(wasteKindSelect.value === "made") wasteAsked = null; });
+
+  wasteAskBtn.addEventListener("click", function(){
+    var name = wasteNameInput.value.trim();
+    var dateStr = wasteMadeDate.value;
+    if(!name){
+      showMadeAnswer("Type what it was — like Saturday takeout or the lasagna you made.");
+      wasteNameInput.focus();
+      return;
+    }
+    if(!dateStr){
+      showMadeAnswer("Pick the day you got it or made it.");
+      wasteMadeDate.focus();
+      return;
+    }
+    if(dateStr > todayStr()){
+      showMadeAnswer("That day is still ahead. Pick the day you already got it or made it.");
+      return;
+    }
+    var answer = madeShelfAnswer(name, dateStr);
+    wasteAsked = { name: name, date: dateStr, days: answer.days, until: answer.until };
+    showMadeAnswer(answer.text);
+  });
 
   document.getElementById("wasteBtn").addEventListener("click", function(){
     renderWasteList();
@@ -3303,6 +3383,9 @@
     produceTipBox.textContent = "";
     produceTipBox.hidden = true;
     wasteRemindAsk.hidden = true;
+    if(!wasteMadeDate.value) wasteMadeDate.value = todayStr();
+    wasteAsked = null;
+    showMadeAnswer("");
     wasteDialog.showModal();
   });
 
@@ -3320,6 +3403,8 @@
     saveState();
     wasteNameInput.value = "";
     wasteMealSelect.value = "";
+    wasteAsked = null;
+    showMadeAnswer("");
     refreshWasteFormMode();
     renderWasteList();
     if(remind && window.Notification && Notification.permission === "default"){
@@ -3361,12 +3446,34 @@
       name = wasteNameInput.value.trim();
     }
     if(!name) return;
-    var days = kind === "leftover" ? LEFTOVER_DAYS_DEFAULT : (lookupInDict(name, OPENED_SHELF_LIFE_DAYS) || OPENED_DAYS_FALLBACK);
-    var today = todayStr();
-    var goodUntil = addDays(today, days);
+    var startDate = todayStr();
+    var days;
+    if(kind === "made"){
+      startDate = wasteMadeDate.value;
+      if(!startDate){
+        showMadeAnswer("Pick the day you got it or made it.");
+        wasteMadeDate.focus();
+        return;
+      }
+      if(startDate > todayStr()){
+        showMadeAnswer("That day is still ahead. Pick the day you already got it or made it.");
+        return;
+      }
+      if(!(wasteAsked && wasteAsked.name === name && wasteAsked.date === startDate)){
+        var answer = madeShelfAnswer(name, startDate);
+        wasteAsked = { name: name, date: startDate, days: answer.days, until: answer.until };
+        showMadeAnswer(answer.text);
+      }
+      days = wasteAsked.days;
+    } else if(kind === "leftover"){
+      days = LEFTOVER_DAYS_DEFAULT;
+    } else {
+      days = lookupInDict(name, OPENED_SHELF_LIFE_DAYS) || OPENED_DAYS_FALLBACK;
+    }
+    var goodUntil = addDays(startDate, days);
     pendingWaste = {
       id: "w"+Date.now()+Math.random().toString(16).slice(2),
-      text: name, kind: kind, addedDate: today, goodUntil: goodUntil
+      text: name, kind: kind, addedDate: startDate, goodUntil: goodUntil
     };
     wasteRemindText.textContent = "Remind you on " + formatDate(goodUntil) + " to throw out " + name + "?";
     wasteRemindAsk.hidden = false;
@@ -3397,10 +3504,12 @@
       body.className = "waste-body";
       var nameEl = document.createElement("div");
       nameEl.className = "waste-name";
-      nameEl.textContent = (t.kind === "leftover" ? "🥡 " : "🍯 ") + t.text;
+      var kindMark = t.kind === "opened" ? "🍯 " : (t.kind === "made" ? "🥡 " : "🍲 ");
+      nameEl.textContent = kindMark + t.text;
       var whenEl = document.createElement("div");
       whenEl.className = "waste-when";
-      whenEl.innerHTML = 'Good until ' + formatDate(t.goodUntil) + ' &nbsp; <span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
+      var fromBit = (t.kind === "made" && t.addedDate) ? ("From " + formatDate(t.addedDate) + " · ") : "";
+      whenEl.innerHTML = fromBit + 'Good until ' + formatDate(t.goodUntil) + ' &nbsp; <span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
         (t.remind ? ' · Reminder on' : '');
       body.appendChild(nameEl);
       body.appendChild(whenEl);
@@ -6472,9 +6581,10 @@
     });
   });
 
-  // Move saved Unsorted rows onto the aisle the dictionary now knows,
-  // and move spices that were filed under Baking into Pantry Isle
-  // (kidney beans and chili powder → Pantry Isle).
+  // Move saved Unsorted rows onto the aisle the dictionary now knows.
+  // Spices such as chili powder stay in Pantry Isle. Baking ingredients
+  // (cupcake mix, flour, cinnamon, cocoa, chocolate chips) stay in Baking,
+  // and finished cupcakes stay in Bakery.
   // classify() keeps a hand-picked aisle stored in state.learned.
   function reclassifyUnsorted(){
     var changed = false;
@@ -6483,6 +6593,7 @@
       if(!next) return dept;
       if(dept === "other" && next !== "other") return next;
       if((dept === "baking" || dept === "bakery") && next === "pantry") return next;
+      if((dept === "pantry" || dept === "bakery") && next === "baking") return next;
       return dept;
     }
     state.items.forEach(function(it){
