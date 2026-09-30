@@ -258,6 +258,44 @@
   }
   .footer-actions button.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 
+  .list-switcher{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    margin-top:12px; padding-top:2px;
+  }
+  .list-switcher[hidden]{ display:none !important; }
+  .list-tab{
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:999px; padding:7px 12px; font-size:.82rem; cursor:pointer;
+    font-family:inherit; max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .list-tab[aria-pressed="true"]{
+    background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+  }
+  .list-tab-new{
+    border:1.5px dashed var(--border); background:transparent; color:var(--muted);
+    border-radius:999px; padding:7px 12px; font-size:.82rem; cursor:pointer; font-family:inherit;
+  }
+  .list-tab-new:hover{ color:var(--ink); border-color:var(--muted); }
+  .list-tab-manage{
+    border:none; background:transparent; color:var(--muted);
+    padding:6px 8px; font-size:.78rem; cursor:pointer; font-family:inherit;
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .more-menu-quiet{
+    margin-top:2px; padding:8px 10px 4px;
+    border:none; background:transparent; color:var(--muted);
+    font-size:.78rem; text-align:left; cursor:pointer; width:100%;
+    font-family:inherit;
+  }
+  .more-menu-quiet:hover{ color:var(--danger); }
+  .lists-manage-row{
+    display:flex; align-items:center; gap:8px; padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .lists-manage-row:last-child{ border-bottom:none; }
+  .lists-manage-name{ flex:1; font-size:.95rem; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .lists-manage-row .chip-btn{ flex:none; padding:8px 10px; font-size:.8rem; }
+
   dialog{
     border:none; border-radius:var(--radius); padding:0; color:var(--ink); background:var(--surface);
     max-width:420px; width:calc(100% - 32px);
@@ -462,6 +500,7 @@
   body.shopping-mode #listBar,
   body.shopping-mode .brand-bar,
   body.shopping-mode .dinner-cta,
+  body.shopping-mode .list-switcher,
   body.shopping-mode .add,
   body.shopping-mode .shop-tools,
   body.shopping-mode #shoppingModeNote,
@@ -479,6 +518,7 @@
 
   body.list-mode .brand-bar,
   body.list-mode .dinner-cta,
+  body.list-mode .list-switcher,
   body.list-mode .shop-tools,
   body.list-mode #shoppingModeNote,
   body.list-mode #shoppingBar,
@@ -812,8 +852,12 @@
         <button class="chip-btn" id="flyerBtn" type="button">🏷️ Check A Flyer</button>
         <button class="chip-btn" id="reorderToggle" type="button" aria-pressed="false">↕️ Smart Flow</button>
         <button class="chip-btn" id="clearDone" type="button">🧹 Clear checked</button>
+        <button class="chip-btn" id="manageListsBtn" type="button">📝 My lists</button>
+        <button class="more-menu-quiet" id="startOverBtn" type="button">Clear list</button>
       </div>
     </div>
+
+    <div class="list-switcher" id="listSwitcher" aria-label="Shopping lists"></div>
 
     <button class="dinner-cta" id="dinnerScanBtn" type="button">
       <span class="dinner-cta-title">What's For Dinner</span>
@@ -850,9 +894,18 @@
   <main id="listArea"></main>
 </div>
 
-<div class="footer-actions">
-  <button type="button" class="primary" id="startOverBtn">Clear whole list</button>
-</div>
+<dialog id="manageListsDialog">
+  <div class="dialog-inner">
+    <h2>My lists</h2>
+    <p class="hint" style="margin:0 0 10px;">Keep separate trips — weekly groceries, Costco, a party — without mixing them.</p>
+    <div id="manageListsBody"></div>
+    <form class="meal-form" id="newListForm" style="margin-top:12px;">
+      <input type="text" id="newListName" placeholder="Name a new list" maxlength="40" autocomplete="off">
+      <button type="submit">Add list</button>
+    </form>
+    <button class="dialog-close" id="closeManageLists" type="button">Done</button>
+  </div>
+</dialog>
 
 <dialog id="settingsDialog">
   <div class="dialog-inner">
@@ -2487,6 +2540,112 @@
   if(!Array.isArray(state.customDepts)) state.customDepts = [];
   state.items.forEach(function(it){ if(!it.meals) it.meals = []; });
 
+  // ---------- Multiple shopping lists ----------
+  // Keep state.items as the live array for the active list so the rest of the
+  // app can keep reading/writing state.items without a big rewrite.
+  function newListId(){ return "list" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function normalizeListName(name, fallback){
+    var clean = String(name == null ? "" : name).replace(/\s+/g, " ").trim().slice(0, 40);
+    return clean || fallback || "List";
+  }
+  function ensureShoppingLists(){
+    if(!Array.isArray(state.lists) || !state.lists.length){
+      var seedItems = Array.isArray(state.items) ? state.items : [];
+      var id = "list-default";
+      state.lists = [{ id: id, name: "Groceries", items: seedItems }];
+      state.activeListId = id;
+    }
+    state.lists = state.lists.filter(function(list){
+      return list && typeof list === "object";
+    }).map(function(list, idx){
+      return {
+        id: list.id || ("list" + idx + Date.now().toString(36)),
+        name: normalizeListName(list.name, idx === 0 ? "Groceries" : "List"),
+        items: Array.isArray(list.items) ? list.items : []
+      };
+    });
+    if(!state.lists.length){
+      state.lists = [{ id: "list-default", name: "Groceries", items: [] }];
+    }
+    var active = state.lists.find(function(list){ return list.id === state.activeListId; }) || state.lists[0];
+    state.activeListId = active.id;
+    state.items = active.items;
+    state.items.forEach(function(it){ if(it && !it.meals) it.meals = []; });
+  }
+  function getActiveList(){
+    return state.lists.find(function(list){ return list.id === state.activeListId; }) || state.lists[0];
+  }
+  function syncActiveListItems(){
+    var active = getActiveList();
+    if(active) active.items = state.items;
+  }
+  function switchShoppingList(id){
+    if(!id || id === state.activeListId) return;
+    var next = state.lists.find(function(list){ return list.id === id; });
+    if(!next) return;
+    syncActiveListItems();
+    state.activeListId = next.id;
+    state.items = next.items;
+    state.items.forEach(function(it){ if(it && !it.meals) it.meals = []; });
+    saveState();
+    renderListSwitcher();
+    render();
+  }
+  function addShoppingList(name){
+    syncActiveListItems();
+    var list = {
+      id: newListId(),
+      name: normalizeListName(name, "New list"),
+      items: []
+    };
+    state.lists.push(list);
+    state.activeListId = list.id;
+    state.items = list.items;
+    saveState();
+    renderListSwitcher();
+    renderManageLists();
+    render();
+    return list;
+  }
+  function renameShoppingList(id, name){
+    var list = state.lists.find(function(l){ return l.id === id; });
+    if(!list) return;
+    list.name = normalizeListName(name, list.name);
+    saveState();
+    renderListSwitcher();
+    renderManageLists();
+  }
+  function deleteShoppingList(id){
+    if(state.lists.length <= 1) return false;
+    var idx = state.lists.findIndex(function(l){ return l.id === id; });
+    if(idx === -1) return false;
+    var wasActive = state.activeListId === id;
+    state.lists.splice(idx, 1);
+    if(wasActive){
+      var next = state.lists[Math.max(0, idx - 1)] || state.lists[0];
+      state.activeListId = next.id;
+      state.items = next.items;
+    } else {
+      syncActiveListItems();
+    }
+    saveState();
+    renderListSwitcher();
+    renderManageLists();
+    render();
+    return true;
+  }
+  ensureShoppingLists();
+
+  var _saveStateRaw = saveState;
+  saveState = function(){
+    syncActiveListItems();
+    // Persist grocery rows only under lists[] so storage stays one copy per list.
+    var itemsRef = state.items;
+    delete state.items;
+    _saveStateRaw();
+    state.items = itemsRef;
+  };
+
   function keywordIsPantry(text){
     var key = String(text || "").trim().toLowerCase();
     if(!key) return false;
@@ -2509,10 +2668,13 @@
       if(next !== dept) changed = true;
       return next;
     }
-    state.items.forEach(function(it){
-      if(!it) return;
-      it.dept = take(it.dept, it.text);
+    state.lists.forEach(function(list){
+      (list.items || []).forEach(function(it){
+        if(!it) return;
+        it.dept = take(it.dept, it.text);
+      });
     });
+    // Active list shares the array reference with state.items after ensureShoppingLists.
     Object.keys(state.learned).forEach(function(key){
       var next = take(state.learned[key], key);
       if(next !== state.learned[key]) state.learned[key] = next;
@@ -3352,7 +3514,8 @@
 
   // ---------- Shared: formatted list text ----------
   function buildListText(){
-    var lines = ["Oh Stuffing — shopping list", ""];
+    var listTitle = (getActiveList() && getActiveList().name) || "shopping list";
+    var lines = ["Oh Stuffing — " + listTitle, ""];
     var any = false;
     state.order.forEach(function(deptId){
       var dept = DEPT_BY_ID[deptId];
@@ -3396,8 +3559,9 @@
   });
   document.getElementById("shareNativeBtn").addEventListener("click", function(){
     var text = buildListText();
+    var title = "Oh Stuffing — " + ((getActiveList() && getActiveList().name) || "shopping list");
     if(navigator.share){
-      navigator.share({ title: "Oh Stuffing — shopping list", text: text }).catch(function(){});
+      navigator.share({ title: title, text: text }).catch(function(){});
     }
     shareDialog.close();
   });
@@ -3408,7 +3572,8 @@
   });
   document.getElementById("shareEmailBtn").addEventListener("click", function(){
     var text = buildListText();
-    window.open("mailto:?subject=" + encodeURIComponent("Oh Stuffing — shopping list") + "&body=" + encodeURIComponent(text), "_blank");
+    var title = "Oh Stuffing — " + ((getActiveList() && getActiveList().name) || "shopping list");
+    window.open("mailto:?subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(text), "_blank");
     shareDialog.close();
   });
   document.getElementById("shareCopyBtn").addEventListener("click", function(){
@@ -4262,24 +4427,140 @@
     if(!removed.length) return;
     var previous = state.items.slice();
     state.items = state.items.filter(function(it){ return !it.done; });
+    syncActiveListItems();
     saveState();
     render();
     showUndo(removed.length === 1 ? "Cleared 1 checked item" : "Cleared " + removed.length + " checked items", function(){
       state.items = previous;
+      syncActiveListItems();
     });
   });
   document.getElementById("startOverBtn").addEventListener("click", function(){
+    setMoreFeaturesOpen(false);
     if(state.items.length === 0) return;
-    if(confirm("Clear your whole list? You can undo this right after.")){
+    var listName = getActiveList().name || "list";
+    if(confirm("Clear “" + listName + "”? You can undo this right after.")){
       var previous = state.items.slice();
       state.items = [];
+      syncActiveListItems();
       saveState();
       render();
-      showUndo("Cleared the list", function(){
+      showUndo("Cleared “" + listName + "”", function(){
         state.items = previous;
+        syncActiveListItems();
       });
     }
   });
+
+  // ---------- List switcher / manage lists ----------
+  var listSwitcher = document.getElementById("listSwitcher");
+  var manageListsDialog = document.getElementById("manageListsDialog");
+  var manageListsBody = document.getElementById("manageListsBody");
+  function renderListSwitcher(){
+    if(!listSwitcher) return;
+    listSwitcher.innerHTML = "";
+    state.lists.forEach(function(list){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-tab";
+      btn.textContent = list.name;
+      btn.setAttribute("aria-pressed", (list.id === state.activeListId).toString());
+      btn.title = list.name + (list.id === state.activeListId ? " (current)" : "");
+      btn.addEventListener("click", function(){ switchShoppingList(list.id); });
+      listSwitcher.appendChild(btn);
+    });
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "list-tab-new";
+    addBtn.textContent = "+ New list";
+    addBtn.addEventListener("click", function(){
+      var name = window.prompt("Name for the new list", "New list");
+      if(name === null) return;
+      addShoppingList(name);
+    });
+    listSwitcher.appendChild(addBtn);
+    if(state.lists.length > 1){
+      var manageLink = document.createElement("button");
+      manageLink.type = "button";
+      manageLink.className = "list-tab-manage";
+      manageLink.textContent = "Manage";
+      manageLink.addEventListener("click", function(){
+        renderManageLists();
+        if(manageListsDialog) manageListsDialog.showModal();
+      });
+      listSwitcher.appendChild(manageLink);
+    }
+  }
+  function renderManageLists(){
+    if(!manageListsBody) return;
+    manageListsBody.innerHTML = "";
+    state.lists.forEach(function(list){
+      var row = document.createElement("div");
+      row.className = "lists-manage-row";
+      var name = document.createElement("div");
+      name.className = "lists-manage-name";
+      name.textContent = list.name + (list.id === state.activeListId ? " · current" : "");
+      row.appendChild(name);
+      var openBtn = document.createElement("button");
+      openBtn.type = "button";
+      openBtn.className = "chip-btn";
+      openBtn.textContent = "Open";
+      openBtn.addEventListener("click", function(){
+        switchShoppingList(list.id);
+        renderManageLists();
+      });
+      row.appendChild(openBtn);
+      var renameBtn = document.createElement("button");
+      renameBtn.type = "button";
+      renameBtn.className = "chip-btn";
+      renameBtn.textContent = "Rename";
+      renameBtn.addEventListener("click", function(){
+        var next = window.prompt("Rename list", list.name);
+        if(next === null) return;
+        renameShoppingList(list.id, next);
+      });
+      row.appendChild(renameBtn);
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "chip-btn";
+      delBtn.textContent = "Delete";
+      delBtn.disabled = state.lists.length <= 1;
+      delBtn.addEventListener("click", function(){
+        if(state.lists.length <= 1) return;
+        var count = (list.items || []).length;
+        var msg = count
+          ? "Delete “" + list.name + "” and its " + count + " item" + (count === 1 ? "" : "s") + "?"
+          : "Delete “" + list.name + "”?";
+        if(!confirm(msg)) return;
+        deleteShoppingList(list.id);
+      });
+      row.appendChild(delBtn);
+      manageListsBody.appendChild(row);
+    });
+  }
+  var manageListsBtn = document.getElementById("manageListsBtn");
+  if(manageListsBtn && manageListsDialog){
+    manageListsBtn.addEventListener("click", function(){
+      setMoreFeaturesOpen(false);
+      renderManageLists();
+      manageListsDialog.showModal();
+    });
+  }
+  var closeManageLists = document.getElementById("closeManageLists");
+  if(closeManageLists && manageListsDialog){
+    closeManageLists.addEventListener("click", function(){ manageListsDialog.close(); });
+  }
+  var newListForm = document.getElementById("newListForm");
+  if(newListForm){
+    newListForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var input = document.getElementById("newListName");
+      var name = input ? input.value : "";
+      addShoppingList(name || "New list");
+      if(input) input.value = "";
+    });
+  }
+  renderListSwitcher();
 
   // ---------- Settings dialog ----------
   var settingsDialog = document.getElementById("settingsDialog");
