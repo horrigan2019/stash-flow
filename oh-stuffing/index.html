@@ -621,6 +621,19 @@
     box-shadow:0 12px 28px rgba(43,38,32,.28);
   }
   .beta-toast[hidden]{ display:none !important; }
+  .undo-toast{
+    position:fixed; z-index:91; left:50%; bottom:22px; transform:translateX(-50%);
+    width:min(92vw, 420px); padding:12px 14px; border-radius:14px;
+    background:#2C4A34; color:#F7FBF5;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    font-size:1rem; font-weight:650; line-height:1.35;
+    box-shadow:0 12px 28px rgba(43,38,32,.28);
+  }
+  .undo-toast[hidden]{ display:none !important; }
+  .undo-toast button{
+    flex:none; border:none; border-radius:999px; padding:8px 14px;
+    background:#F7FBF5; color:#2C4A34; font:inherit; font-weight:750; cursor:pointer;
+  }
   .account-chip{
     display:inline-flex; align-items:center; gap:6px; margin-top:8px;
     padding:6px 10px; border-radius:999px; border:1.5px solid var(--border);
@@ -745,6 +758,10 @@
   </div>
 </div>
 <div id="betaToast" class="beta-toast" hidden role="status">Welcome Beta Tester! All Pro features unlocked.</div>
+<div id="undoToast" class="undo-toast" hidden role="status">
+  <span id="undoToastText"></span>
+  <button type="button" id="undoBtn">Undo</button>
+</div>
 
 <div class="wrap">
   <header class="top">
@@ -2080,15 +2097,15 @@
 
   // ---------- Keyword dictionary: many everyday items -> department id ----------
   var KEYWORDS = {
-    produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish","plantain","plantains","platano","platanos","green plantains","jackfruit","jackfruits","jack fruit","kiwi","kiwis","kiwifruit","kiwi fruit"],
+    produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish","plantain","plantains","platano","platanos","green plantains","jackfruit","jackfruits","jack fruit","kiwi","kiwis","kiwifruit","kiwi fruit","guava","guavas","papaya","papayas","passion fruit","passionfruit","dragon fruit","dragonfruit","pitaya","starfruit","star fruit","carambola","lychee","lychees","rambutan","rambutans","persimmon","persimmons","pomegranate","pomegranates","coconut","coconuts","kumquat","kumquats","fig","figs","tamarind","durian","durians","raspberries","blackberry","blackberries","boysenberry","boysenberries","cranberry","cranberries","honeydew","honeydew melon","bok choy","bokchoy","daikon","jicama","fennel","kohlrabi","parsnip","parsnips","rutabaga","rutabagas","lemongrass","lemon grass","ginger root","turmeric root","artichoke","artichokes","okra","watercress","leek","leeks","shallot","shallots","swiss chard","chard","endive","radicchio","rapini","broccolini","poblano","poblanos","serrano","serranos","habanero","habaneros","jalapeno","jalapeño","jalapenos","jalapeños","ghost pepper","ghost peppers","banana pepper","banana peppers","mint","rosemary","dill","thyme"],
     bakery: ["bread","baguette","bagel","bagels","bun","buns","roll","rolls","muffin","muffins","croissant","croissants","pita","donut","donuts","cake","cupcake","cupcakes","dinner rolls","sourdough","hamburger buns","hot dog buns","biscuit","biscuits","buscuits"],
     deli: ["deli meat","turkey slices","ham slices","salami","prosciutto","sliced cheese","deli cheese","rotisserie chicken","pepperoni sliced","sub sandwich"],
     meat: ["chicken","chicken breast","chicken thighs","beef","ground beef","steak","pork","pork chops","bacon","sausage","sausages","turkey","ham","lamb","shrimp","salmon","fish","tilapia","cod","tuna steak","ground turkey","hot dogs","meatballs","ribs","pork ribs","beef ribs","baby back ribs","spare ribs","short ribs"],
-    dairy: ["milk","eggs","egg","huevos","cheese","cheddar","mozzarella","fresh mozzarella","gouda","mexican cheese","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","oat milk","soy milk","whipped cream","whip cream","string cheese","parmesan","shredded parmesan"],
+    dairy: ["milk","eggs","egg","huevos","cheese","cheddar","mozzarella","fresh mozzarella","gouda","mexican cheese","yogurt","yoghurt","butter","cream cheese","sour cream","half and half","heavy cream","cottage cheese","almond milk","coconut milk","oat milk","soy milk","whipped cream","whip cream","string cheese","parmesan","shredded parmesan"],
     frozen: ["frozen pizza","ice cream","frozen vegetables","frozen fruit","frozen peas","frozen corn","popsicle","popsicles","frozen fries","french fries","frozen waffles","waffles","frozen dinner","frozen meal","frozen shrimp","frozen chicken nuggets","chicken tenders","chicken tender","pizza rolls","hashbrown","hashbrowns","hash brown","hash browns","hashbrown patties","hash brown patties","tater tots","tater tot"],
     breakfast: ["cereal","oatmeal","granola","pancake mix","pancakes","syrup","maple syrup","breakfast bar","pop tarts","grits","cream of wheat"],
     baking: ["flour","sugar","brown sugar","powdered sugar","baking soda","baking powder","yeast","vanilla","vanilla extract","chocolate chips","chocolate chip","choc chips","choc chip","choco chips","cake mix","cupcake mix","cupcake mixes","cocoa","cocoa powder","cinnamon","cornstarch","food coloring","sprinkles","shortening","molasses","frosting","icing","pie crust","stuffing mix"],
-    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","thyme","rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
+    pantry: ["applesauce","apple sauce","juicy gummies","jucie gummies","gummies","gummy","canned beans","black beans","chickpeas","kidney beans","pinto beans","garbanzo beans","garbanzo","cannellini beans","cannellini","navy beans","great northern beans","northern beans","lima beans","butter beans","black eyed peas","white beans","red beans","baked beans","chili beans","pink beans","beans","canned tomatoes","tomato sauce","soup","canned soup","canned corn","canned tuna","tuna","broth","chicken broth","vegetable broth","stock","canned fruit","refried beans","canned pumpkin","cranberry sauce","canned cranberry sauce","gravy","turkey gravy","olive oil","vegetable oil","vinegar","peanut butter","jelly","jam","honey","marinara","chili powder","cumin","paprika","smoked paprika","oregano","nutmeg","turmeric","cayenne","black pepper","garlic powder","onion powder","italian seasoning","bay leaves","bay leaf","dried thyme","dried rosemary","sage","chili flakes","red pepper flakes","crushed red pepper","coriander","allspice","cloves","ground ginger","salt","taco seasoning","chili seasoning","curry powder","garlic salt","pumpkin spice","tortilla","tortillas","tortilla shells","flour tortillas","corn tortillas","taco shells","seasoning","seasonings","slap ya mama","pudding","pudding cup","pudding cups"],
     condiments: ["ketchup","mustard","honey mustard","mayo","mayonnaise","hot sauce","soy sauce","oyster sauce","fish sauce","hoisin","hoisin sauce","teriyaki","teriyaki sauce","steak sauce","salad dressing","bbq sauce","barbecue sauce","salsa","relish","worcestershire","worcestershire sauce","sriracha","ranch","chili sauce","sweet chili sauce","cocktail sauce","tartar sauce","aioli"],
     pasta: ["pasta","spaghetti","macaroni","noodles","rice","brown rice","white rice","quinoa","couscous","lentils","ramen","lasagna noodles","penne"],
     snacks: ["chips","crackers","pretzels","popcorn","cookies","candy","chocolate","nuts","almonds","peanuts","trail mix","granola bar","granola bars","fruit snacks","salsa chips","tortilla chips","pita chips","corn chips","kettle chips","potato chips","kettle potato chips"],
@@ -2445,6 +2462,7 @@
     else state.order.splice(otherIdx, 0, d.id);
   });
   if(!state.learned) state.learned = {};
+  if(!state.aisleMisses) state.aisleMisses = {};
   if(!state.items) state.items = [];
   if(!state.prefs) state.prefs = { textSize:"normal", contrast:"normal", theme:"system", accentColor:"green" };
   if(!state.prefs.accentColor) state.prefs.accentColor = "green";
@@ -2542,8 +2560,17 @@
     return w;
   }
   function stripQuantity(text){
-    var stripped = text.replace(/^(\d+\s*)?(a|an|the|some|few|couple of|dozen|bag of|box of|can of|jar of|loaf of|gallon of|carton of)\s+/,"").trim();
-    return stripped.replace(/^\d+\s*/,"").trim();
+    var s = String(text || "").replace(/\s+/g," ").trim().toLowerCase();
+    var unit = "lbs?|pounds?|oz|ounces?|kg|kgs?|grams?|packs?|packages?|bags?|boxes?|cans?|jars?|bunch(?:es)?|heads?|cloves?|gallons?|quarts?|pints?|dozen|count|ct|pk|pkg";
+    var re = new RegExp("^(?:\\d+(?:\\.\\d+)?\\s*)?(?:a|an|the|some|few|couple of|dozen|(?:" + unit + ")(?:\\s+of)?|bag of|box of|can of|jar of|loaf of|gallon of|carton of|pack of|package of|bunch of|head of)\\s+","i");
+    var guard = 0;
+    while(s && guard < 4){
+      var next = s.replace(re, "").trim().replace(/^\d+(?:[./]\d+)?\s+/, "").trim();
+      if(next === s) break;
+      s = next;
+      guard++;
+    }
+    return s;
   }
   function stripTrailingFor(text){
     return String(text).replace(/\s+for\s+.+$/i,"").trim();
@@ -2621,6 +2648,8 @@
         if(dept) return dept;
       }
     }
+    var spelled = correctedSpelling(stripped || text);
+    if(spelled && lookupKeyword(spelled)) return lookupKeyword(spelled);
     return "other";
   }
 
@@ -2778,15 +2807,29 @@
     }
     return rows[a.length][b.length];
   }
+  function normalizeGroceryName(text){
+    return stripQuantity(String(text || "").replace(/\s+/g," ").trim().toLowerCase());
+  }
+  function splitLeadingQuantity(text){
+    var spaced = String(text || "").replace(/\s+/g," ").trim();
+    var lower = spaced.toLowerCase();
+    var foodLower = normalizeGroceryName(lower);
+    if(!foodLower) return { qty:"", food: spaced, foodLower: lower };
+    var idx = lower.lastIndexOf(foodLower);
+    if(idx <= 0) return { qty:"", food: spaced, foodLower: foodLower };
+    return { qty: spaced.slice(0, idx).trim(), food: spaced.slice(idx).trim(), foodLower: foodLower };
+  }
   function canonicalItemName(text){
     var spaced = String(text || "").replace(/\s+/g," ").trim();
+    if(!spaced) return "";
     var lower = spaced.toLowerCase();
     var spellingFix = { "buscuits":"biscuits", "jucie gummies":"juicy gummies", "jucie gummy":"juicy gummies" };
     if(spellingFix[lower]) return spellingFix[lower];
-    var compact = lower.replace(/[\s-]+/g,"");
-    if(WORD_TO_DEPT[compact]) return compact === lower ? spaced : compact;
-    if(WORD_TO_DEPT[lower]) return spaced;
-    return spaced;
+    var parts = splitLeadingQuantity(spaced);
+    var corrected = correctedSpelling(parts.foodLower);
+    var food = corrected || parts.food;
+    if(parts.qty) return (parts.qty + " " + food).trim();
+    return food;
   }
   function isSimplePluralPair(a, b){
     a = String(a || "").toLowerCase().trim();
@@ -2807,25 +2850,95 @@
     }
     return pluralOf(a, b) || pluralOf(b, a);
   }
-  function closestKnownItem(text){
-    var lower = String(text || "").replace(/\s+/g," ").trim().toLowerCase();
-    if(!lower || WORD_TO_DEPT[lower] || WORD_TO_DEPT[lower.replace(/[\s-]+/g,"")]) return "";
+  function exactPlural(typed, singular){
+    if(!typed || !singular || typed === singular) return false;
+    if(typed === singular + "s" || typed === singular + "es") return true;
+    if(singular.length > 2 && /[^aeiou]y$/.test(singular) && typed === singular.slice(0, -1) + "ies") return true;
+    return false;
+  }
+  function sharedPrefixLen(a, b){
+    var n = 0;
+    var max = Math.min(a.length, b.length);
+    while(n < max && a.charAt(n) === b.charAt(n)) n++;
+    return n;
+  }
+  function finalLetterOnly(a, b){
+    if(a.length === b.length) return a.slice(0, -1) === b.slice(0, -1);
+    if(Math.abs(a.length - b.length) !== 1) return false;
+    var longer = a.length > b.length ? a : b;
+    var shorter = a.length > b.length ? b : a;
+    return longer.slice(0, -1) === shorter;
+  }
+  function preferPluralDisplay(match, typed){
+    if(!match || !/[s]$/.test(typed) || /ss$/.test(typed)) return match;
+    var plural = "";
+    Object.keys(WORD_TO_DEPT).forEach(function(term){
+      if(term === match) return;
+      if((singularize(term) === match || isSimplePluralPair(match, term)) && term.length > plural.length) plural = term;
+    });
+    return plural || match;
+  }
+  function spellToken(token){
+    token = String(token || "").toLowerCase().trim();
+    if(!token || token.length < 4 || WORD_TO_DEPT[token]) return "";
     var terms = Object.keys(WORD_TO_DEPT);
-    for(var p=0; p<terms.length; p++){
-      if(isSimplePluralPair(lower, terms[p])) return "";
+    var pluralBase = "";
+    for(var i=0; i<terms.length; i++){
+      if(exactPlural(token, terms[i])) pluralBase = terms[i];
+    }
+    var probes = [token];
+    var stem = singularize(token);
+    if(stem && stem !== token) probes.push(stem);
+    if(token.length > 4 && token.endsWith("s") && !token.endsWith("ss")){
+      var simple = token.slice(0, -1);
+      if(probes.indexOf(simple) === -1) probes.push(simple);
     }
     var best = "";
     var bestDist = 99;
-    terms.forEach(function(term){
-      if(term.length < 4) return;
-      var dist = editDistance(lower, term);
-      var allowed = term.length >= 10 ? 2 : 1;
-      if(dist > 0 && dist <= allowed && dist < bestDist){
-        best = term;
-        bestDist = dist;
-      }
+    probes.forEach(function(probe){
+      terms.forEach(function(term){
+        if(term.length < 4) return;
+        if(probe.indexOf(" ") === -1 && term.indexOf(" ") !== -1) return;
+        if(exactPlural(token, term)) return;
+        var dist = editDistance(probe, term);
+        if(dist === 0) return;
+        var allowed = Math.max(token.length, term.length) >= 8 ? 2 : 1;
+        if(dist > allowed) return;
+        if(token.charAt(0) !== term.charAt(0) && probe.charAt(0) !== term.charAt(0)) return;
+        var prefix = sharedPrefixLen(probe, term);
+        if(dist >= 2 && prefix < 3) return;
+        if(dist === 1 && prefix < 2) return;
+        if(finalLetterOnly(probe, term) && token.length < 6) return;
+        if(dist < bestDist){
+          best = term;
+          bestDist = dist;
+        }
+      });
     });
-    return best;
+    if(pluralBase){
+      var baseDist = editDistance(token, pluralBase);
+      if(!best || bestDist > baseDist) return "";
+      if(bestDist < baseDist) return preferPluralDisplay(best, token);
+      if(/s$/.test(token) && !/ss$/.test(token) && (isSimplePluralPair(pluralBase, best) || singularize(best) === pluralBase)) return best;
+      return "";
+    }
+    if(!best) return "";
+    return preferPluralDisplay(best, token);
+  }
+  function correctedSpelling(text){
+    var lower = normalizeGroceryName(text);
+    if(!lower || WORD_TO_DEPT[lower] || WORD_TO_DEPT[lower.replace(/[\s-]+/g,"")]) return "";
+    var whole = spellToken(lower);
+    if(whole) return whole;
+    var parts = lower.split(/\s+/).filter(Boolean);
+    if(parts.length < 2) return "";
+    var lastFix = spellToken(parts[parts.length - 1]);
+    if(!lastFix || lastFix === parts[parts.length - 1]) return "";
+    parts[parts.length - 1] = lastFix;
+    return parts.join(" ");
+  }
+  function closestKnownItem(text){
+    return correctedSpelling(text) || "";
   }
   function addItems(raw, mealName, opts){
     opts = opts || {};
@@ -2865,8 +2978,39 @@
         var guess = closestKnownItem(entry.typed);
         if(guess) enqueueDidYouMean(entry.item, guess);
       }
+      if(entry.item.dept === "other") askAssistantForAisle(entry.item);
     });
   }
+
+  // ---------- Undo accidental deletes ----------
+  var undoToast = document.getElementById("undoToast");
+  var undoToastText = document.getElementById("undoToastText");
+  var undoBtn = document.getElementById("undoBtn");
+  var undoRestore = null;
+  var undoTimer = null;
+  function hideUndo(){
+    if(undoTimer) clearTimeout(undoTimer);
+    undoTimer = null;
+    undoRestore = null;
+    if(undoToast) undoToast.hidden = true;
+  }
+  function showUndo(message, restore){
+    undoRestore = restore;
+    if(undoToastText) undoToastText.textContent = message;
+    if(undoToast) undoToast.hidden = false;
+    if(undoTimer) clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideUndo, 6000);
+    if(undoBtn) undoBtn.focus();
+  }
+  function undoLastDelete(){
+    if(!undoRestore) return;
+    var restore = undoRestore;
+    hideUndo();
+    restore();
+    saveState();
+    render();
+  }
+  if(undoBtn) undoBtn.addEventListener("click", undoLastDelete);
 
   // ---------- Rendering ----------
   var listArea = document.getElementById("listArea");
@@ -2993,8 +3137,19 @@
           del.textContent = "✕";
           del.setAttribute("aria-label", "Remove " + it.text);
           del.addEventListener("click", function(){
+            var index = -1;
+            for(var di=0; di<state.items.length; di++){
+              if(state.items[di].id === it.id){ index = di; break; }
+            }
+            if(index === -1) return;
+            var removed = state.items[index];
             state.items = state.items.filter(function(x){ return x.id !== it.id; });
-            saveState(); render();
+            saveState();
+            render();
+            showUndo("Removed " + removed.text, function(){
+              var at = Math.min(Math.max(index, 0), state.items.length);
+              state.items.splice(at, 0, removed);
+            });
           });
           li.appendChild(cb);
           li.appendChild(span);
@@ -4103,14 +4258,26 @@
     render();
   });
   document.getElementById("clearDone").addEventListener("click", function(){
+    var removed = state.items.filter(function(it){ return it.done; });
+    if(!removed.length) return;
+    var previous = state.items.slice();
     state.items = state.items.filter(function(it){ return !it.done; });
-    saveState(); render();
+    saveState();
+    render();
+    showUndo(removed.length === 1 ? "Cleared 1 checked item" : "Cleared " + removed.length + " checked items", function(){
+      state.items = previous;
+    });
   });
   document.getElementById("startOverBtn").addEventListener("click", function(){
     if(state.items.length === 0) return;
-    if(confirm("Clear your whole list? This can't be undone.")){
+    if(confirm("Clear your whole list? You can undo this right after.")){
+      var previous = state.items.slice();
       state.items = [];
-      saveState(); render();
+      saveState();
+      render();
+      showUndo("Cleared the list", function(){
+        state.items = previous;
+      });
     }
   });
 
@@ -6581,6 +6748,58 @@
     });
   });
 
+  function askAssistantForAisle(item){
+    if(!item || item.dept !== "other" || !hasProAccess()) return;
+    var key = normalizeGroceryName(item.text);
+    if(!key || key.length < 3 || state.learned[key] || (state.aisleMisses && state.aisleMisses[key])) return;
+    if(askAssistantForAisle.pending[key]) return;
+    askAssistantForAisle.pending[key] = true;
+    var ids = DEPARTMENTS.map(function(d){ return d.id; }).join(", ");
+    var prompt = "Classify this grocery item into exactly one aisle id (" + ids + "). Rule: Classify any edible botanical fruit, vegetable, fresh herb, or root into \"produce\" unless it is canned, frozen, dried, or heavily processed. Item: " + JSON.stringify(key) + "\nRespond with ONLY JSON like {\"dept\":\"produce\"}.";
+    var headers = { "content-type": "application/json" };
+    if(isBetaTester()) headers["x-beta-code"] = BETA_CODE;
+    fetch("/api/vision", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: headers,
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 60,
+        messages: [{ role: "user", content: [{ type: "text", text: prompt }] }]
+      })
+    }).then(function(res){
+      if(!res.ok) return null;
+      return res.json();
+    }).then(function(data){
+      if(!data) return;
+      var text = "";
+      (data.content || []).forEach(function(block){
+        if(block && block.type === "text") text += block.text;
+      });
+      var parsed;
+      try { parsed = parseJsonFromText(text); }
+      catch(e){ return; }
+      var dept = parsed && String(parsed.dept || "").toLowerCase().trim();
+      if(!DEPT_BY_ID[dept]) return;
+      if(dept === "other"){
+        if(!state.aisleMisses) state.aisleMisses = {};
+        state.aisleMisses[key] = 1;
+        saveState();
+        return;
+      }
+      state.learned[key] = dept;
+      state.items.forEach(function(it){
+        if(!it || it.dept !== "other") return;
+        if(normalizeGroceryName(it.text) === key) it.dept = dept;
+      });
+      saveState();
+      render();
+    }).catch(function(){}).then(function(){
+      delete askAssistantForAisle.pending[key];
+    });
+  }
+  askAssistantForAisle.pending = {};
+
   // Move saved Unsorted rows onto the aisle the dictionary now knows.
   // Spices such as chili powder stay in Pantry Isle. Baking ingredients
   // (cupcake mix, flour, cinnamon, cocoa, chocolate chips) stay in Baking,
@@ -6597,6 +6816,16 @@
       return dept;
     }
     state.items.forEach(function(it){
+      if(it && it.dept === "other"){
+        var typedKey = String(it.text || "").trim().toLowerCase();
+        if(!state.learned[typedKey]){
+          var fixed = canonicalItemName(it.text);
+          if(fixed && fixed.toLowerCase() !== typedKey){
+            it.text = fixed;
+            changed = true;
+          }
+        }
+      }
       var next = nextDept(it.text, it.dept);
       if(next === it.dept) return;
       it.dept = next;
@@ -6624,6 +6853,12 @@
   }
 
   reclassifyUnsorted();
+  var assistCount = 0;
+  state.items.forEach(function(it){
+    if(assistCount >= 6 || !it || it.dept !== "other") return;
+    assistCount++;
+    askAssistantForAisle(it);
+  });
   addRegularsThatAreDue();
   render();
 
