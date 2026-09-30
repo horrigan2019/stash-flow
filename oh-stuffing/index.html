@@ -4474,22 +4474,26 @@
     addBtn.className = "list-tab-new";
     addBtn.textContent = "+ New list";
     addBtn.addEventListener("click", function(){
-      var name = window.prompt("Name for the new list", "New list");
-      if(name === null) return;
-      addShoppingList(name);
+      renderManageLists();
+      if(manageListsDialog){
+        manageListsDialog.showModal();
+        var input = document.getElementById("newListName");
+        if(input){
+          input.value = "";
+          setTimeout(function(){ input.focus(); }, 0);
+        }
+      }
     });
     listSwitcher.appendChild(addBtn);
-    if(state.lists.length > 1){
-      var manageLink = document.createElement("button");
-      manageLink.type = "button";
-      manageLink.className = "list-tab-manage";
-      manageLink.textContent = "Manage";
-      manageLink.addEventListener("click", function(){
-        renderManageLists();
-        if(manageListsDialog) manageListsDialog.showModal();
-      });
-      listSwitcher.appendChild(manageLink);
-    }
+    var manageLink = document.createElement("button");
+    manageLink.type = "button";
+    manageLink.className = "list-tab-manage";
+    manageLink.textContent = "Manage";
+    manageLink.addEventListener("click", function(){
+      renderManageLists();
+      if(manageListsDialog) manageListsDialog.showModal();
+    });
+    listSwitcher.appendChild(manageLink);
   }
   function renderManageLists(){
     if(!manageListsBody) return;
@@ -4515,9 +4519,9 @@
       renameBtn.className = "chip-btn";
       renameBtn.textContent = "Rename";
       renameBtn.addEventListener("click", function(){
-        var next = window.prompt("Rename list", list.name);
-        if(next === null) return;
-        renameShoppingList(list.id, next);
+        var input = window.prompt("Rename list", list.name);
+        if(input === null) return;
+        renameShoppingList(list.id, input);
       });
       row.appendChild(renameBtn);
       var delBtn = document.createElement("button");
