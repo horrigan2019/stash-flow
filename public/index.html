@@ -2068,7 +2068,7 @@
 
   // ---------- Keyword dictionary: many everyday items -> department id ----------
   var KEYWORDS = {
-    produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish","plantain","plantains","platano","platanos","green plantains"],
+    produce: ["apple","apples","banana","bananas","orange","oranges","grape","grapes","lemon","lime","avocado","tomato","tomatoes","potato","potatoes","onion","onions","garlic","carrot","carrots","celery","lettuce","spinach","kale","broccoli","cauliflower","cucumber","pepper","peppers","bell pepper","mushroom","mushrooms","berries","strawberry","strawberries","blueberry","blueberries","raspberry","melon","watermelon","cantaloupe","pear","peach","peaches","plum","mango","pineapple","cilantro","parsley","basil","ginger","zucchini","squash","corn","green beans","cabbage","herbs","scallion","scallions","radish","plantain","plantains","platano","platanos","green plantains","jackfruit","jackfruits","jack fruit","kiwi","kiwis","kiwifruit","kiwi fruit"],
     bakery: ["bread","baguette","bagel","bagels","bun","buns","roll","rolls","muffin","muffins","croissant","croissants","pita","donut","donuts","cake","dinner rolls","sourdough","hamburger buns","hot dog buns","biscuit","biscuits","buscuits"],
     deli: ["deli meat","turkey slices","ham slices","salami","prosciutto","sliced cheese","deli cheese","rotisserie chicken","pepperoni sliced","sub sandwich"],
     meat: ["chicken","chicken breast","chicken thighs","beef","ground beef","steak","pork","pork chops","bacon","sausage","sausages","turkey","ham","lamb","shrimp","salmon","fish","tilapia","cod","tuna steak","ground turkey","hot dogs","meatballs","ribs","pork ribs","beef ribs","baby back ribs","spare ribs","short ribs"],
@@ -2554,10 +2554,16 @@
     var parts = phrase.split(/\s+/).filter(Boolean);
     if(!parts.length) return [];
     var out = [parts.join(" ")];
-    var last = singularize(parts[parts.length - 1]);
-    if(last !== parts[parts.length - 1]){
+    var originalLast = parts[parts.length - 1];
+    var last = singularize(originalLast);
+    if(last !== originalLast){
       parts[parts.length - 1] = last;
       out.push(parts.join(" "));
+    }
+    // "limes" is a plural of "lime", but the -es rule turns it into "lim".
+    if(originalLast.length > 3 && originalLast.endsWith("s") && !originalLast.endsWith("ss")){
+      var simple = parts.slice(0, -1).concat(originalLast.slice(0, -1)).join(" ");
+      if(out.indexOf(simple) === -1) out.push(simple);
     }
     return out;
   }
@@ -2767,12 +2773,35 @@
     if(WORD_TO_DEPT[lower]) return spaced;
     return spaced;
   }
+  function isSimplePluralPair(a, b){
+    a = String(a || "").toLowerCase().trim();
+    b = String(b || "").toLowerCase().trim();
+    if(!a || !b || a === b) return false;
+    function pluralOf(singular, plural){
+      if(plural === singular + "s" || plural === singular + "es") return true;
+      if(singular.length > 2 && /[^aeiou]y$/.test(singular) && plural === singular.slice(0, -1) + "ies") return true;
+      var sParts = singular.split(/\s+/);
+      var pParts = plural.split(/\s+/);
+      if(sParts.length < 2 || sParts.length !== pParts.length) return false;
+      if(sParts.slice(0, -1).join(" ") !== pParts.slice(0, -1).join(" ")) return false;
+      var sLast = sParts[sParts.length - 1];
+      var pLast = pParts[pParts.length - 1];
+      if(pLast === sLast + "s" || pLast === sLast + "es") return true;
+      if(sLast.length > 2 && /[^aeiou]y$/.test(sLast) && pLast === sLast.slice(0, -1) + "ies") return true;
+      return false;
+    }
+    return pluralOf(a, b) || pluralOf(b, a);
+  }
   function closestKnownItem(text){
     var lower = String(text || "").replace(/\s+/g," ").trim().toLowerCase();
     if(!lower || WORD_TO_DEPT[lower] || WORD_TO_DEPT[lower.replace(/[\s-]+/g,"")]) return "";
+    var terms = Object.keys(WORD_TO_DEPT);
+    for(var p=0; p<terms.length; p++){
+      if(isSimplePluralPair(lower, terms[p])) return "";
+    }
     var best = "";
     var bestDist = 99;
-    Object.keys(WORD_TO_DEPT).forEach(function(term){
+    terms.forEach(function(term){
       if(term.length < 4) return;
       var dist = editDistance(lower, term);
       var allowed = term.length >= 10 ? 2 : 1;
