@@ -41,15 +41,13 @@ export function useGroceryList() {
       const nextQty = Math.min(99, Math.max(1, Math.floor(quantity) || 1));
       const nextUnit = (unit ?? "").replace(/\s+/g, " ").trim().slice(0, 12);
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                quantity: nextQty,
-                ...(nextUnit ? { unit: nextUnit } : { unit: undefined }),
-              }
-            : item,
-        ),
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          const next: GroceryItem = { ...item, quantity: nextQty };
+          if (nextUnit) next.unit = nextUnit;
+          else delete next.unit;
+          return next;
+        }),
       );
     },
     [],
