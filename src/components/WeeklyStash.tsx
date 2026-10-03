@@ -26,7 +26,8 @@ function guessAisle(phrase: string): AisleId {
 }
 
 export function WeeklyStash() {
-  const { items, hydrated, toggleItem, addItems } = useGroceryList();
+  const { items, hydrated, toggleItem, addItems, bumpItemQuantity } =
+    useGroceryList();
   const [openAisles, setOpenAisles] = useState<Record<string, boolean>>({
     produce: true,
   });
@@ -106,6 +107,7 @@ export function WeeklyStash() {
             open={Boolean(openAisles[aisle.id])}
             onToggleOpen={() => toggleAisle(aisle.id)}
             onToggleItem={toggleItem}
+            onBumpQuantity={bumpItemQuantity}
           />
         ))}
 

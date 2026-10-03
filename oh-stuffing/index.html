@@ -233,10 +233,59 @@
   li.done .item-text{ text-decoration:line-through; color:var(--muted); }
   .move-btn{
     border:none; background:transparent; color:var(--muted); font-size:1rem; cursor:pointer;
-    width:32px; height:32px; border-radius:8px; flex:none;
+    width:40px; height:40px; border-radius:10px; flex:none;
   }
   .move-btn:hover{ background:var(--surface-2); color:var(--ink); }
   .move-btn.repeat-on{ color:var(--accent-2); }
+  .qty-stepper{
+    display:inline-flex; align-items:center; gap:2px; flex:none;
+    border:1.5px solid var(--border); border-radius:12px; background:var(--surface);
+    padding:2px;
+  }
+  .qty-stepper button{
+    border:none; background:transparent; color:var(--ink); cursor:pointer;
+    font-family:inherit; border-radius:10px;
+  }
+  .qty-stepper .qty-btn{
+    width:40px; height:40px; font-size:1.35rem; line-height:1; color:var(--muted);
+  }
+  .qty-stepper .qty-btn:hover{ background:var(--surface-2); color:var(--ink); }
+  .qty-stepper .qty-btn:disabled{ opacity:.35; cursor:default; }
+  .qty-stepper .qty-value{
+    min-width:2.6rem; height:40px; padding:0 6px; font-size:.95rem; font-weight:700;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+  }
+  .qty-stepper .qty-value.has-unit{ min-width:3.6rem; font-size:.82rem; }
+  .move-list-btn{
+    border:none; background:transparent; color:var(--muted); font-size:.78rem; cursor:pointer;
+    min-width:44px; height:40px; padding:0 8px; border-radius:10px; flex:none;
+    font-family:inherit; font-weight:600;
+  }
+  .move-list-btn:hover{ background:var(--surface-2); color:var(--ink); }
+  .move-list-targets{ display:flex; flex-direction:column; gap:8px; margin:12px 0 4px; }
+  .move-list-targets button{
+    width:100%; text-align:left; padding:14px 14px; border-radius:12px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    font-size:1rem; cursor:pointer; font-family:inherit;
+  }
+  .move-list-targets button:hover{ border-color:var(--accent); background:var(--surface-2); }
+  .unit-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .unit-chips button{
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:999px; padding:10px 14px; font-size:.9rem; cursor:pointer; font-family:inherit;
+  }
+  .unit-chips button[aria-pressed="true"]{
+    background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+  }
+  .qty-edit-row{ display:flex; align-items:center; gap:10px; }
+  .qty-edit-row input[type=number]{
+    width:88px; padding:12px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:1.1rem; font-family:inherit;
+  }
+  .qty-edit-row input[type=text]{
+    flex:1; padding:12px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:1rem; font-family:inherit;
+  }
 
   .empty{
     text-align:center; padding:28px 20px 40px; color:var(--muted);
@@ -509,12 +558,16 @@
   body.shopping-mode #listenBanner,
   body.shopping-mode .footer-actions,
   body.shopping-mode .move-btn,
+  body.shopping-mode .move-list-btn,
   body.shopping-mode .reorder-btns,
   body.shopping-mode .item-meta{ display:none !important; }
   body.shopping-mode .dept-name{ font-size:1.35rem; }
-  body.shopping-mode ul.items li{ padding:16px 10px; gap:14px; }
+  body.shopping-mode ul.items li{ padding:16px 10px; gap:14px; flex-wrap:wrap; }
   body.shopping-mode ul.items li input[type=checkbox]{ width:32px; height:32px; }
   body.shopping-mode .item-text{ font-size:1.45rem; line-height:1.25; }
+  body.shopping-mode .qty-stepper{ margin-left:auto; }
+  body.shopping-mode .qty-stepper .qty-btn{ width:44px; height:44px; }
+  body.shopping-mode .qty-stepper .qty-value{ height:44px; font-size:1.05rem; }
 
   body.list-mode .brand-bar,
   body.list-mode .dinner-cta,
@@ -526,6 +579,7 @@
   body.list-mode #micHint,
   body.list-mode .footer-actions,
   body.list-mode .move-btn,
+  body.list-mode .move-list-btn,
   body.list-mode .reorder-btns{ display:none !important; }
   body.list-mode form.add{ margin-top:4px; }
 
@@ -904,6 +958,38 @@
       <button type="submit">Add list</button>
     </form>
     <button class="dialog-close" id="closeManageLists" type="button">Done</button>
+  </div>
+</dialog>
+
+<dialog id="moveListDialog">
+  <div class="dialog-inner">
+    <h2 id="moveListTitle">Move to another list</h2>
+    <p class="hint" style="margin:0;">Pick the store list this item belongs on.</p>
+    <div class="move-list-targets" id="moveListTargets"></div>
+    <button class="dialog-close" id="closeMoveList" type="button">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="qtyDialog">
+  <div class="dialog-inner">
+    <h2 id="qtyTitle">Quantity</h2>
+    <div class="field-row">
+      <label for="qtyInput">How many?</label>
+      <div class="qty-edit-row">
+        <input type="number" id="qtyInput" min="1" max="99" step="1" value="1" inputmode="numeric">
+        <input type="text" id="unitInput" placeholder="Unit (optional)" maxlength="12" autocomplete="off">
+      </div>
+      <div class="unit-chips" id="unitChips" aria-label="Common units">
+        <button type="button" data-unit="">None</button>
+        <button type="button" data-unit="packs">packs</button>
+        <button type="button" data-unit="cans">cans</button>
+        <button type="button" data-unit="bags">bags</button>
+        <button type="button" data-unit="lbs">lbs</button>
+        <button type="button" data-unit="oz">oz</button>
+      </div>
+    </div>
+    <button class="dialog-close" id="qtySave" type="button" style="background:var(--accent);color:var(--accent-ink);border-color:var(--accent);">Save</button>
+    <button class="dialog-close" id="closeQty" type="button">Cancel</button>
   </div>
 </dialog>
 
@@ -2561,7 +2647,9 @@
       return {
         id: list.id || ("list" + idx + Date.now().toString(36)),
         name: normalizeListName(list.name, idx === 0 ? "Groceries" : "List"),
-        items: Array.isArray(list.items) ? list.items : []
+        items: (Array.isArray(list.items) ? list.items : []).map(function(it){
+          return normalizeGroceryItem(it) || it;
+        })
       };
     });
     if(!state.lists.length){
@@ -2570,7 +2658,7 @@
     var active = state.lists.find(function(list){ return list.id === state.activeListId; }) || state.lists[0];
     state.activeListId = active.id;
     state.items = active.items;
-    state.items.forEach(function(it){ if(it && !it.meals) it.meals = []; });
+    state.items.forEach(function(it){ normalizeGroceryItem(it); });
   }
   function getActiveList(){
     return state.lists.find(function(list){ return list.id === state.activeListId; }) || state.lists[0];
@@ -2579,6 +2667,62 @@
     var active = getActiveList();
     if(active) active.items = state.items;
   }
+  function normalizeGroceryItem(it){
+    if(!it || typeof it !== "object") return it;
+    if(!it.meals) it.meals = [];
+    var q = Number(it.quantity);
+    if(!isFinite(q) || q < 1) it.quantity = 1;
+    else it.quantity = Math.min(99, Math.floor(q));
+    if(typeof it.unit !== "string") it.unit = "";
+    else it.unit = it.unit.replace(/\s+/g, " ").trim().slice(0, 12);
+    return it;
+  }
+  function formatQuantityLabel(it){
+    var q = (it && it.quantity) || 1;
+    var u = it && it.unit ? String(it.unit).trim() : "";
+    return u ? (q + " " + u) : String(q);
+  }
+  function bumpItemQuantity(it, delta){
+    if(!it) return;
+    normalizeGroceryItem(it);
+    it.quantity = Math.min(99, Math.max(1, it.quantity + delta));
+    saveState();
+    render();
+  }
+  function moveItemToList(item, targetListId){
+    if(!item || !targetListId || targetListId === state.activeListId) return false;
+    var target = state.lists.find(function(list){ return list.id === targetListId; });
+    if(!target) return false;
+    normalizeGroceryItem(item);
+    var index = -1;
+    for(var i = 0; i < state.items.length; i++){
+      if(state.items[i].id === item.id){ index = i; break; }
+    }
+    if(index === -1) return false;
+    var removed = state.items[index];
+    state.items.splice(index, 1);
+    var key = String(removed.text || "").trim().toLowerCase();
+    var existing = target.items.find(function(it){
+      return it && !it.done && String(it.text || "").trim().toLowerCase() === key;
+    });
+    if(existing){
+      normalizeGroceryItem(existing);
+      existing.quantity = Math.min(99, existing.quantity + (removed.quantity || 1));
+      if(removed.unit && !existing.unit) existing.unit = removed.unit;
+      if(removed.meals && removed.meals.length){
+        existing.meals = existing.meals || [];
+        removed.meals.forEach(function(m){
+          if(existing.meals.indexOf(m) === -1) existing.meals.push(m);
+        });
+      }
+      if(removed.saleNote && !existing.saleNote) existing.saleNote = removed.saleNote;
+    } else {
+      target.items.push(removed);
+    }
+    saveState();
+    render();
+    return true;
+  }
   function switchShoppingList(id){
     if(!id || id === state.activeListId) return;
     var next = state.lists.find(function(list){ return list.id === id; });
@@ -2586,7 +2730,7 @@
     syncActiveListItems();
     state.activeListId = next.id;
     state.items = next.items;
-    state.items.forEach(function(it){ if(it && !it.meals) it.meals = []; });
+    state.items.forEach(function(it){ normalizeGroceryItem(it); });
     saveState();
     renderListSwitcher();
     render();
@@ -2943,10 +3087,10 @@
         return it.text.trim().toLowerCase() === key && !it.done;
       });
       if(alreadyOnList) return;
-      state.items.push({
+      state.items.push(normalizeGroceryItem({
         id: "i"+Date.now()+Math.random().toString(16).slice(2),
-        text: reg.text, dept: reg.dept, done:false
-      });
+        text: reg.text, dept: reg.dept, done:false, quantity:1, unit:""
+      }));
       reg.lastAdded = today;
       changed = true;
     });
@@ -3115,17 +3259,21 @@
         return !it.done && it.text.trim().toLowerCase() === key;
       });
       if(existing){
+        normalizeGroceryItem(existing);
+        existing.quantity = Math.min(99, existing.quantity + 1);
         if(mealName && existing.meals.indexOf(mealName) === -1) existing.meals.push(mealName);
         return;
       }
       var dept = classify(text);
-      var item = {
+      var item = normalizeGroceryItem({
         id: "i"+Date.now()+Math.random().toString(16).slice(2),
         text: text,
         dept: dept,
         done: false,
-        meals: mealName ? [mealName] : []
-      };
+        meals: mealName ? [mealName] : [],
+        quantity: 1,
+        unit: ""
+      });
       state.items.push(item);
       added.push({ item: item, typed: typed, key: key });
     });
@@ -3285,6 +3433,60 @@
             textWrap.appendChild(meta);
           }
           var span = textWrap;
+          var qtyWrap = document.createElement("div");
+          qtyWrap.className = "qty-stepper";
+          qtyWrap.setAttribute("role", "group");
+          qtyWrap.setAttribute("aria-label", "Quantity for " + it.text);
+          normalizeGroceryItem(it);
+          var dec = document.createElement("button");
+          dec.type = "button";
+          dec.className = "qty-btn";
+          dec.textContent = "−";
+          dec.disabled = it.quantity <= 1;
+          dec.setAttribute("aria-label", "Decrease quantity of " + it.text);
+          dec.addEventListener("click", function(e){
+            e.stopPropagation();
+            bumpItemQuantity(it, -1);
+          });
+          var qtyVal = document.createElement("button");
+          qtyVal.type = "button";
+          qtyVal.className = "qty-value" + (it.unit ? " has-unit" : "");
+          qtyVal.textContent = formatQuantityLabel(it);
+          qtyVal.setAttribute("aria-label", "Edit quantity for " + it.text + ", currently " + formatQuantityLabel(it));
+          qtyVal.addEventListener("click", function(e){
+            e.stopPropagation();
+            openQtyDialog(it);
+          });
+          var inc = document.createElement("button");
+          inc.type = "button";
+          inc.className = "qty-btn";
+          inc.textContent = "+";
+          inc.disabled = it.quantity >= 99;
+          inc.setAttribute("aria-label", "Increase quantity of " + it.text);
+          inc.addEventListener("click", function(e){
+            e.stopPropagation();
+            bumpItemQuantity(it, 1);
+          });
+          qtyWrap.appendChild(dec);
+          qtyWrap.appendChild(qtyVal);
+          qtyWrap.appendChild(inc);
+
+          var otherLists = (state.lists || []).filter(function(list){
+            return list && list.id !== state.activeListId;
+          });
+          var moveListBtn = null;
+          if(otherLists.length){
+            moveListBtn = document.createElement("button");
+            moveListBtn.type = "button";
+            moveListBtn.className = "move-list-btn";
+            moveListBtn.textContent = "Move";
+            moveListBtn.setAttribute("aria-label", "Move " + it.text + " to another store list");
+            moveListBtn.addEventListener("click", function(e){
+              e.stopPropagation();
+              openMoveListDialog(it);
+            });
+          }
+
           var repKey = it.text.trim().toLowerCase();
           var isRepeating = !!state.regulars[repKey];
           var rep = document.createElement("button");
@@ -3315,6 +3517,8 @@
           });
           li.appendChild(cb);
           li.appendChild(span);
+          li.appendChild(qtyWrap);
+          if(moveListBtn) li.appendChild(moveListBtn);
           li.appendChild(rep);
           li.appendChild(del);
           ul.appendChild(li);
@@ -3336,6 +3540,105 @@
     state.order[newIdx] = tmp;
     saveState();
     render();
+  }
+
+  // ---------- Quantity edit dialog ----------
+  var qtyDialog = document.getElementById("qtyDialog");
+  var qtyTitle = document.getElementById("qtyTitle");
+  var qtyInput = document.getElementById("qtyInput");
+  var unitInput = document.getElementById("unitInput");
+  var unitChips = document.getElementById("unitChips");
+  var currentQtyItem = null;
+  function syncUnitChips(activeUnit){
+    if(!unitChips) return;
+    var unit = String(activeUnit || "").trim().toLowerCase();
+    Array.prototype.forEach.call(unitChips.querySelectorAll("button"), function(btn){
+      var val = (btn.getAttribute("data-unit") || "").toLowerCase();
+      btn.setAttribute("aria-pressed", (val === unit).toString());
+    });
+  }
+  function openQtyDialog(item){
+    if(!qtyDialog || !item) return;
+    currentQtyItem = item;
+    normalizeGroceryItem(item);
+    if(qtyTitle) qtyTitle.textContent = 'Quantity for "' + item.text + '"';
+    if(qtyInput) qtyInput.value = String(item.quantity || 1);
+    if(unitInput) unitInput.value = item.unit || "";
+    syncUnitChips(item.unit || "");
+    qtyDialog.showModal();
+    if(qtyInput) setTimeout(function(){ qtyInput.focus(); qtyInput.select(); }, 0);
+  }
+  if(unitChips){
+    unitChips.addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-unit]");
+      if(!btn || !unitInput) return;
+      unitInput.value = btn.getAttribute("data-unit") || "";
+      syncUnitChips(unitInput.value);
+    });
+  }
+  if(unitInput){
+    unitInput.addEventListener("input", function(){
+      syncUnitChips(unitInput.value);
+    });
+  }
+  var qtySave = document.getElementById("qtySave");
+  if(qtySave){
+    qtySave.addEventListener("click", function(){
+      if(currentQtyItem){
+        var q = parseInt(qtyInput && qtyInput.value, 10);
+        currentQtyItem.quantity = (!isFinite(q) || q < 1) ? 1 : Math.min(99, q);
+        currentQtyItem.unit = unitInput ? String(unitInput.value || "").replace(/\s+/g, " ").trim().slice(0, 12) : "";
+        normalizeGroceryItem(currentQtyItem);
+        saveState();
+      }
+      currentQtyItem = null;
+      if(qtyDialog) qtyDialog.close();
+      render();
+    });
+  }
+  var closeQty = document.getElementById("closeQty");
+  if(closeQty && qtyDialog){
+    closeQty.addEventListener("click", function(){
+      currentQtyItem = null;
+      qtyDialog.close();
+    });
+  }
+
+  // ---------- Move item to another store list ----------
+  var moveListDialog = document.getElementById("moveListDialog");
+  var moveListTitle = document.getElementById("moveListTitle");
+  var moveListTargets = document.getElementById("moveListTargets");
+  var currentMoveItem = null;
+  function openMoveListDialog(item){
+    if(!moveListDialog || !moveListTargets || !item) return;
+    var others = (state.lists || []).filter(function(list){
+      return list && list.id !== state.activeListId;
+    });
+    if(!others.length) return;
+    currentMoveItem = item;
+    if(moveListTitle) moveListTitle.textContent = 'Move "' + item.text + '"';
+    moveListTargets.innerHTML = "";
+    others.forEach(function(list){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = list.name;
+      btn.setAttribute("aria-label", "Move to " + list.name);
+      btn.addEventListener("click", function(){
+        var moving = currentMoveItem;
+        currentMoveItem = null;
+        if(moveListDialog) moveListDialog.close();
+        if(moving) moveItemToList(moving, list.id);
+      });
+      moveListTargets.appendChild(btn);
+    });
+    moveListDialog.showModal();
+  }
+  var closeMoveList = document.getElementById("closeMoveList");
+  if(closeMoveList && moveListDialog){
+    closeMoveList.addEventListener("click", function(){
+      currentMoveItem = null;
+      moveListDialog.close();
+    });
   }
 
   // ---------- Assign / re-teach dialog ----------

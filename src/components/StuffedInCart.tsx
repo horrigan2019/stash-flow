@@ -67,7 +67,9 @@ export function StuffedInCart({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm text-neutral-500 line-through">
-                      {item.name}
+                      {(item.quantity ?? 1) > 1 || item.unit
+                        ? `${item.quantity ?? 1}${item.unit ? ` ${item.unit}` : ""} · ${item.name}`
+                        : item.name}
                     </span>
                     <span className="block text-[10px] font-medium uppercase tracking-wide text-emerald-700/70">
                       {aisleTitle(item.aisleId)}

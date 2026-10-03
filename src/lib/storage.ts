@@ -9,6 +9,18 @@ const LEGACY_STORAGE_KEYS = [
   "oh-stuffing:weekly-stash:v1",
 ];
 
+function normalizeQuantity(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(99, Math.floor(n));
+}
+
+function normalizeUnit(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const clean = value.replace(/\s+/g, " ").trim().slice(0, 12);
+  return clean || undefined;
+}
+
 function isValidItem(value: unknown): value is GroceryItem {
   if (!value || typeof value !== "object") return false;
   const item = value as Record<string, unknown>;
@@ -19,6 +31,15 @@ function isValidItem(value: unknown): value is GroceryItem {
     typeof item.aisleId === "string" &&
     typeof item.checked === "boolean"
   );
+}
+
+function normalizeItem(item: GroceryItem): GroceryItem {
+  const quantity = normalizeQuantity(item.quantity);
+  const unit = normalizeUnit(item.unit);
+  const next: GroceryItem = { ...item, quantity };
+  if (unit) next.unit = unit;
+  else delete next.unit;
+  return next;
 }
 
 function freshSample(): GroceryListState {
@@ -50,7 +71,7 @@ export function sanitizeGroceryList(
     }
 
     seen.add(row.id);
-    cleaned.push({ ...row });
+    cleaned.push(normalizeItem({ ...row }));
   }
 
   if (cleaned.length === 0) {

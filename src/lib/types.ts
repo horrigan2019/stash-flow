@@ -15,6 +15,8 @@ export interface GroceryItem {
   name: string;
   aisleId: AisleId;
   checked: boolean;
+  quantity?: number; // defaults to 1
+  unit?: string; // optional unit (e.g., "lbs", "cans", "packs")
 }
 
 export interface AisleMeta {
