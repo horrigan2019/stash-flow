@@ -36,6 +36,36 @@ export function useGroceryList() {
     );
   }, []);
 
+  const setItemQuantity = useCallback(
+    (id: string, quantity: number, unit?: string) => {
+      const nextQty = Math.min(99, Math.max(1, Math.floor(quantity) || 1));
+      const nextUnit = (unit ?? "").replace(/\s+/g, " ").trim().slice(0, 12);
+      setItems((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          const next: GroceryItem = { ...item, quantity: nextQty };
+          if (nextUnit) next.unit = nextUnit;
+          else delete next.unit;
+          return next;
+        }),
+      );
+    },
+    [],
+  );
+
+  const bumpItemQuantity = useCallback((id: string, delta: number) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const current = item.quantity ?? 1;
+        return {
+          ...item,
+          quantity: Math.min(99, Math.max(1, current + delta)),
+        };
+      }),
+    );
+  }, []);
+
   const addItem = useCallback((name: string, aisleId: AisleId) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -44,6 +74,7 @@ export function useGroceryList() {
       name: trimmed,
       aisleId,
       checked: false,
+      quantity: 1,
     };
     setItems((prev) => {
       const next = ensureUniqueItemIds([...prev, item]);
@@ -65,6 +96,7 @@ export function useGroceryList() {
           name,
           aisleId,
           checked: false,
+          quantity: 1,
         }));
 
       if (prepared.length === 0) return;
@@ -85,6 +117,8 @@ export function useGroceryList() {
     items,
     hydrated,
     toggleItem,
+    setItemQuantity,
+    bumpItemQuantity,
     addItem,
     addItems,
     resetToSample,

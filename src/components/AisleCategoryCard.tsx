@@ -10,6 +10,13 @@ interface AisleCategoryCardProps {
   open: boolean;
   onToggleOpen: () => void;
   onToggleItem: (id: string) => void;
+  onBumpQuantity?: (id: string, delta: number) => void;
+}
+
+function quantityLabel(item: GroceryItem) {
+  const qty = item.quantity ?? 1;
+  const unit = (item.unit ?? "").trim();
+  return unit ? `${qty} ${unit}` : String(qty);
 }
 
 export function AisleCategoryCard({
@@ -18,6 +25,7 @@ export function AisleCategoryCard({
   open,
   onToggleOpen,
   onToggleItem,
+  onBumpQuantity,
 }: AisleCategoryCardProps) {
   const pending = uniqueById(items.filter((i) => !i.checked));
   const countLabel =
@@ -72,15 +80,46 @@ export function AisleCategoryCard({
           ) : (
             pending.map((item) => (
               <li key={item.id}>
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-amber-50/80">
-                  <input
-                    type="checkbox"
-                    checked={false}
-                    onChange={() => onToggleItem(item.id)}
-                    className="h-4 w-4 rounded border-neutral-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <span className="text-sm text-neutral-800">{item.name}</span>
-                </label>
+                <div className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-amber-50/80">
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-1 py-1">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => onToggleItem(item.id)}
+                      className="h-5 w-5 rounded border-neutral-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="truncate text-sm text-neutral-800">
+                      {item.name}
+                    </span>
+                  </label>
+                  {onBumpQuantity ? (
+                    <div
+                      className="flex shrink-0 items-center gap-0.5"
+                      role="group"
+                      aria-label={`Quantity for ${item.name}`}
+                    >
+                      <button
+                        type="button"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg text-lg text-neutral-600 hover:bg-amber-100"
+                        aria-label={`Decrease quantity of ${item.name}`}
+                        onClick={() => onBumpQuantity(item.id, -1)}
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums text-neutral-800">
+                        {quantityLabel(item)}
+                      </span>
+                      <button
+                        type="button"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg text-lg text-neutral-600 hover:bg-amber-100"
+                        aria-label={`Increase quantity of ${item.name}`}
+                        onClick={() => onBumpQuantity(item.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </li>
             ))
           )}
