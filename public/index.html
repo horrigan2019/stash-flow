@@ -2268,6 +2268,9 @@
     "spaghetti and meatballs": ["spaghetti","ground beef","breadcrumbs","eggs","marinara sauce","parmesan cheese"],
     "grilled cheese": ["bread","cheddar cheese","butter"],
     "chili": ["ground beef","kidney beans","canned tomatoes","onion","chili powder","cheddar cheese"],
+    "gumbo": ["andouille sausage","chicken thighs","shrimp","onion","bell pepper","celery","garlic","flour","chicken broth","cajun seasoning","green onions","white rice"],
+    "seafood gumbo": ["shrimp","crab","andouille sausage","onion","bell pepper","celery","garlic","flour","seafood stock","cajun seasoning","okra","white rice"],
+    "jambalaya": ["andouille sausage","chicken thighs","shrimp","rice","onion","bell pepper","celery","garlic","cajun seasoning","chicken broth"],
     "pancakes": ["pancake mix","eggs","milk","butter","maple syrup"],
     "waffles": ["frozen waffles","butter","maple syrup"],
     "burgers": ["ground beef","hamburger buns","cheddar cheese","lettuce","tomato","ketchup","mustard"],
@@ -2297,7 +2300,21 @@
     "shrimp scampi": ["shrimp","spaghetti","garlic","butter","lemon","parmesan cheese"],
     "pork chops": ["pork chops","potatoes","green beans"],
     "meatballs": ["ground beef","breadcrumbs","eggs","marinara sauce","parmesan cheese"],
-    "chicken alfredo": ["chicken breast","fettuccine","heavy cream","parmesan cheese","garlic","butter"]
+    "chicken alfredo": ["chicken breast","fettuccine","heavy cream","parmesan cheese","garlic","butter"],
+    "pot roast": ["chuck roast","potatoes","carrots","onion","beef broth","garlic"],
+    "shepherds pie": ["ground beef","mashed potatoes","peas","carrots","onion","beef broth"],
+    "shepherd's pie": ["ground beef","mashed potatoes","peas","carrots","onion","beef broth"],
+    "sloppy joes": ["ground beef","hamburger buns","onion","ketchup","mustard","brown sugar"],
+    "tuna casserole": ["egg noodles","canned tuna","cream of mushroom soup","frozen peas","cheddar cheese"],
+    "beef stew": ["stew beef","potatoes","carrots","onion","celery","beef broth","flour"],
+    "pad thai": ["rice noodles","shrimp","eggs","bean sprouts","peanuts","lime","fish sauce","soy sauce"],
+    "curry": ["chicken thighs","coconut milk","curry paste","onion","garlic","ginger","rice"],
+    "chicken curry": ["chicken thighs","coconut milk","curry paste","onion","garlic","ginger","rice"],
+    "ramen": ["ramen noodles","eggs","green onions","soy sauce","garlic","ginger","broth"],
+    "salmon": ["salmon fillets","lemon","garlic","asparagus","olive oil","butter"],
+    "baked salmon": ["salmon fillets","lemon","garlic","asparagus","olive oil","butter"],
+    "enchiladas": ["tortillas","chicken breast","enchilada sauce","cheddar cheese","onion","sour cream"],
+    "meatball subs": ["ground beef","sub rolls","marinara sauce","mozzarella cheese","garlic"]
   };
 
   // ---------- Waste tracking: shelf-life guidance (general estimates — USDA FoodKeeper style) ----------
@@ -4227,8 +4244,49 @@
   var mealSuggestHint = document.getElementById("mealSuggestHint");
   var lastAutoFillText = "";       // what we last wrote in, so we know if the user has since edited it
   var lastSuggestionSource = null; // the suggestion array currently backing the textarea
+  var mealSuggestTimer = null;
+  var mealSuggestToken = 0;
+  var MEAL_CACHE_KEY = "oh_stuffing_meal_cache";
 
-  function showSuggestion(list, isNew){
+  function loadMealCache(){
+    try{
+      var raw = localStorage.getItem(MEAL_CACHE_KEY);
+      if(!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    }catch(e){ return {}; }
+  }
+  function saveMealCache(cache){
+    try{ localStorage.setItem(MEAL_CACHE_KEY, JSON.stringify(cache)); }catch(e){}
+  }
+  function normalizeMealCacheKey(name){
+    return String(name || "").trim().toLowerCase()
+      .replace(/\s+(night|day|tonight|for dinner|for lunch|dinner|lunch|time)\s*$/,"")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function getCachedMealIngredients(name){
+    var key = normalizeMealCacheKey(name);
+    if(!key) return null;
+    var cache = loadMealCache();
+    var hit = cache[key];
+    if(Array.isArray(hit) && hit.length) return hit;
+    return null;
+  }
+  function putCachedMealIngredients(name, list){
+    var key = normalizeMealCacheKey(name);
+    if(!key || !Array.isArray(list) || !list.length) return;
+    var cache = loadMealCache();
+    cache[key] = list.slice(0, 14);
+    // Keep cache bounded for small devices
+    var keys = Object.keys(cache);
+    if(keys.length > 120){
+      keys.slice(0, keys.length - 100).forEach(function(k){ delete cache[k]; });
+    }
+    saveMealCache(cache);
+  }
+
+  function showSuggestion(list){
     lastSuggestionSource = list;
     mealIngredientsInput.value = list.join(", ");
     lastAutoFillText = mealIngredientsInput.value;
@@ -4237,25 +4295,98 @@
     mealSuggestAgainBtn.hidden = false;
   }
 
-  mealNameInput.addEventListener("input", function(){
-    // only auto-fill if the ingredients box is empty or still exactly what we last suggested
+  function showFindingIngredients(meal){
+    var msg = "Finding ingredients for " + meal + "…";
+    mealIngredientsInput.value = msg;
+    lastAutoFillText = msg;
+    mealSuggestHint.hidden = false;
+    mealSuggestHint.textContent = "Looking up a flavor-first grocery list…";
+    mealSuggestAgainBtn.hidden = true;
+  }
+
+  function resolveLocalMealSuggestion(name){
+    return findMealSuggestion(name) || getCachedMealIngredients(name);
+  }
+
+  function fetchAiMealIngredients(meal){
+    return fetch("/api/suggest-meal-ingredients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ meal: meal })
+    }).then(function(res){
+      return res.json().then(function(data){
+        return { res: res, data: data };
+      }, function(){
+        return { res: res, data: null };
+      });
+    }).then(function(out){
+      if(!out.res.ok || !out.data || out.data.error){
+        var msg = (out.data && out.data.error && out.data.error.message) || "Couldn't suggest ingredients right now.";
+        var err = new Error(msg);
+        err.code = out.data && out.data.error && out.data.error.type;
+        throw err;
+      }
+      var list = Array.isArray(out.data.ingredients) ? out.data.ingredients : [];
+      list = list.map(function(x){ return String(x || "").trim(); }).filter(Boolean);
+      if(list.length < 3) throw new Error("Couldn't suggest ingredients right now.");
+      return list;
+    });
+  }
+
+  function requestMealSuggestion(opts){
+    opts = opts || {};
+    var meal = mealNameInput.value.trim();
     var untouched = mealIngredientsInput.value.trim() === "" || mealIngredientsInput.value === lastAutoFillText;
-    if(!untouched) return;
-    var suggestion = findMealSuggestion(mealNameInput.value);
-    if(suggestion){
-      showSuggestion(suggestion, true);
-    } else {
+    if(!opts.force && !untouched) return;
+    if(!meal){
       mealSuggestHint.hidden = true;
       mealSuggestAgainBtn.hidden = true;
       if(mealIngredientsInput.value === lastAutoFillText){
         mealIngredientsInput.value = "";
         lastAutoFillText = "";
       }
+      return;
     }
+
+    if(!opts.skipLocal){
+      var local = resolveLocalMealSuggestion(meal);
+      if(local && local.length){
+        showSuggestion(local);
+        return;
+      }
+    }
+
+    var token = ++mealSuggestToken;
+    showFindingIngredients(meal);
+    fetchAiMealIngredients(meal).then(function(list){
+      if(token !== mealSuggestToken) return;
+      // User may have typed a different meal or edited ingredients while waiting
+      if(mealNameInput.value.trim().toLowerCase() !== meal.toLowerCase()) return;
+      var stillUntouched = mealIngredientsInput.value.trim() === "" || mealIngredientsInput.value === lastAutoFillText;
+      if(!stillUntouched) return;
+      putCachedMealIngredients(meal, list);
+      showSuggestion(list);
+    }).catch(function(e){
+      if(token !== mealSuggestToken) return;
+      if(mealIngredientsInput.value === lastAutoFillText){
+        mealIngredientsInput.value = "";
+        lastAutoFillText = "";
+      }
+      mealSuggestHint.hidden = false;
+      mealSuggestHint.textContent = (e && e.message) || "Couldn't suggest ingredients — type them in below.";
+      mealSuggestAgainBtn.hidden = false;
+    });
+  }
+
+  mealNameInput.addEventListener("input", function(){
+    if(mealSuggestTimer) clearTimeout(mealSuggestTimer);
+    mealSuggestTimer = setTimeout(function(){
+      requestMealSuggestion({ skipLocal: false });
+    }, 400);
   });
   mealSuggestAgainBtn.addEventListener("click", function(){
-    var suggestion = findMealSuggestion(mealNameInput.value);
-    if(suggestion) showSuggestion(suggestion, false);
+    // Re-suggest: prefer a fresh AI pass so seniors can refresh a weak guess
+    requestMealSuggestion({ force: true, skipLocal: true });
   });
   mealIngredientsInput.addEventListener("input", function(){
     if(mealIngredientsInput.value !== lastAutoFillText){
@@ -4272,6 +4403,7 @@
     state.meals.push({ id: "m"+Date.now()+Math.random().toString(16).slice(2), name: name, ingredients: ingredients });
     // remember whatever the user ended up with, so next time this meal auto-fills too
     state.learnedMeals[name.toLowerCase()] = ingredients;
+    putCachedMealIngredients(name, ingredients);
     addItems(ingredientsRaw, name); // adds/tags items and saves + renders the list
     mealNameInput.value = "";
     mealIngredientsInput.value = "";
