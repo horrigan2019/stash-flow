@@ -345,6 +345,31 @@
   .lists-manage-name{ flex:1; font-size:.95rem; min-width:0; overflow:hidden; text-overflow:ellipsis; }
   .lists-manage-row .chip-btn{ flex:none; padding:8px 10px; font-size:.8rem; }
 
+  .import-spinner{
+    width:18px; height:18px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
+    animation:spin .8s linear infinite; flex:none;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .recipe-import-card{
+    border:1.5px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface);
+  }
+  .recipe-import-card img{ width:100%; height:160px; object-fit:cover; display:block; background:var(--surface-2); }
+  .recipe-import-card-body{ padding:12px; }
+  .recipe-import-ings, .recipe-import-steps{
+    list-style:none; margin:0; padding:0; max-height:200px; overflow:auto;
+  }
+  .recipe-import-ings li{
+    display:flex; align-items:flex-start; gap:10px; padding:8px 4px;
+    border-bottom:1px solid var(--border); font-size:.95rem;
+  }
+  .recipe-import-ings li:last-child{ border-bottom:none; }
+  .recipe-import-ings input[type=checkbox]{ width:22px; height:22px; flex:none; accent-color:var(--accent); margin-top:1px; }
+  .recipe-import-steps{
+    list-style:decimal; padding-left:22px; max-height:180px;
+  }
+  .recipe-import-steps li{ padding:6px 0; font-size:.95rem; }
+
   dialog{
     border:none; border-radius:var(--radius); padding:0; color:var(--ink); background:var(--surface);
     max-width:420px; width:calc(100% - 32px);
@@ -1293,6 +1318,7 @@
   <div class="dialog-inner">
     <h2>Recipe vault</h2>
     <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works anytime. Photo scan, scaling, and diet swaps are temporarily unavailable — try again later.</div>
+    <button type="button" class="chip-btn" id="openRecipeImportBtn" style="width:100%;justify-content:center;margin-bottom:12px;padding:12px 14px;font-size:.95rem;">🔗 Import Recipe from Link / Social Media</button>
     <form class="meal-form" id="recipeForm">
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe name</label>
@@ -1368,6 +1394,53 @@
     <button class="dialog-close" id="addRecipeToListBtn" type="button" style="margin-top:14px;">🛒 Add ingredients to my list</button>
     <button class="dialog-close" id="deleteRecipeBtn" type="button" style="margin-top:10px;background:var(--danger);color:#fff;">🗑️ Delete this recipe</button>
     <button class="dialog-close" id="closeRecipeDetail" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Back to vault</button>
+  </div>
+</dialog>
+
+<dialog id="recipeImportDialog">
+  <div class="dialog-inner" style="max-width:480px;">
+    <h2>Import recipe from link</h2>
+    <p class="hint" style="margin:0 0 12px;">Paste any recipe link (Google, TikTok, Instagram, YouTube, food blog)…</p>
+
+    <div id="recipeImportInputStep">
+      <label for="recipeImportUrl" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe link</label>
+      <input type="url" id="recipeImportUrl" placeholder="https://…" autocomplete="off" inputmode="url" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:1rem;box-sizing:border-box;">
+      <button type="button" class="dialog-close" id="recipeImportSubmit" style="margin-top:12px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span class="import-spinner" id="recipeImportSpinner" hidden aria-hidden="true"></span>
+        <span id="recipeImportSubmitLabel">Import Recipe</span>
+      </button>
+      <button type="button" class="hint" id="recipeImportNeedPaste" hidden style="display:none;margin-top:10px;padding:0;border:none;background:transparent;color:var(--accent-2);text-align:left;cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:2px;">Couldn't load this link automatically. Tap here to paste the recipe text or caption directly.</button>
+      <div id="recipeImportPasteWrap" hidden style="margin-top:12px;">
+        <label for="recipeImportPaste" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Paste recipe text or social caption</label>
+        <textarea id="recipeImportPaste" rows="6" placeholder="Paste the caption or full recipe text here…" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:1rem;box-sizing:border-box;"></textarea>
+        <button type="button" class="chip-btn" id="recipeImportPasteSubmit" style="margin-top:8px;width:100%;justify-content:center;">Read pasted text</button>
+      </div>
+      <div class="hint" id="recipeImportStatus" style="margin-top:8px;" role="status"></div>
+    </div>
+
+    <div id="recipeImportPreview" hidden>
+      <div class="recipe-import-card">
+        <img id="recipeImportImage" alt="" hidden>
+        <div class="recipe-import-card-body">
+          <div class="waste-name" id="recipeImportTitle"></div>
+          <div class="hint" id="recipeImportMeta" style="margin:4px 0 0;"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="waste-name" style="font-size:.9rem;margin-bottom:6px;">Ingredients</div>
+        <ul class="recipe-import-ings" id="recipeImportIngredients"></ul>
+      </div>
+      <div style="margin-top:12px;" id="recipeImportStepsWrap" hidden>
+        <div class="waste-name" style="font-size:.9rem;margin-bottom:6px;">Steps</div>
+        <ol class="recipe-import-steps" id="recipeImportSteps"></ol>
+      </div>
+      <div class="hint" id="recipeImportPreviewStatus" style="margin-top:8px;" role="status"></div>
+      <button type="button" class="dialog-close" id="recipeImportSaveVault" style="margin-top:12px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);">Save to Recipe Vault</button>
+      <button type="button" class="dialog-close" id="recipeImportAddList" style="margin-top:8px;">Add Ingredients to Shopping List</button>
+      <button type="button" class="chip-btn" id="recipeImportTryAnother" style="margin-top:8px;width:100%;justify-content:center;">Try another link</button>
+    </div>
+
+    <button class="dialog-close" id="closeRecipeImport" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Cancel</button>
   </div>
 </dialog>
 
@@ -1525,6 +1598,7 @@
 <dialog id="mealPlanDialog">
   <div class="dialog-inner">
     <h2>Meal Planning</h2>
+    <button type="button" class="chip-btn" id="mealPlanImportRecipeBtn" style="width:100%;justify-content:center;margin-bottom:12px;padding:12px 14px;font-size:.95rem;">🔗 Import Recipe from Link / Social Media</button>
     <form class="meal-form" id="mealForm">
       <div>
         <label for="mealName" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What are you making?</label>
@@ -6222,6 +6296,275 @@
     renderRecipeList();
     recipeDialog.showModal();
   });
+
+  // ---------- Recipe URL / social import (uses /api/import-recipe) ----------
+  var recipeImportDialog = document.getElementById("recipeImportDialog");
+  var recipeImportUrl = document.getElementById("recipeImportUrl");
+  var recipeImportPaste = document.getElementById("recipeImportPaste");
+  var recipeImportPasteWrap = document.getElementById("recipeImportPasteWrap");
+  var recipeImportNeedPaste = document.getElementById("recipeImportNeedPaste");
+  var recipeImportStatus = document.getElementById("recipeImportStatus");
+  var recipeImportPreviewStatus = document.getElementById("recipeImportPreviewStatus");
+  var recipeImportInputStep = document.getElementById("recipeImportInputStep");
+  var recipeImportPreview = document.getElementById("recipeImportPreview");
+  var recipeImportSubmit = document.getElementById("recipeImportSubmit");
+  var recipeImportSpinner = document.getElementById("recipeImportSpinner");
+  var recipeImportSubmitLabel = document.getElementById("recipeImportSubmitLabel");
+  var importedRecipeDraft = null;
+
+  function formatImportedVaultText(recipe){
+    var lines = [];
+    if(recipe.ingredients && recipe.ingredients.length){
+      lines.push("Ingredients:");
+      recipe.ingredients.forEach(function(ing){ lines.push("- " + ing); });
+      lines.push("");
+    }
+    if(recipe.instructions && recipe.instructions.length){
+      lines.push("Instructions:");
+      recipe.instructions.forEach(function(step, i){ lines.push((i + 1) + ". " + step); });
+    }
+    return lines.join("\n").trim();
+  }
+
+  function setImportLoading(on){
+    if(recipeImportSubmit) recipeImportSubmit.disabled = !!on;
+    if(recipeImportSpinner) recipeImportSpinner.hidden = !on;
+    if(recipeImportSubmitLabel) recipeImportSubmitLabel.textContent = on ? "Importing…" : "Import Recipe";
+  }
+
+  function resetRecipeImportUi(){
+    importedRecipeDraft = null;
+    if(recipeImportUrl) recipeImportUrl.value = "";
+    if(recipeImportPaste) recipeImportPaste.value = "";
+    if(recipeImportPasteWrap) recipeImportPasteWrap.hidden = true;
+    if(recipeImportNeedPaste){
+      recipeImportNeedPaste.hidden = true;
+      recipeImportNeedPaste.style.display = "none";
+    }
+    if(recipeImportStatus) recipeImportStatus.textContent = "";
+    if(recipeImportPreviewStatus) recipeImportPreviewStatus.textContent = "";
+    if(recipeImportInputStep) recipeImportInputStep.hidden = false;
+    if(recipeImportPreview) recipeImportPreview.hidden = true;
+    setImportLoading(false);
+  }
+
+  function showImportedPreview(recipe){
+    importedRecipeDraft = recipe;
+    if(recipeImportInputStep) recipeImportInputStep.hidden = true;
+    if(recipeImportPreview) recipeImportPreview.hidden = false;
+    document.getElementById("recipeImportTitle").textContent = recipe.title || "Imported recipe";
+    var meta = [];
+    if(recipe.servings) meta.push("Serves " + recipe.servings);
+    if(recipe.prepTime) meta.push("Prep " + recipe.prepTime);
+    if(recipe.cookTime) meta.push("Cook " + recipe.cookTime);
+    document.getElementById("recipeImportMeta").textContent = meta.join(" · ");
+    var img = document.getElementById("recipeImportImage");
+    if(recipe.image){
+      img.src = recipe.image;
+      img.hidden = false;
+    } else {
+      img.removeAttribute("src");
+      img.hidden = true;
+    }
+    var ul = document.getElementById("recipeImportIngredients");
+    ul.innerHTML = "";
+    (recipe.ingredients || []).forEach(function(ing, idx){
+      var li = document.createElement("li");
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = true;
+      cb.setAttribute("data-idx", String(idx));
+      var span = document.createElement("span");
+      span.textContent = ing;
+      li.appendChild(cb);
+      li.appendChild(span);
+      ul.appendChild(li);
+    });
+    var stepsWrap = document.getElementById("recipeImportStepsWrap");
+    var ol = document.getElementById("recipeImportSteps");
+    ol.innerHTML = "";
+    if(recipe.instructions && recipe.instructions.length){
+      stepsWrap.hidden = false;
+      recipe.instructions.forEach(function(step){
+        var li = document.createElement("li");
+        li.textContent = step;
+        ol.appendChild(li);
+      });
+    } else {
+      stepsWrap.hidden = true;
+    }
+    if(recipeImportPreviewStatus) recipeImportPreviewStatus.textContent = "";
+  }
+
+  function openRecipeImport(){
+    resetRecipeImportUi();
+    if(recipeDialog && recipeDialog.open) recipeDialog.close();
+    if(document.getElementById("mealPlanDialog") && document.getElementById("mealPlanDialog").open){
+      document.getElementById("mealPlanDialog").close();
+    }
+    if(recipeImportDialog) recipeImportDialog.showModal();
+    if(recipeImportUrl) setTimeout(function(){ recipeImportUrl.focus(); }, 0);
+  }
+
+  function selectedImportedIngredients(){
+    if(!importedRecipeDraft) return [];
+    var checked = [];
+    document.querySelectorAll("#recipeImportIngredients input[type=checkbox]").forEach(function(cb){
+      if(cb.checked){
+        var idx = parseInt(cb.getAttribute("data-idx"), 10);
+        if(importedRecipeDraft.ingredients[idx]) checked.push(importedRecipeDraft.ingredients[idx]);
+      }
+    });
+    return checked;
+  }
+
+  function callImportRecipe(payload){
+    setImportLoading(true);
+    if(recipeImportStatus) recipeImportStatus.textContent = "Reading the recipe…";
+    return fetch("/api/import-recipe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function(res){
+      return res.json().then(function(data){
+        return { res: res, data: data };
+      }, function(){
+        return { res: res, data: null };
+      });
+    }).then(function(out){
+      setImportLoading(false);
+      if(!out.res.ok || !out.data || out.data.error){
+        var msg = (out.data && out.data.error && out.data.error.message) ||
+          "Couldn't load this link automatically. Tap here to paste the recipe text or caption directly.";
+        var needsPaste = !!(out.data && out.data.error && out.data.error.needsPaste);
+        if(recipeImportStatus) recipeImportStatus.textContent = msg;
+        if(needsPaste || /paste/i.test(msg)){
+          if(recipeImportNeedPaste){
+            recipeImportNeedPaste.hidden = false;
+            recipeImportNeedPaste.style.display = "block";
+          }
+        }
+        return;
+      }
+      showImportedPreview(out.data.recipe);
+    }).catch(function(){
+      setImportLoading(false);
+      if(recipeImportStatus){
+        recipeImportStatus.textContent = "Couldn't load this link automatically. Tap here to paste the recipe text or caption directly.";
+      }
+      if(recipeImportNeedPaste){
+        recipeImportNeedPaste.hidden = false;
+        recipeImportNeedPaste.style.display = "block";
+      }
+    });
+  }
+
+  var openRecipeImportBtn = document.getElementById("openRecipeImportBtn");
+  if(openRecipeImportBtn) openRecipeImportBtn.addEventListener("click", openRecipeImport);
+  var mealPlanImportRecipeBtn = document.getElementById("mealPlanImportRecipeBtn");
+  if(mealPlanImportRecipeBtn) mealPlanImportRecipeBtn.addEventListener("click", openRecipeImport);
+
+  if(recipeImportSubmit){
+    recipeImportSubmit.addEventListener("click", function(){
+      var url = (recipeImportUrl && recipeImportUrl.value || "").trim();
+      if(!url){
+        if(recipeImportStatus) recipeImportStatus.textContent = "Paste a recipe link first.";
+        return;
+      }
+      callImportRecipe({ url: url });
+    });
+  }
+  if(recipeImportNeedPaste){
+    recipeImportNeedPaste.addEventListener("click", function(){
+      if(recipeImportPasteWrap) recipeImportPasteWrap.hidden = false;
+      if(recipeImportPaste) recipeImportPaste.focus();
+    });
+  }
+  var recipeImportPasteSubmit = document.getElementById("recipeImportPasteSubmit");
+  if(recipeImportPasteSubmit){
+    recipeImportPasteSubmit.addEventListener("click", function(){
+      var text = (recipeImportPaste && recipeImportPaste.value || "").trim();
+      if(text.length < 20){
+        if(recipeImportStatus) recipeImportStatus.textContent = "Paste a bit more of the recipe or caption so we can read it.";
+        return;
+      }
+      callImportRecipe({
+        pasteText: text,
+        url: (recipeImportUrl && recipeImportUrl.value || "").trim() || undefined
+      });
+    });
+  }
+  var recipeImportSaveVault = document.getElementById("recipeImportSaveVault");
+  if(recipeImportSaveVault){
+    recipeImportSaveVault.addEventListener("click", function(){
+      if(!importedRecipeDraft) return;
+      var text = formatImportedVaultText(importedRecipeDraft);
+      if(!importedRecipeDraft.title || !text){
+        if(recipeImportPreviewStatus) recipeImportPreviewStatus.textContent = "That recipe is missing a title or ingredients.";
+        return;
+      }
+      state.recipes.push({
+        id: "r"+Date.now()+Math.random().toString(16).slice(2),
+        title: importedRecipeDraft.title,
+        servings: importedRecipeDraft.servings || 4,
+        text: text,
+        sourceUrl: importedRecipeDraft.sourceUrl || "",
+        image: importedRecipeDraft.image || "",
+        ingredients: importedRecipeDraft.ingredients || [],
+        instructions: importedRecipeDraft.instructions || [],
+        prepTime: importedRecipeDraft.prepTime || "",
+        cookTime: importedRecipeDraft.cookTime || ""
+      });
+      saveState();
+      if(recipeImportPreviewStatus) recipeImportPreviewStatus.textContent = "Saved to your Recipe Vault.";
+      renderRecipeList();
+      setTimeout(function(){
+        if(recipeImportDialog) recipeImportDialog.close();
+        if(recipeDialog) recipeDialog.showModal();
+      }, 450);
+    });
+  }
+  var recipeImportAddList = document.getElementById("recipeImportAddList");
+  if(recipeImportAddList){
+    recipeImportAddList.addEventListener("click", function(){
+      if(!importedRecipeDraft) return;
+      var ings = selectedImportedIngredients();
+      if(!ings.length){
+        if(recipeImportPreviewStatus) recipeImportPreviewStatus.textContent = "Check at least one ingredient to add.";
+        return;
+      }
+      // Existing auto-categorizer path — do not bypass classify/addItems.
+      addItems(ings.join("\n"), importedRecipeDraft.title, { silent: true });
+      if(recipeImportPreviewStatus){
+        recipeImportPreviewStatus.textContent = "Added " + ings.length + " ingredient" + (ings.length === 1 ? "" : "s") + " to your list.";
+      }
+    });
+  }
+  var recipeImportTryAnother = document.getElementById("recipeImportTryAnother");
+  if(recipeImportTryAnother){
+    recipeImportTryAnother.addEventListener("click", function(){
+      var keepUrl = recipeImportUrl ? recipeImportUrl.value : "";
+      resetRecipeImportUi();
+      if(recipeImportUrl) recipeImportUrl.value = keepUrl;
+    });
+  }
+  var closeRecipeImport = document.getElementById("closeRecipeImport");
+  if(closeRecipeImport && recipeImportDialog){
+    closeRecipeImport.addEventListener("click", function(){ recipeImportDialog.close(); });
+  }
+
+  // Accept ingredients queued from the React Feast Runway import modal.
+  function consumePendingRecipeIngredients(){
+    try{
+      var raw = localStorage.getItem("ostuffing.pendingRecipeIngredients");
+      if(!raw) return;
+      localStorage.removeItem("ostuffing.pendingRecipeIngredients");
+      var payload = JSON.parse(raw);
+      if(!payload || !Array.isArray(payload.ingredients) || !payload.ingredients.length) return;
+      addItems(payload.ingredients.join("\n"), payload.title || "", { silent: true });
+    }catch(e){}
+  }
+  consumePendingRecipeIngredients();
 
   // ---------- Holidays & events ----------
   var eventDialog = document.getElementById("eventDialog");
