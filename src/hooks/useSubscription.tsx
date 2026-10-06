@@ -21,7 +21,7 @@ export type EntitlementSession = {
   isPro: boolean;
   isInTrial: boolean;
   trialDaysRemaining: number;
-  plan: "weekly" | "yearly" | "monthly" | null;
+  plan: "monthly" | "annual" | "weekly" | "yearly" | null;
   mockPayments: boolean;
 };
 

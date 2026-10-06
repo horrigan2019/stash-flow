@@ -37,15 +37,15 @@ export async function POST(request: Request) {
 
   const plan: BillingPlan | null =
     normalizePlan(body.plan) ||
-    (body.priceId?.includes("year")
-      ? "yearly"
+    (body.priceId?.includes("year") || body.priceId?.includes("annual")
+      ? "annual"
       : body.priceId
-        ? "weekly"
+        ? "monthly"
         : null);
 
   if (!plan) {
     return NextResponse.json(
-      { error: "Choose weekly ($1.99) or yearly ($39.99)." },
+      { error: "Choose monthly ($6.99) or annual ($39.99)." },
       { status: 400 }
     );
   }
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Set STRIPE_PRICE_WEEKLY and STRIPE_PRICE_YEARLY in Vercel to your Stripe Price IDs, then redeploy.",
+          "Set STRIPE_PRICE_ID_MONTHLY and STRIPE_PRICE_ID_ANNUAL in Vercel to your Stripe Price IDs, then redeploy.",
       },
       { status: 503 }
     );

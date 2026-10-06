@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-export type BillingPlan = "weekly" | "yearly";
+export type BillingPlan = "monthly" | "annual";
 
 export type SubscriptionModalProps = {
   open: boolean;
@@ -32,16 +32,16 @@ export function SubscriptionModal({
   mockMode = false,
   onRedeemBetaCode,
 }: SubscriptionModalProps) {
-  const [plan, setPlan] = useState<BillingPlan>("yearly");
+  const [plan, setPlan] = useState<BillingPlan>("annual");
   const [showBetaCode, setShowBetaCode] = useState(false);
   const [betaCode, setBetaCode] = useState("");
   const [betaError, setBetaError] = useState<string | null>(null);
 
   const ctaLabel = useMemo(() => {
-    if (plan === "yearly") {
+    if (plan === "annual") {
       return "Start 7-Day Free Trial, then $39.99/year";
     }
-    return "Start 7-Day Free Trial, then $1.99/week";
+    return "Start 7-Day Free Trial, then $6.99/month";
   }, [plan]);
 
   const handleCta = useCallback(() => {
@@ -89,10 +89,10 @@ export function SubscriptionModal({
         <div className="mt-4 space-y-2">
           <button
             type="button"
-            onClick={() => setPlan("yearly")}
-            aria-pressed={plan === "yearly"}
+            onClick={() => setPlan("annual")}
+            aria-pressed={plan === "annual"}
             className={`w-full rounded-2xl border-2 p-4 text-left transition ${
-              plan === "yearly"
+              plan === "annual"
                 ? "border-[#3F6B4A] bg-white shadow-sm"
                 : "border-[#D9CFC0] bg-[#F7F1E8]"
             }`}
@@ -100,30 +100,30 @@ export function SubscriptionModal({
             <div className="mb-1 flex items-center gap-2">
               <strong className="text-[#2C261C]">Annual</strong>
               <span className="rounded-full bg-[#E8A87C] px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide text-[#3A2414]">
-                Best value · Save 61%
+                Best value · Save 52%
               </span>
             </div>
             <div className="font-[family-name:var(--font-display,Fraunces,Georgia,serif)] text-2xl font-bold text-[#3F6B4A]">
               $39.99
               <span className="text-sm font-medium text-[#5C5346]"> / year</span>
             </div>
-            <div className="text-sm text-[#5C5346]">$0.77 / week</div>
+            <div className="text-sm text-[#5C5346]">$3.33 / month</div>
           </button>
 
           <button
             type="button"
-            onClick={() => setPlan("weekly")}
-            aria-pressed={plan === "weekly"}
+            onClick={() => setPlan("monthly")}
+            aria-pressed={plan === "monthly"}
             className={`w-full rounded-2xl border-2 p-4 text-left transition ${
-              plan === "weekly"
+              plan === "monthly"
                 ? "border-[#3F6B4A] bg-white shadow-sm"
                 : "border-[#D9CFC0] bg-[#F7F1E8]"
             }`}
           >
-            <strong className="text-[#2C261C]">Weekly</strong>
+            <strong className="text-[#2C261C]">Monthly</strong>
             <div className="mt-1 font-[family-name:var(--font-display,Fraunces,Georgia,serif)] text-2xl font-bold text-[#3F6B4A]">
-              $1.99
-              <span className="text-sm font-medium text-[#5C5346]"> / week</span>
+              $6.99
+              <span className="text-sm font-medium text-[#5C5346]"> / month</span>
             </div>
             <div className="text-sm text-[#5C5346]">Flexible, cancel anytime</div>
           </button>
