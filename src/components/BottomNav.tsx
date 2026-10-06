@@ -1,6 +1,11 @@
 "use client";
 
-import { CalendarDays, ShoppingBasket, Settings2 } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardCheck,
+  ShoppingBasket,
+  Settings2,
+} from "lucide-react";
 import type { TabId } from "@/lib/types";
 
 const TABS: {
@@ -10,6 +15,7 @@ const TABS: {
 }[] = [
   { id: "weekly-stash", label: "Weekly Stash", icon: ShoppingBasket },
   { id: "feast-runway", label: "Feast Runway", icon: CalendarDays },
+  { id: "izzy", label: "Izzy", icon: ClipboardCheck },
   { id: "pantry-settings", label: "Pantry & Settings", icon: Settings2 },
 ];
 
@@ -24,7 +30,7 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
       className="sticky bottom-0 z-20 border-t border-amber-200/70 bg-amber-50/95 backdrop-blur-sm"
       aria-label="Main"
     >
-      <ul className="grid grid-cols-3 gap-1 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+      <ul className="grid grid-cols-4 gap-1 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
           return (
