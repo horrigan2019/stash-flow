@@ -1,8 +1,24 @@
-# Oh Stuffing!
+# Oh Stuffing! + Izzy
 
 Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, flyer check, leftover countdown.
 
 **Freemium:** core shopping list tools are free; **Oh Stuffing Pro** (What's My Stock / dinner ideas, Check A Flyer, Compare Stores, Countdown leftover & expiry alerts) starts with a **7-day free trial**, then **$6.99/month** or **$39.99/year** (best value) via email signup + Stripe Checkout.
+
+## Izzy (Insurance Decoder)
+
+**Izzy** lives at [`/izzy`](/izzy): free policy decode, Pro Ask Izzy + offline accident vault, and zero-PII Agency Desk Sidekick.
+
+| Path | Purpose |
+| --- | --- |
+| `/izzy` | Brand landing + compliance footer |
+| `/izzy/decode` | Free single dec-page decode + Pro paywall teaser |
+| `/izzy/changes` | Consumer change checklist + underwriting FAQ (from PR #6) |
+| `/izzy/vault` | Pro offline accident emergency vault (IndexedDB) |
+| `/izzy/agency` | CoverQuote / ClaimFlow / De-escalate (no customer PII) |
+
+Key APIs: `/api/analyze-policy`, `/api/create-checkout-session` (`planType`: monthly/annual), `/api/webhooks/stripe` (toggles `profiles.is_subscribed`), `/api/chat` (402 if not Pro).
+
+Schema: `supabase/schema.sql`. Env template: `.env.example` (includes Supabase + Stripe price placeholders).
 
 ## Deploy (like Fiona)
 
@@ -51,6 +67,10 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 | --- | --- |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Only if you later add Stripe.js on the client (Checkout uses server redirects today) |
 | `NEXT_PUBLIC_APP_URL` | Canonical site URL (e.g. `https://www.ohstuffing.com`) for Checkout success/cancel links |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Izzy profiles / policies) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role (webhooks + server writes) |
+| `IZZY_PRO_UNLOCK` | Set `true` locally to bypass Ask Izzy 402 paywall |
 
 **Local / missing Stripe or Redis:** the app still boots. Auth uses an in-memory store; choosing a plan **mock-unlocks Photo & AI** without charging a card. Free features work without an account.
 
@@ -64,7 +84,7 @@ Set these under **Project → Settings → Environment Variables** (Production, 
    - **$39.99 USD / year** → copy Price ID → `STRIPE_PRICE_ID_ANNUAL`
 3. **Developers → API keys** → copy Secret key → `STRIPE_SECRET_KEY` (Publishable key optional for now)
 4. **Developers → Webhooks → Add endpoint**
-   - URL: `https://www.ohstuffing.com/api/stripe/webhook` (or your `*.vercel.app` URL + `/api/stripe/webhook`)
+   - URL: `https://www.ohstuffing.com/api/webhooks/stripe` (Izzy profiles) and/or `/api/stripe/webhook` (Oh Stuffing session store)
    - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
    - Copy **Signing secret** → `STRIPE_WEBHOOK_SECRET`
 5. **Settings → Billing → Customer portal** → enable so customers can cancel / update payment method
