@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
+import {
+  DEESCALATE_SCENARIOS,
+  getDeescalateScenario,
+  type DeescalateScenarioId,
+} from "@/lib/izzy/deescalate-scripts";
 
 type Tool = "coverquote" | "claimflow" | "deescalate";
 
@@ -202,36 +207,27 @@ function ClaimFlowChecklist() {
 }
 
 function DeescalateBuffer() {
-  const [scenario, setScenario] = useState<"rate" | "nonrenew" | "cancel">("rate");
+  const [scenario, setScenario] = useState<DeescalateScenarioId>("bill-up");
+  const [openFollowUp, setOpenFollowUp] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const scripts = {
-    rate: {
-      title: "Rate increase",
-      lines: [
-        "I hear how frustrating a renewal jump feels—let’s look at what changed on the product side, not at you personally.",
-        "We can walk the rating factors that commonly move (territory, vehicle symbols, household driving record bands) without needing private identifiers in this tool.",
-        "If you’d like options, I can outline deductible or coverage tradeoffs to discuss with the licensed producer of record.",
-      ],
-    },
-    nonrenew: {
-      title: "Non-renewal",
-      lines: [
-        "A non-renewal notice is stressful. I’m here to slow this down and clarify timelines—not to argue the underwriting decision.",
-        "Let’s confirm the notice date, the last day of coverage, and what documentation windows still exist with the carrier.",
-        "Next, we can prepare a clean handoff checklist for shopping markets—still without storing claim or policy files in Izzy.",
-      ],
-    },
-    cancel: {
-      title: "Cancellation",
-      lines: [
-        "Thanks for telling me what’s going on. Cancellations have strict timing—let’s focus on restoring continuity if that’s the goal.",
-        "We’ll separate what the carrier needs versus what we can prepare as talking points for a licensed agent.",
-        "I’ll stay calm with you while we list only process steps—no SSNs, licenses, or claim packets in this workspace.",
-      ],
-    },
-  } as const;
+  const active = getDeescalateScenario(scenario);
 
-  const active = scripts[scenario];
+  async function copyCrmNote() {
+    try {
+      await navigator.clipboard.writeText(active.crmNote);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // ignore
+    }
+  }
+
+  function selectScenario(id: DeescalateScenarioId) {
+    setScenario(id);
+    setOpenFollowUp(null);
+    setCopied(false);
+  }
 
   return (
     <section>
@@ -239,37 +235,158 @@ function DeescalateBuffer() {
         De-escalate & resolve buffer
       </h2>
       <p className="mt-1 text-sm text-[color:var(--izzy-ink)]/70">
-        Empathy-first scripts for rate increases, non-renewals, and cancellations.
+        Empathy-first scripts for bill increases, household/unlisted-driver pushback,
+        non-renewals, and cancellations. Zero-PII templates only.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {(
-          [
-            ["rate", "Rate increase"],
-            ["nonrenew", "Non-renewal"],
-            ["cancel", "Cancellation"],
-          ] as const
-        ).map(([id, label]) => (
+      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="De-escalation scenarios">
+        {DEESCALATE_SCENARIOS.map((s) => (
           <button
-            key={id}
+            key={s.id}
             type="button"
-            onClick={() => setScenario(id)}
+            role="tab"
+            aria-selected={scenario === s.id}
+            onClick={() => selectScenario(s.id)}
             className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
-              scenario === id
+              scenario === s.id
                 ? "bg-[color:var(--izzy-coral)] text-white"
                 : "bg-white text-[color:var(--izzy-ink)] border border-[color:var(--izzy-line)]"
             }`}
           >
-            {label}
+            {s.label}
           </button>
         ))}
       </div>
-      <ol className="mt-4 list-decimal space-y-3 pl-5">
-        {active.lines.map((line) => (
-          <li key={line} className="text-sm leading-relaxed text-[color:var(--izzy-ink)]">
-            {line}
-          </li>
-        ))}
-      </ol>
+
+      <div className="mt-5 space-y-5">
+        <div>
+          <h3 className="font-[family-name:var(--font-izzy-display)] text-lg font-semibold text-[color:var(--izzy-ink)]">
+            {active.title}
+          </h3>
+          <p className="mt-1 text-sm text-[color:var(--izzy-ink)]/70">{active.subtitle}</p>
+        </div>
+
+        <div className="rounded-xl border border-[color:var(--izzy-line)] bg-white/80 p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+            Empathy first
+          </p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5">
+            {active.empathy.map((line) => (
+              <li key={line} className="text-sm leading-relaxed text-[color:var(--izzy-ink)]">
+                {line}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+            Plain-English explainers
+          </p>
+          <ul className="mt-2 space-y-2">
+            {active.explainers.map((block) => (
+              <li
+                key={block.heading}
+                className="rounded-lg border border-[color:var(--izzy-line)] bg-white/80 px-3 py-2"
+              >
+                <p className="text-sm font-semibold text-[color:var(--izzy-ink)]">
+                  {block.heading}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-[color:var(--izzy-ink)]/80">
+                  {block.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {active.softCompliance ? (
+          <p className="rounded-lg border border-dashed border-[color:var(--izzy-coral)]/40 bg-[color:var(--izzy-coral)]/5 px-3 py-2 text-xs leading-relaxed text-[color:var(--izzy-ink)]/80">
+            {active.softCompliance}
+          </p>
+        ) : null}
+
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+            Next-step options
+          </p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5">
+            {active.nextSteps.map((step) => (
+              <li key={step} className="text-sm leading-relaxed text-[color:var(--izzy-ink)]">
+                {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {active.documentChecklist?.length ? (
+          <div className="rounded-xl border border-[color:var(--izzy-line)] bg-white/80 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+              Document checklist (generic — no PII)
+            </p>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5">
+              {active.documentChecklist.map((item) => (
+                <li key={item} className="text-sm leading-relaxed text-[color:var(--izzy-ink)]">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {active.followUps.length ? (
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+              Follow-up answer beats
+            </p>
+            <p className="mt-1 text-xs text-[color:var(--izzy-ink)]/60">
+              Tap a pushback line the insured might say—script a calm reply.
+            </p>
+            <ul className="mt-2 space-y-2">
+              {active.followUps.map((beat) => {
+                const open = openFollowUp === beat.id;
+                return (
+                  <li key={beat.id}>
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() => setOpenFollowUp(open ? null : beat.id)}
+                      className="w-full rounded-lg border border-[color:var(--izzy-line)] bg-white/80 px-3 py-2 text-left"
+                    >
+                      <p className="text-sm font-semibold text-[color:var(--izzy-ink)]">
+                        “{beat.pushback}”
+                      </p>
+                      {open ? (
+                        <p className="mt-2 text-sm leading-relaxed text-[color:var(--izzy-ink)]/80">
+                          {beat.reply}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-[color:var(--izzy-teal)]">Show reply →</p>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="rounded-xl border border-[color:var(--izzy-line)] bg-[color:var(--izzy-foam)] p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-[color:var(--izzy-teal)]">
+            Sanitized CRM note generator
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[color:var(--izzy-ink)]">
+            {active.crmNote}
+          </p>
+          <button
+            type="button"
+            onClick={copyCrmNote}
+            className="mt-3 inline-flex items-center gap-2 rounded-md bg-[color:var(--izzy-ink)] px-3 py-2 text-xs font-bold text-white"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy for CRM"}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
