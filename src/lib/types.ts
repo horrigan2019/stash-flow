@@ -8,7 +8,11 @@ export type AisleId =
   | "household"
   | "frozen";
 
-export type TabId = "weekly-stash" | "feast-runway" | "pantry-settings";
+export type TabId =
+  | "weekly-stash"
+  | "feast-runway"
+  | "izzy"
+  | "pantry-settings";
 
 export interface GroceryItem {
   id: string;

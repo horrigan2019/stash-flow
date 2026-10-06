@@ -65,3 +65,92 @@ body {
 .aisle-stack > section:nth-child(10) {
   animation-delay: 0.36s;
 }
+
+/* Izzy product surface — teal / coral (scoped under .izzy-surface) */
+.izzy-surface {
+  --izzy-ink: #0b3d4a;
+  --izzy-teal: #156b78;
+  --izzy-coral: #e85d4c;
+  --izzy-foam: #e8f4f2;
+  --izzy-mist: #d7ebe7;
+  --izzy-line: rgba(11, 61, 74, 0.14);
+  color: var(--izzy-ink);
+  background:
+    radial-gradient(ellipse 90% 60% at 10% -10%, #1f8a7a33, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, #e85d4c22, transparent 50%),
+    linear-gradient(180deg, #e8f4f2 0%, #f7fbfa 42%, #eef6f4 100%);
+  min-height: 100dvh;
+}
+
+@keyframes izzy-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes izzy-cta-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.izzy-hero .izzy-brand-mark {
+  animation: izzy-rise 0.7s ease-out both;
+}
+
+.izzy-hero h1 {
+  animation: izzy-rise 0.75s ease-out 0.08s both;
+}
+
+.izzy-hero .izzy-cta {
+  animation:
+    izzy-rise 0.8s ease-out 0.16s both,
+    izzy-cta-pulse 2.8s ease-in-out 1.2s infinite;
+}
+
+/* Izzy call sheet — from Project store call-sheet-print.css */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  /* Hide navigation bars, sidebars, and chat modals during print */
+  nav,
+  header,
+  footer,
+  aside,
+  .paywall-modal,
+  .ask-izzy-drawer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force clean page breaks and remove drop-shadows */
+  .printable-card {
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+
+  #izzy-call-sheet,
+  .izzy-call-sheet {
+    display: block !important;
+    max-width: 100% !important;
+  }
+
+  @page {
+    margin: 0.5in;
+    size: auto;
+  }
+}

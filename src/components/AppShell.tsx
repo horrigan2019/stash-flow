@@ -5,6 +5,7 @@ import type { TabId } from "@/lib/types";
 import { BottomNav } from "@/components/BottomNav";
 import { WeeklyStash } from "@/components/WeeklyStash";
 import { FeastRunway } from "@/components/FeastRunway";
+import { IzzyDashboard } from "@/components/dashboard/IzzyDashboard";
 import { PantrySettings } from "@/components/PantrySettings";
 import { clearCorruptedGroceryList } from "@/lib/storage";
 import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
@@ -39,6 +40,7 @@ function AppShellInner() {
           <WeeklyStash key={stashKey} />
         ) : null}
         {activeTab === "feast-runway" ? <FeastRunway /> : null}
+        {activeTab === "izzy" ? <IzzyDashboard /> : null}
         {activeTab === "pantry-settings" ? (
           <PantrySettings onResetStash={handleResetStash} />
         ) : null}
