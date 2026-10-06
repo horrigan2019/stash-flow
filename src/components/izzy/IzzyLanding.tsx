@@ -35,6 +35,12 @@ export function IzzyLanding() {
               {IZZY_PRIMARY_CTA}
             </Link>
             <Link
+              href="/izzy/vault"
+              className="inline-flex items-center justify-center rounded-md border-2 border-[#FDE68A] bg-[#DC2626] px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:brightness-110"
+            >
+              In Case of Accident / Emergency
+            </Link>
+            <Link
               href="/izzy/agency"
               className="inline-flex items-center justify-center rounded-md border border-white/50 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
             >
