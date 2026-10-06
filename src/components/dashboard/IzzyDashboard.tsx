@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChangeChecklist } from "@/components/dashboard/ChangeChecklist";
 import { UnderwritingFAQ } from "@/components/dashboard/UnderwritingFAQ";
+import { AccidentEmergencyKit } from "@/components/dashboard/AccidentEmergencyKit";
 
-type Panel = "checklist" | "decoder";
+type Panel = "checklist" | "decoder" | "emergency";
 
 export function IzzyDashboard() {
   const [panel, setPanel] = useState<Panel>("checklist");
@@ -15,8 +17,14 @@ export function IzzyDashboard() {
   return (
     <div className="flex flex-1 flex-col">
       <div className="sticky top-0 z-10 border-b border-amber-200/60 bg-[#FBF7F0]/95 px-5 py-2 backdrop-blur-sm print:hidden">
+        <Link
+          href="/izzy/vault"
+          className="mb-2 flex w-full items-center justify-center gap-2 rounded-md border-2 border-[#7F1D1D] bg-[#DC2626] px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide text-white shadow-[0_0_0_2px_#FDE68A]"
+        >
+          In Case of Accident / Emergency
+        </Link>
         <div
-          className="grid grid-cols-2 gap-1 rounded-xl bg-amber-100/70 p-1"
+          className="grid grid-cols-3 gap-1 rounded-xl bg-amber-100/70 p-1"
           role="tablist"
           aria-label="Izzy modules"
         >
@@ -45,6 +53,19 @@ export function IzzyDashboard() {
             }`}
           >
             Why are they asking?
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panel === "emergency"}
+            onClick={() => setPanel("emergency")}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+              panel === "emergency"
+                ? "bg-[#FEE2E2] text-[#7F1D1D] shadow-sm"
+                : "text-neutral-600 hover:text-amber-950"
+            }`}
+          >
+            Emergency kit
           </button>
         </div>
 
@@ -77,7 +98,7 @@ export function IzzyDashboard() {
 
       {panel === "checklist" ? (
         <ChangeChecklist />
-      ) : (
+      ) : panel === "decoder" ? (
         <UnderwritingFAQ
           policyContext={{
             state: policyState || undefined,
@@ -85,6 +106,8 @@ export function IzzyDashboard() {
             policyNumber: policyNumber || undefined,
           }}
         />
+      ) : (
+        <AccidentEmergencyKit compact initialCategory="auto" />
       )}
     </div>
   );

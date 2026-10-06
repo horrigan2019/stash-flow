@@ -12,13 +12,19 @@
 import { get, set, del, keys } from "idb-keyval";
 import type {
   OfflineEmergencyCard,
-  PostAccidentStep,
+  OtherPartyRecord,
   PolicyCategory,
+  PostAccidentStep,
+  ScenePhotoCheckId,
+  ScenePhotoChecklistState,
 } from "@/lib/izzy/types";
 
 const VAULT_META_KEY = "izzy:offline-vault:meta";
 const CARD_PREFIX = "izzy:offline-vault:card:";
 const CHECKLIST_KEY = "izzy:offline-vault:post-accident";
+const OTHER_PARTY_KEY = "izzy:offline-vault:other-party";
+const SCENE_PHOTOS_KEY = "izzy:offline-vault:scene-photos";
+const HOME_CARD_ID = "demo-home";
 
 export type OfflineVaultMeta = {
   lastSyncedAt: string | null;
@@ -217,7 +223,95 @@ export async function readVault(opts?: {
   return { offline, cards, checklist, meta };
 }
 
-/** Seed a demo Pro vault card for local testing / demos. */
+export const EMPTY_SCENE_PHOTOS: ScenePhotoChecklistState = {
+  vehicle_damage: false,
+  license_plates: false,
+  intersection_skid: false,
+  wider_scene: false,
+};
+
+export const SCENE_PHOTO_ITEMS: Array<{
+  id: ScenePhotoCheckId;
+  label: string;
+  detail: string;
+}> = [
+  {
+    id: "vehicle_damage",
+    label: "Vehicle damage (all angles)",
+    detail: "Close-ups of dents, glass, lights, and bumper impact points.",
+  },
+  {
+    id: "license_plates",
+    label: "License plates",
+    detail: "Your plate and the other vehicle’s plate, readable if safe.",
+  },
+  {
+    id: "intersection_skid",
+    label: "Intersection / skid marks",
+    detail: "Lane markings, traffic controls, debris, and skid paths.",
+  },
+  {
+    id: "wider_scene",
+    label: "Wider scene context",
+    detail: "Street signs, weather/lighting, and where vehicles came to rest.",
+  },
+];
+
+export async function getOtherPartyRecord(): Promise<OtherPartyRecord | null> {
+  return (await get<OtherPartyRecord>(OTHER_PARTY_KEY)) ?? null;
+}
+
+export async function saveOtherPartyRecord(
+  patch: Partial<Omit<OtherPartyRecord, "id" | "updatedAt">> & {
+    id?: string;
+  },
+): Promise<OtherPartyRecord> {
+  const prev = (await getOtherPartyRecord()) ?? {
+    id: "scene-other-party",
+    driverName: "",
+    phone: "",
+    insuranceCarrier: "",
+    policyNumber: "",
+    policeReportOrBadge: "",
+    notes: "",
+    updatedAt: "",
+  };
+  const next: OtherPartyRecord = {
+    ...prev,
+    ...patch,
+    id: patch.id || prev.id || "scene-other-party",
+    updatedAt: new Date().toISOString(),
+  };
+  await set(OTHER_PARTY_KEY, next);
+  await writeMeta({ lastSyncedAt: next.updatedAt });
+  return next;
+}
+
+export async function clearOtherPartyRecord(): Promise<void> {
+  await del(OTHER_PARTY_KEY);
+}
+
+export async function getScenePhotoChecklist(): Promise<ScenePhotoChecklistState> {
+  const saved = await get<ScenePhotoChecklistState>(SCENE_PHOTOS_KEY);
+  return { ...EMPTY_SCENE_PHOTOS, ...(saved ?? {}) };
+}
+
+export async function saveScenePhotoChecklist(
+  state: ScenePhotoChecklistState,
+): Promise<ScenePhotoChecklistState> {
+  await set(SCENE_PHOTOS_KEY, state);
+  await writeMeta({ lastSyncedAt: new Date().toISOString() });
+  return state;
+}
+
+export function telHref(phone: string | undefined): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/[^\d+]/g, "");
+  if (digits.length < 3) return null;
+  return `tel:${digits}`;
+}
+
+/** Seed demo auto + home cards for local testing / demos. */
 export async function seedDemoVaultCard(input?: {
   carrierName?: string;
   claimsPhone?: string;
@@ -226,7 +320,7 @@ export async function seedDemoVaultCard(input?: {
   category?: PolicyCategory;
 }): Promise<OfflineEmergencyCard> {
   await cachePostAccidentChecklist();
-  return cacheEmergencyCard({
+  const auto = await cacheEmergencyCard({
     id: "demo-auto",
     label: "Auto — emergency card",
     carrierName: input?.carrierName ?? "Sample Mutual",
@@ -235,5 +329,25 @@ export async function seedDemoVaultCard(input?: {
     roadsidePhone: input?.roadsidePhone ?? "1-800-555-0144",
     state: input?.state ?? "NY",
     category: input?.category ?? "auto",
+    collisionDeductible: "$1,000",
+    comprehensiveDeductible: "$500",
   });
+  await cacheEmergencyCard({
+    id: HOME_CARD_ID,
+    label: "Home — emergency card",
+    carrierName: input?.carrierName ?? "Sample Mutual",
+    policyNumber: "•••-HOME",
+    claimsPhone: input?.claimsPhone ?? "1-800-555-0199",
+    state: input?.state ?? "NY",
+    category: "home",
+    homeDeductible: "$1,000",
+  });
+  return auto;
+}
+
+export async function getCardForCategory(
+  category: PolicyCategory,
+): Promise<OfflineEmergencyCard | null> {
+  const cards = await listEmergencyCards();
+  return cards.find((c) => c.category === category) ?? cards[0] ?? null;
 }

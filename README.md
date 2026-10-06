@@ -11,9 +11,10 @@ Grocery & meal planning — shopping list by aisle, pantry photos, **What can I 
 | Path | Purpose |
 | --- | --- |
 | `/izzy` | Brand landing + compliance footer |
+| `/izzy/dashboard` (alias `/dashboard`) | Pocket vault category tabs + emergency kit entry |
 | `/izzy/decode` | Free single dec-page decode + Pro paywall teaser |
 | `/izzy/changes` | Consumer change checklist + underwriting FAQ (from PR #6) |
-| `/izzy/vault` | Pro offline accident emergency vault (IndexedDB) |
+| `/izzy/vault` | Full Accident Emergency Kit (IndexedDB offline crisis toolkit) |
 | `/izzy/agency` | CoverQuote / ClaimFlow / De-escalate (no customer PII) |
 
 Key APIs: `/api/analyze-policy`, `/api/create-checkout-session` (`planType`: monthly/annual), `/api/webhooks/stripe` (toggles `profiles.is_subscribed`), `/api/chat` (402 if not Pro).

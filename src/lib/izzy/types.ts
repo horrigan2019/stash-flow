@@ -41,6 +41,10 @@ export type OfflineEmergencyCard = {
   roadsidePhone?: string;
   state?: string;
   category?: PolicyCategory;
+  /** Exact deductibles for Claims & Deductible Reality Check */
+  collisionDeductible?: string;
+  comprehensiveDeductible?: string;
+  homeDeductible?: string;
   updatedAt: string;
 };
 
@@ -50,3 +54,23 @@ export type PostAccidentStep = {
   detail: string;
   order: number;
 };
+
+/** Other-party info captured at the scene — IndexedDB only. */
+export type OtherPartyRecord = {
+  id: string;
+  driverName: string;
+  phone: string;
+  insuranceCarrier: string;
+  policyNumber: string;
+  policeReportOrBadge: string;
+  notes: string;
+  updatedAt: string;
+};
+
+export type ScenePhotoCheckId =
+  | "vehicle_damage"
+  | "license_plates"
+  | "intersection_skid"
+  | "wider_scene";
+
+export type ScenePhotoChecklistState = Record<ScenePhotoCheckId, boolean>;
