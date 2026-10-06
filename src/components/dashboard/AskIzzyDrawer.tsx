@@ -82,7 +82,12 @@ export function AskIzzyDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 print:hidden" role="dialog" aria-modal="true" aria-labelledby="ask-izzy-title">
+    <div
+      className="ask-izzy-drawer fixed inset-0 z-50 print:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ask-izzy-title"
+    >
       <button
         type="button"
         className="absolute inset-0 bg-amber-950/35"

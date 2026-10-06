@@ -66,33 +66,40 @@ body {
   animation-delay: 0.36s;
 }
 
+/* Izzy call sheet — from Project store call-sheet-print.css */
 @media print {
-  @page {
-    margin: 0.6in;
-    size: letter;
-  }
-
   body {
     background: white !important;
-    color: #111 !important;
+    color: black !important;
+    font-size: 11pt;
   }
 
-  nav[aria-label="Main"],
+  /* Hide navigation bars, sidebars, and chat modals during print */
+  nav,
+  header,
+  footer,
+  aside,
+  .paywall-modal,
+  .ask-izzy-drawer,
   .print\:hidden {
     display: none !important;
+  }
+
+  /* Force clean page breaks and remove drop-shadows */
+  .printable-card {
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
   }
 
   #izzy-call-sheet,
   .izzy-call-sheet {
     display: block !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
     max-width: 100% !important;
   }
 
-  #izzy-call-sheet[hidden],
-  .izzy-call-sheet[hidden] {
-    display: block !important;
+  @page {
+    margin: 0.5in;
+    size: auto;
   }
 }

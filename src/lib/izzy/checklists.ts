@@ -111,6 +111,13 @@ export const WORKFLOWS: WorkflowDef[] = [
       "Validate the VIN, gather odometer and lien details, assign a primary driver, and lock coverage choices before you call.",
     items: [
       {
+        id: "ymm",
+        label: "Year / Make / Model",
+        hint: "e.g. 2024 Honda CR-V EX-L",
+        required: true,
+        kind: "text",
+      },
+      {
         id: "vin",
         label: "17-digit VIN",
         hint: "Letters/numbers only — VIN never uses I, O, or Q.",
@@ -158,6 +165,12 @@ export const WORKFLOWS: WorkflowDef[] = [
         hint: "Who will mainly operate this vehicle.",
         required: true,
         kind: "text",
+      },
+      {
+        id: "commute",
+        label: "Daily commute (miles)",
+        hint: "One-way miles if used for rating / usage class.",
+        kind: "number",
       },
       {
         id: "coverage",
