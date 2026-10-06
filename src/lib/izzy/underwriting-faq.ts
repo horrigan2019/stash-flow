@@ -5,6 +5,8 @@ export interface FaqCard {
   whyTheyAsk: string;
   tip: string;
   tags: string[];
+  /** Prefill text when opening Ask Izzy from this card. */
+  askPrompt: string;
 }
 
 export const UNDERWRITING_FAQ: FaqCard[] = [
@@ -16,17 +18,21 @@ export const UNDERWRITING_FAQ: FaqCard[] = [
     whyTheyAsk:
       "Anyone living with you who has a license can potentially drive a listed vehicle. Underwriters check household composition to price that exposure and avoid “unlisted driver” claim disputes.",
     tip: "List every licensed resident even if they “never drive.” If someone is excluded, ask for a named-driver exclusion in writing.",
-    tags: ["household", "drivers", "dob", "unlisted", "residents"],
+    tags: ["household", "drivers", "dob", "unlisted", "residents", "names"],
+    askPrompt:
+      "Why are carriers asking for names and dates of birth of everyone in my household?",
   },
   {
     id: "mileage-commute",
-    question: "Why ask for annual mileage or commute distance?",
+    question: "Why ask for annual mileage & commute distance?",
     shortAnswer:
       "Mileage and commute distance place the vehicle into rating tiers that change premium.",
     whyTheyAsk:
       "More road time usually means higher claim frequency. Carriers bucket annual miles and work/school commute to set usage class (pleasure, commute, business).",
     tip: "Estimate honestly from odometer history. Understating mileage can void discounts or complicate a claim review.",
-    tags: ["mileage", "commute", "rating", "usage", "odometer"],
+    tags: ["mileage", "commute", "rating", "usage", "odometer", "annual"],
+    askPrompt:
+      "How should I answer annual mileage and commute distance questions for underwriting?",
   },
   {
     id: "prior-insurance",
@@ -37,36 +43,47 @@ export const UNDERWRITING_FAQ: FaqCard[] = [
       "Continuous coverage discounts reward customers who stayed insured. Declaration pages prove prior limits, carriers, and whether there was a gap in coverage.",
     tip: "Download the last 1–3 years of dec pages from your prior carrier portal before shopping or mid-term changes.",
     tags: ["prior", "declarations", "continuous", "lapse", "discount"],
+    askPrompt:
+      "Why do carriers need prior insurance declaration pages, and what should I send?",
   },
   {
-    id: "mortgagee-lienholder",
-    question: "Why do they need mortgagee or lienholder clauses?",
+    id: "lienholder-loss-payee",
+    question: "Why do they need lienholder / loss payee details?",
     shortAnswer:
-      "Lenders have an insurable financial interest and must be named as loss payee / mortgagee.",
+      "Lenders have an insurable financial interest and must be named correctly as loss payee.",
     whyTheyAsk:
-      "If the bank or lessor has a loan on the home or vehicle, the policy must protect that interest. Exact clause wording ensures claim checks are issued correctly.",
-    tip: "Copy the clause verbatim from closing or lease paperwork—abbreviations and missing “ISAOA/ATIMA” language often get rejected.",
-    tags: ["mortgagee", "lienholder", "lender", "escrow", "clause"],
+      "If a bank or lessor has a loan on the vehicle (or a mortgage on the home), the policy must protect that interest. Exact name, address, and account wording ensures claim checks are issued correctly.",
+    tip: "Copy the clause verbatim from finance or closing paperwork—abbreviations and missing account numbers often get rejected.",
+    tags: [
+      "lienholder",
+      "loss payee",
+      "mortgagee",
+      "lender",
+      "escrow",
+      "clause",
+    ],
+    askPrompt:
+      "What lienholder or loss payee details do I need ready for my carrier?",
   },
   {
-    id: "garaging-address",
-    question: "Why confirm the garaging address?",
+    id: "health-card-pip",
+    question: "Why ask for a copy of my health insurance card?",
     shortAnswer:
-      "Territory rating uses where the vehicle overnight parks, not just your mailing address.",
+      "In PIP states, carriers coordinate benefits and may need to know if health insurance is primary or secondary.",
     whyTheyAsk:
-      "Claim costs vary by ZIP. A vehicle garaged in a different city can change premium and eligibility.",
-    tip: "If a teen takes a car to college, ask whether a school address should be listed as garaging.",
-    tags: ["garaging", "address", "territory", "zip"],
-  },
-  {
-    id: "other-vehicles",
-    question: "Why ask about other vehicles in the household?",
-    shortAnswer:
-      "Underwriters look for rating consistency and vehicles that should be listed or excluded.",
-    whyTheyAsk:
-      "Unlisted household cars can signal underinsurance or misrated primary use. Some states and carriers require disclosure of all owned vehicles.",
-    tip: "Have year/make/model and who primarily drives each household vehicle ready when you call.",
-    tags: ["vehicles", "household", "ownership", "disclosure"],
+      "Personal Injury Protection (PIP) can interact with health coverage. Underwriters and claims teams use your health card to set coordination of benefits—whether auto PIP or health insurance pays first after an injury.",
+    tip: "Have a clear front/back photo of the card. Ask whether PIP is primary or secondary in your state and on your policy form.",
+    tags: [
+      "health",
+      "pip",
+      "primary",
+      "secondary",
+      "coordination",
+      "benefits",
+      "card",
+    ],
+    askPrompt:
+      "Why is my carrier asking for a copy of my health insurance card for PIP / coordination of benefits?",
   },
 ];
 

@@ -67,8 +67,14 @@ body {
 }
 
 @media print {
+  @page {
+    margin: 0.6in;
+    size: letter;
+  }
+
   body {
     background: white !important;
+    color: #111 !important;
   }
 
   nav[aria-label="Main"],
@@ -76,9 +82,17 @@ body {
     display: none !important;
   }
 
-  #izzy-print-summary {
+  #izzy-call-sheet,
+  .izzy-call-sheet {
     display: block !important;
     border: none !important;
     box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  #izzy-call-sheet[hidden],
+  .izzy-call-sheet[hidden] {
+    display: block !important;
   }
 }
