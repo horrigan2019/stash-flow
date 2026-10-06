@@ -58,16 +58,14 @@ async function applySubscription(
     user.stripeCustomerId = sub.customer.id;
   }
   user.subscriptionStatus = mapStatus(sub.status);
-  user.plan =
-    planFromPriceId(priceId) ||
-    (sub.metadata?.plan === "yearly" ||
-    sub.metadata?.plan === "weekly" ||
-    sub.metadata?.plan === "monthly"
-      ? sub.metadata.plan === "monthly"
-        ? "weekly"
-        : (sub.metadata.plan as "weekly" | "yearly")
-      : user.plan) ||
-    null;
+  const metaPlan = sub.metadata?.plan;
+  const fromMeta =
+    metaPlan === "annual" || metaPlan === "yearly"
+      ? ("annual" as const)
+      : metaPlan === "monthly" || metaPlan === "weekly"
+        ? ("monthly" as const)
+        : null;
+  user.plan = planFromPriceId(priceId) || fromMeta || user.plan || null;
   if (sub.status === "trialing" && sub.trial_end) {
     user.trialEndsAt = new Date(sub.trial_end * 1000).toISOString();
   } else if (sub.status === "active") {
@@ -134,11 +132,12 @@ export async function POST(request: Request) {
         } else {
           user.subscriptionStatus = "active";
           user.plan =
+            session.metadata?.plan === "annual" ||
             session.metadata?.plan === "yearly"
-              ? "yearly"
-              : session.metadata?.plan === "weekly" ||
-                  session.metadata?.plan === "monthly"
-                ? "weekly"
+              ? "annual"
+              : session.metadata?.plan === "monthly" ||
+                  session.metadata?.plan === "weekly"
+                ? "monthly"
                 : user.plan;
           await saveUser(user);
         }

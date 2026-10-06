@@ -1,11 +1,13 @@
 import Stripe from "stripe";
 
-export const PRICE_WEEKLY_DEFAULT = "price_mock_weekly";
-export const PRICE_YEARLY_DEFAULT = "price_mock_yearly";
-/** @deprecated Prefer PRICE_WEEKLY_DEFAULT — kept for older env names */
-export const PRICE_MONTHLY_DEFAULT = PRICE_WEEKLY_DEFAULT;
+export const PRICE_MONTHLY_DEFAULT = "price_mock_monthly";
+export const PRICE_ANNUAL_DEFAULT = "price_mock_annual";
+/** @deprecated Prefer PRICE_MONTHLY_DEFAULT — kept for older mock IDs */
+export const PRICE_WEEKLY_DEFAULT = PRICE_MONTHLY_DEFAULT;
+/** @deprecated Prefer PRICE_ANNUAL_DEFAULT */
+export const PRICE_YEARLY_DEFAULT = PRICE_ANNUAL_DEFAULT;
 
-export type BillingPlan = "weekly" | "yearly";
+export type BillingPlan = "monthly" | "annual";
 
 export const TRIAL_DAYS = 7;
 
@@ -20,35 +22,52 @@ export function getStripe(): Stripe | null {
 }
 
 export function normalizePlan(plan: string | null | undefined): BillingPlan | null {
-  if (plan === "yearly") return "yearly";
-  // Legacy "monthly" maps to weekly ($1.99/week)
-  if (plan === "weekly" || plan === "monthly") return "weekly";
+  if (plan === "annual" || plan === "yearly") return "annual";
+  // Legacy "weekly" maps to monthly ($6.99/mo)
+  if (plan === "monthly" || plan === "weekly") return "monthly";
   return null;
 }
 
-export function priceIdForPlan(plan: BillingPlan): string {
-  if (plan === "yearly") {
-    return process.env.STRIPE_PRICE_YEARLY?.trim() || PRICE_YEARLY_DEFAULT;
-  }
+function monthlyPriceIdFromEnv(): string | undefined {
   return (
+    process.env.STRIPE_PRICE_ID_MONTHLY?.trim() ||
     process.env.STRIPE_PRICE_WEEKLY?.trim() ||
     process.env.STRIPE_PRICE_MONTHLY?.trim() ||
-    PRICE_WEEKLY_DEFAULT
+    undefined
   );
+}
+
+function annualPriceIdFromEnv(): string | undefined {
+  return (
+    process.env.STRIPE_PRICE_ID_ANNUAL?.trim() ||
+    process.env.STRIPE_PRICE_YEARLY?.trim() ||
+    undefined
+  );
+}
+
+export function priceIdForPlan(plan: BillingPlan): string {
+  if (plan === "annual") {
+    return annualPriceIdFromEnv() || PRICE_ANNUAL_DEFAULT;
+  }
+  return monthlyPriceIdFromEnv() || PRICE_MONTHLY_DEFAULT;
 }
 
 export function planFromPriceId(
   priceId: string | undefined | null
 ): BillingPlan | null {
   if (!priceId) return null;
-  const weekly =
-    process.env.STRIPE_PRICE_WEEKLY?.trim() ||
-    process.env.STRIPE_PRICE_MONTHLY?.trim();
-  const yearly = process.env.STRIPE_PRICE_YEARLY?.trim();
-  if (yearly && priceId === yearly) return "yearly";
-  if (weekly && priceId === weekly) return "weekly";
-  if (priceId.includes("year")) return "yearly";
-  if (priceId.includes("week") || priceId.includes("month")) return "weekly";
+  const monthly = monthlyPriceIdFromEnv();
+  const annual = annualPriceIdFromEnv();
+  if (annual && priceId === annual) return "annual";
+  if (monthly && priceId === monthly) return "monthly";
+  if (priceId.includes("year") || priceId.includes("annual")) return "annual";
+  if (
+    priceId.includes("month") ||
+    priceId.includes("week") ||
+    priceId.includes("monthly")
+  ) {
+    return "monthly";
+  }
   return null;
 }
 

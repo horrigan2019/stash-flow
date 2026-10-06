@@ -16,7 +16,7 @@ export type SessionPayload = {
   exp: number;
   /** Snapshotted at cookie issue time — lets /api/vision auth across serverless isolates without shared KV. */
   subscriptionStatus?: SubscriptionStatus;
-  plan?: "weekly" | "yearly" | "monthly" | null;
+  plan?: "monthly" | "annual" | "weekly" | "yearly" | null;
   trialEndsAt?: string | null;
 };
 
@@ -142,7 +142,7 @@ export type PublicSession = {
   isPro: boolean;
   isInTrial: boolean;
   trialDaysRemaining: number;
-  plan: "weekly" | "yearly" | "monthly" | null;
+  plan: "monthly" | "annual" | "weekly" | "yearly" | null;
   subscriptionStatus: string;
   mockPayments: boolean;
   storeBackend: "upstash" | "memory";

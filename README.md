@@ -2,7 +2,7 @@
 
 Grocery & meal planning — shopping list by aisle, pantry photos, **What can I make?**, recipes, flyer check, leftover countdown.
 
-**Freemium:** core shopping list tools are free; **Oh Stuffing Pro** (What's My Stock / dinner ideas, Check A Flyer, Compare Stores, Countdown leftover & expiry alerts) starts with a **7-day free trial**, then **$1.99/week** or **$39.99/year** (best value) via email signup + Stripe Checkout.
+**Freemium:** core shopping list tools are free; **Oh Stuffing Pro** (What's My Stock / dinner ideas, Check A Flyer, Compare Stores, Countdown leftover & expiry alerts) starts with a **7-day free trial**, then **$6.99/month** or **$39.99/year** (best value) via email signup + Stripe Checkout.
 
 ## Deploy (like Fiona)
 
@@ -38,9 +38,10 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 | `AUTH_SECRET` | Long random string used to sign login cookies (e.g. `openssl rand -hex 32`) |
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_live_…` or `sk_test_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_…`) |
-| `STRIPE_PRICE_WEEKLY` | Stripe Price ID for **$1.99/week** (preferred) |
-| `STRIPE_PRICE_MONTHLY` | Legacy alias — used if `STRIPE_PRICE_WEEKLY` is unset |
-| `STRIPE_PRICE_YEARLY` | Stripe Price ID for **$39.99/year** |
+| `STRIPE_PRICE_ID_MONTHLY` | Stripe Price ID for **$6.99/mo** (preferred) |
+| `STRIPE_PRICE_ID_ANNUAL` | Stripe Price ID for **$39.99/yr** (preferred) |
+| `STRIPE_PRICE_WEEKLY` / `STRIPE_PRICE_MONTHLY` | Legacy fallbacks if `STRIPE_PRICE_ID_MONTHLY` is unset |
+| `STRIPE_PRICE_YEARLY` | Legacy fallback if `STRIPE_PRICE_ID_ANNUAL` is unset |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (account storage) |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
 
@@ -59,8 +60,8 @@ Set these under **Project → Settings → Environment Variables** (Production, 
 
 1. [Stripe Dashboard](https://dashboard.stripe.com) → **Product catalog** → create a product **Oh Stuffing**
 2. Add two **recurring** prices (both with a **7-day free trial** in Checkout — trial is set in code via `trial_period_days: 7`):
-   - **$1.99 USD / week** → copy Price ID → `STRIPE_PRICE_WEEKLY`
-   - **$39.99 USD / year** → copy Price ID → `STRIPE_PRICE_YEARLY`
+   - **$6.99 USD / month** → copy Price ID → `STRIPE_PRICE_ID_MONTHLY`
+   - **$39.99 USD / year** → copy Price ID → `STRIPE_PRICE_ID_ANNUAL`
 3. **Developers → API keys** → copy Secret key → `STRIPE_SECRET_KEY` (Publishable key optional for now)
 4. **Developers → Webhooks → Add endpoint**
    - URL: `https://www.ohstuffing.com/api/stripe/webhook` (or your `*.vercel.app` URL + `/api/stripe/webhook`)
@@ -89,8 +90,8 @@ npm install
 # export AUTH_SECRET=dev-secret
 # export STRIPE_SECRET_KEY=sk_test_...
 # export STRIPE_WEBHOOK_SECRET=whsec_...
-# export STRIPE_PRICE_MONTHLY=price_...
-# export STRIPE_PRICE_YEARLY=price_...
+# export STRIPE_PRICE_ID_MONTHLY=price_xxxxxx
+# export STRIPE_PRICE_ID_ANNUAL=price_yyyyyy
 # export UPSTASH_REDIS_REST_URL=...
 # export UPSTASH_REDIS_REST_TOKEN=...
 npm run dev

@@ -20,8 +20,8 @@ export type UserRecord = {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus: SubscriptionStatus;
-  /** weekly ($1.99) or yearly ($39.99); legacy "monthly" treated as weekly */
-  plan?: "weekly" | "yearly" | "monthly" | null;
+  /** monthly ($6.99) or annual ($39.99); legacy weekly/yearly kept for existing records */
+  plan?: "monthly" | "annual" | "weekly" | "yearly" | null;
   /** ISO timestamp when free trial ends (subscriptionStatus may be trialing) */
   trialEndsAt?: string | null;
 };
