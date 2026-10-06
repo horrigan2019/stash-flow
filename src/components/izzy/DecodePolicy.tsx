@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { FileUp, Lock, Loader2 } from "lucide-react";
 import type { AnalyzePolicyResult } from "@/lib/izzy/types";
@@ -28,6 +28,7 @@ export function DecodePolicy() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzePolicyResult | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function onFile(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -36,20 +37,30 @@ export function DecodePolicy() {
     setError(null);
   }
 
+  function selectedFile(): File | null {
+    return file ?? fileInputRef.current?.files?.[0] ?? null;
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!file || busy) return;
+    const upload = selectedFile();
+    if (busy) return;
+    if (!upload) {
+      setError("Choose a PDF or image of your declarations page first.");
+      return;
+    }
+    if (!file) setFile(upload);
     setBusy(true);
     setError(null);
     try {
-      const fileBase64 = await fileToBase64(file);
+      const fileBase64 = await fileToBase64(upload);
       const res = await fetch("/api/analyze-policy", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           fileBase64,
-          fileName: file.name,
-          mimeType: file.type,
+          fileName: upload.name,
+          mimeType: upload.type,
           state,
           category: "auto",
           docType: "dec_page",
@@ -127,11 +138,14 @@ export function DecodePolicy() {
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[color:var(--izzy-teal)]/50 bg-[color:var(--izzy-foam)] px-4 py-8 text-center">
           <FileUp className="h-6 w-6 text-[color:var(--izzy-teal)]" aria-hidden />
           <span className="text-sm font-semibold text-[color:var(--izzy-ink)]">
-            {file ? file.name : "Drop or choose PDF / PNG / JPG"}
+            {file?.name ||
+              fileInputRef.current?.files?.[0]?.name ||
+              "Drop or choose PDF / PNG / JPG"}
           </span>
           <input
+            ref={fileInputRef}
             type="file"
-            accept=".pdf,image/png,image/jpeg"
+            accept=".pdf,image/png,image/jpeg,.png,.jpg,.jpeg"
             className="sr-only"
             onChange={onFile}
           />
@@ -139,7 +153,7 @@ export function DecodePolicy() {
 
         <button
           type="submit"
-          disabled={!file || busy}
+          disabled={busy}
           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[color:var(--izzy-coral)] px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
