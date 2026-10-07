@@ -133,3 +133,92 @@ export async function createUser(input: {
 export function storeBackend(): "upstash" | "memory" {
   return redisConfigured() ? "upstash" : "memory";
 }
+
+const STASH_PREFIX = "ohstuffing:stash:";
+const STASH_MAX_BYTES = 450_000;
+
+export type UserStash = Record<string, unknown>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function countArray(state: UserStash, key: string): number {
+  const value = state[key];
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function countObject(state: UserStash, key: string): number {
+  const value = state[key];
+  return isRecord(value) ? Object.keys(value).length : 0;
+}
+
+/** True when the stash has lists or plans worth keeping. Photos do not count. */
+export function stashHasContent(state: UserStash | null | undefined): boolean {
+  if (!state) return false;
+  const lists = Array.isArray(state.lists) ? state.lists : [];
+  let items = 0;
+  if (lists.length) {
+    for (const list of lists) {
+      if (isRecord(list) && Array.isArray(list.items)) items += list.items.length;
+    }
+  } else if (Array.isArray(state.items)) {
+    items = state.items.length;
+  }
+  return (
+    items > 0 ||
+    countArray(state, "meals") > 0 ||
+    countArray(state, "recipes") > 0 ||
+    countArray(state, "tracked") > 0 ||
+    countArray(state, "events") > 0 ||
+    countArray(state, "myStores") > 0 ||
+    countArray(state, "customDepts") > 0 ||
+    countObject(state, "regulars") > 0 ||
+    countObject(state, "learned") > 0 ||
+    countObject(state, "learnedMeals") > 0 ||
+    countObject(state, "learnedEvents") > 0 ||
+    countObject(state, "pantryItems") > 0 ||
+    countObject(state, "priceEntries") > 0
+  );
+}
+
+function stripPhotos(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripPhotos);
+  if (!isRecord(value)) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "pantryPhotos" || key === "dataUrl") continue;
+    if (typeof child === "string" && child.startsWith("data:image/")) continue;
+    out[key] = stripPhotos(child);
+  }
+  return out;
+}
+
+export function sanitizeStash(value: unknown): UserStash | null {
+  if (!isRecord(value)) return null;
+  return stripPhotos(value) as UserStash;
+}
+
+export async function getUserStash(userId: string): Promise<UserStash | null> {
+  const raw = await kvGet(STASH_PREFIX + userId);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return sanitizeStash(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveUserStash(userId: string, incoming: UserStash): Promise<void> {
+  const cleaned = sanitizeStash(incoming);
+  if (!cleaned) throw new Error("List data was empty.");
+  const existing = await getUserStash(userId);
+  // A blank phone must not wipe lists already saved on the account.
+  if (stashHasContent(existing) && !stashHasContent(cleaned)) return;
+  const json = JSON.stringify(cleaned);
+  if (json.length > STASH_MAX_BYTES) {
+    throw new Error("List data is too large to save on the account.");
+  }
+  await kvSet(STASH_PREFIX + userId, json);
+}

@@ -2106,7 +2106,12 @@
           loginGateHold = false;
           applyAccessUI();
           setMsg(msg, hasProAccess() ? "Welcome back — Pro unlocked!" : "Account ready — start a 7-day Pro trial, or continue free.", "ok");
-          if(isBetaTester()){
+          var synced = await syncAccountStash();
+          if(synced === "saved" || synced === "merged"){
+            showBetaToast("Signed in. Lists from this phone are saved on your account.");
+          } else if(synced === "loaded"){
+            showBetaToast("Signed in. Your saved lists are on this phone.");
+          } else if(isBetaTester()){
             showBetaToast("Signed in" + (accessSession.email ? " as " + accessSession.email : "") + ". Tester unlock stays on this phone.");
           }
           if(authPassword){
@@ -2219,6 +2224,7 @@
     if(betaToastPending) showBetaToast();
     refreshSession().then(function(session){
       setMsg(document.getElementById("authMsg"), "", null);
+      if(session && session.authenticated) syncAccountStash();
       var params = new URLSearchParams(window.location.search);
       if(params.get("checkout") === "success"){
         if(session.subscribed || session.isPro){
@@ -2872,6 +2878,238 @@
   }
   ensureShoppingLists();
 
+  var accountStashReady = false;
+  var stashApplying = false;
+  var stashSyncing = false;
+  var stashSyncPromise = null;
+  var stashPushTimer = null;
+
+  function hasUserContent(s){
+    if(!s) return false;
+    var lists = Array.isArray(s.lists) ? s.lists : [];
+    var items = 0;
+    if(lists.length){
+      lists.forEach(function(list){
+        items += (list && Array.isArray(list.items)) ? list.items.length : 0;
+      });
+    } else if(Array.isArray(s.items)){
+      items = s.items.length;
+    }
+    function n(arr){ return Array.isArray(arr) ? arr.length : 0; }
+    function o(obj){ return obj && typeof obj === "object" ? Object.keys(obj).length : 0; }
+    return items > 0 || n(s.meals) || n(s.recipes) || n(s.tracked) || n(s.events) || n(s.myStores) || n(s.customDepts)
+      || o(s.regulars) || o(s.learned) || o(s.learnedMeals) || o(s.learnedEvents) || o(s.pantryItems) || o(s.priceEntries);
+  }
+  function mergeObjects(localObj, remoteObj){
+    var out = {};
+    var remote = remoteObj && typeof remoteObj === "object" ? remoteObj : {};
+    var local = localObj && typeof localObj === "object" ? localObj : {};
+    Object.keys(remote).forEach(function(k){ out[k] = remote[k]; });
+    Object.keys(local).forEach(function(k){ out[k] = local[k]; });
+    return out;
+  }
+  function mergeById(localArr, remoteArr){
+    var map = {};
+    var order = [];
+    function take(arr, overwrite){
+      (arr || []).forEach(function(item){
+        if(!item || typeof item !== "object") return;
+        if(!item.id){
+          order.push({ raw: item });
+          return;
+        }
+        if(!Object.prototype.hasOwnProperty.call(map, item.id)) order.push(item.id);
+        if(!map[item.id] || overwrite) map[item.id] = item;
+      });
+    }
+    take(remoteArr, false);
+    take(localArr, true);
+    return order.map(function(entry){
+      return entry && entry.raw ? entry.raw : map[entry];
+    });
+  }
+  function listsOf(s){
+    if(s && Array.isArray(s.lists) && s.lists.length) return s.lists;
+    var items = (s && Array.isArray(s.items)) ? s.items : [];
+    return [{ id: "list-default", name: "Groceries", items: items }];
+  }
+  function mergeLists(localState, remoteState){
+    var localLists = listsOf(localState);
+    var remoteLists = listsOf(remoteState);
+    var byId = {};
+    function copyList(list){
+      return {
+        id: list.id,
+        name: list.name,
+        items: Array.isArray(list.items) ? list.items.slice() : []
+      };
+    }
+    remoteLists.forEach(function(list){
+      if(list && list.id) byId[list.id] = copyList(list);
+    });
+    localLists.forEach(function(list){
+      if(!list || !list.id) return;
+      if(!byId[list.id]){
+        byId[list.id] = copyList(list);
+        return;
+      }
+      var merged = byId[list.id];
+      if(list.name) merged.name = list.name;
+      merged.items = mergeById(list.items, merged.items);
+    });
+    var order = [];
+    remoteLists.concat(localLists).forEach(function(list){
+      if(list && list.id && order.indexOf(list.id) === -1 && byId[list.id]) order.push(list.id);
+    });
+    return order.map(function(id){ return byId[id]; });
+  }
+  function mergePriceEntries(localObj, remoteObj){
+    var out = {};
+    var remote = remoteObj && typeof remoteObj === "object" ? remoteObj : {};
+    var local = localObj && typeof localObj === "object" ? localObj : {};
+    Object.keys(remote).forEach(function(k){ out[k] = Object.assign({}, remote[k]); });
+    Object.keys(local).forEach(function(k){ out[k] = Object.assign({}, out[k] || {}, local[k]); });
+    return out;
+  }
+  function mergeStates(localState, remoteState){
+    var lists = mergeLists(localState, remoteState);
+    var active = localState.activeListId;
+    if(!lists.some(function(list){ return list.id === active; })) active = remoteState.activeListId;
+    if(!lists.some(function(list){ return list.id === active; })) active = lists[0] && lists[0].id;
+    var localWaste = localState.wasteStats || {};
+    var remoteWaste = remoteState.wasteStats || {};
+    return {
+      order: (localState.order && localState.order.length) ? localState.order.slice() : (remoteState.order || []).slice(),
+      learned: mergeObjects(localState.learned, remoteState.learned),
+      aisleMisses: mergeObjects(localState.aisleMisses, remoteState.aisleMisses),
+      regulars: mergeObjects(localState.regulars, remoteState.regulars),
+      meals: mergeById(localState.meals, remoteState.meals),
+      learnedMeals: mergeObjects(localState.learnedMeals, remoteState.learnedMeals),
+      storeUrl: localState.storeUrl || remoteState.storeUrl || "",
+      tracked: mergeById(localState.tracked, remoteState.tracked),
+      wasteStats: {
+        eaten: Math.max(Number(localWaste.eaten) || 0, Number(remoteWaste.eaten) || 0),
+        tossed: Math.max(Number(localWaste.tossed) || 0, Number(remoteWaste.tossed) || 0)
+      },
+      pantryItems: mergeObjects(localState.pantryItems, remoteState.pantryItems),
+      recipes: mergeById(localState.recipes, remoteState.recipes),
+      events: mergeById(localState.events, remoteState.events),
+      learnedEvents: mergeObjects(localState.learnedEvents, remoteState.learnedEvents),
+      myStores: mergeById(localState.myStores, remoteState.myStores),
+      priceEntries: mergePriceEntries(localState.priceEntries, remoteState.priceEntries),
+      prefs: localState.prefs || remoteState.prefs,
+      customDepts: mergeById(localState.customDepts, remoteState.customDepts),
+      hideDealBanner: !!(localState.hideDealBanner || remoteState.hideDealBanner),
+      lastFlyerStore: localState.lastFlyerStore || remoteState.lastFlyerStore || "",
+      lists: lists,
+      activeListId: active
+    };
+  }
+  function refreshSavedViews(){
+    if(typeof render === "function") render();
+    if(typeof renderListSwitcher === "function") renderListSwitcher();
+    if(typeof renderWasteList === "function") renderWasteList();
+    if(typeof renderMealList === "function") renderMealList();
+    if(typeof renderRecipeList === "function") renderRecipeList();
+    if(typeof renderEventList === "function") renderEventList();
+    if(typeof renderPantryChips === "function") renderPantryChips();
+  }
+  function applyAccountState(incoming){
+    var photos = state.pantryPhotos;
+    Object.keys(state).forEach(function(k){ delete state[k]; });
+    Object.keys(incoming || {}).forEach(function(k){
+      if(k === "pantryPhotos" || k === "items") return;
+      state[k] = incoming[k];
+    });
+    state.pantryPhotos = Array.isArray(photos) ? photos : [];
+    ensureShoppingLists();
+    var wasReady = accountStashReady;
+    accountStashReady = false;
+    saveState();
+    accountStashReady = wasReady;
+  }
+  function accountStashSnapshot(){
+    syncActiveListItems();
+    var itemsRef = state.items;
+    var photos = state.pantryPhotos;
+    delete state.items;
+    delete state.pantryPhotos;
+    var copy;
+    try { copy = JSON.parse(JSON.stringify(state)); }
+    finally {
+      state.items = itemsRef;
+      state.pantryPhotos = photos;
+    }
+    return copy;
+  }
+  function pushAccountStash(){
+    if(!accessSession || !accessSession.authenticated) return Promise.resolve();
+    return fetch("/api/stash", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: accountStashSnapshot() })
+    }).then(function(res){
+      if(!res.ok) return res.json().catch(function(){ return {}; }).then(function(data){
+        throw new Error((data && data.error) || "Could not save lists");
+      });
+    });
+  }
+  function scheduleAccountPush(){
+    if(!accountStashReady || stashApplying || !accessSession || !accessSession.authenticated) return;
+    if(stashPushTimer) clearTimeout(stashPushTimer);
+    stashPushTimer = setTimeout(function(){
+      stashPushTimer = null;
+      pushAccountStash().catch(function(){});
+    }, 800);
+  }
+  function syncAccountStash(){
+    if(!accessSession || !accessSession.authenticated) return Promise.resolve("skipped");
+    if(stashSyncing && stashSyncPromise) return stashSyncPromise;
+    stashSyncing = true;
+    stashSyncPromise = fetch("/api/stash", { credentials: "same-origin" })
+      .then(function(res){
+        if(res.status === 401) return { skipped: true };
+        if(!res.ok) throw new Error("Could not load saved lists");
+        return res.json();
+      })
+      .then(function(data){
+        if(data && data.skipped) return "skipped";
+        var remote = data && data.state;
+        var localHas = hasUserContent(state);
+        var remoteHas = hasUserContent(remote);
+        if(!remoteHas && localHas){
+          accountStashReady = true;
+          return pushAccountStash().then(function(){ return "saved"; });
+        }
+        if(remoteHas && !localHas){
+          stashApplying = true;
+          try { applyAccountState(remote); }
+          finally { stashApplying = false; }
+          accountStashReady = true;
+          refreshSavedViews();
+          return "loaded";
+        }
+        if(remoteHas && localHas){
+          var merged = mergeStates(state, remote);
+          stashApplying = true;
+          try { applyAccountState(merged); }
+          finally { stashApplying = false; }
+          accountStashReady = true;
+          refreshSavedViews();
+          return pushAccountStash().then(function(){ return "merged"; });
+        }
+        accountStashReady = true;
+        return "empty";
+      })
+      .catch(function(){ return "error"; })
+      .finally(function(){
+        stashSyncing = false;
+        stashSyncPromise = null;
+      });
+    return stashSyncPromise;
+  }
+
   var _saveStateRaw = saveState;
   saveState = function(){
     syncActiveListItems();
@@ -2880,6 +3118,7 @@
     delete state.items;
     _saveStateRaw();
     state.items = itemsRef;
+    scheduleAccountPush();
   };
 
   function keywordIsPantry(text){
