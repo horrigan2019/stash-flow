@@ -1219,9 +1219,13 @@
       <div id="wasteNameRow">
         <input type="text" id="wasteName" placeholder="e.g. Cream cheese" autocomplete="off" style="width:100%;box-sizing:border-box;">
       </div>
+      <div id="wasteDateRow">
+        <label for="wasteMadeDate" id="wasteMadeDateLabel" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">When did you make or order it?</label>
+        <input type="date" id="wasteMadeDate" style="width:100%;box-sizing:border-box;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:.95rem;">
+        <p class="hint" style="margin:6px 0 0;">You can pick a past day if it was made or ordered earlier — the countdown starts from that date.</p>
+        <p class="hint" id="wasteDateStatus" hidden style="margin:6px 0 0;color:var(--danger);"></p>
+      </div>
       <div id="wasteMadeRow" hidden>
-        <label for="wasteMadeDate" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">When did you get or make it?</label>
-        <input type="date" id="wasteMadeDate">
         <button type="button" id="wasteAskBtn">Ask how long it's good</button>
         <p class="hint" id="wasteAskAnswer" hidden style="margin:0;"></p>
       </div>
@@ -4289,14 +4293,22 @@
     var kind = wasteKindSelect.value;
     var isLeftover = kind === "leftover";
     var isMade = kind === "made";
+    var isOpened = kind === "opened";
     wasteMealRow.hidden = !isLeftover;
-    wasteMadeRow.hidden = !isMade;
+    wasteMadeRow.hidden = !isMade; // "Ask how long" stays takeout/made-only
     var pickedRealMeal = isLeftover && wasteMealSelect.value && wasteMealSelect.value !== "__custom__";
     wasteNameRow.hidden = pickedRealMeal;
+    var dateLabel = document.getElementById("wasteMadeDateLabel");
+    if(dateLabel){
+      if(isOpened) dateLabel.textContent = "When did you open it?";
+      else if(isMade) dateLabel.textContent = "When did you get or make it?";
+      else dateLabel.textContent = "When did you make or order it?";
+    }
     if(isMade) wasteNameInput.placeholder = "e.g. Saturday takeout, homemade lasagna";
     else if(!isLeftover) wasteNameInput.placeholder = "e.g. Cream cheese, Ketchup, Salsa";
     else wasteNameInput.placeholder = "Type the leftover's name";
     wasteSubmitBtn.textContent = isMade ? "Add to countdown" : "Start the clock";
+    if(!wasteMadeDate.value) wasteMadeDate.value = todayStr();
     if(!isMade){
       wasteAsked = null;
       showMadeAnswer("");
@@ -4400,19 +4412,25 @@
       name = wasteNameInput.value.trim();
     }
     if(!name) return;
-    var startDate = todayStr();
+    var startDate = wasteMadeDate.value || todayStr();
+    if(!wasteMadeDate.value){
+      wasteMadeDate.value = startDate;
+    }
+    if(startDate > todayStr()){
+      var futureMsg = "That day is still ahead. Pick the day you already made, ordered, or opened it.";
+      var dateStatus = document.getElementById("wasteDateStatus");
+      if(kind === "made") showMadeAnswer(futureMsg);
+      if(dateStatus){
+        dateStatus.hidden = false;
+        dateStatus.textContent = futureMsg;
+      }
+      wasteMadeDate.focus();
+      return;
+    }
+    var dateStatusClear = document.getElementById("wasteDateStatus");
+    if(dateStatusClear){ dateStatusClear.hidden = true; dateStatusClear.textContent = ""; }
     var days;
     if(kind === "made"){
-      startDate = wasteMadeDate.value;
-      if(!startDate){
-        showMadeAnswer("Pick the day you got it or made it.");
-        wasteMadeDate.focus();
-        return;
-      }
-      if(startDate > todayStr()){
-        showMadeAnswer("That day is still ahead. Pick the day you already got it or made it.");
-        return;
-      }
       if(!(wasteAsked && wasteAsked.name === name && wasteAsked.date === startDate)){
         var answer = madeShelfAnswer(name, startDate);
         wasteAsked = { name: name, date: startDate, days: answer.days, until: answer.until };
