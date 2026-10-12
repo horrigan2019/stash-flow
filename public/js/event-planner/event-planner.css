@@ -1,0 +1,110 @@
+/* Payday schedule + calendar export — Event Planner only */
+
+.ep-pay-panel {
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 12px 14px;
+  margin: 12px 0 4px;
+}
+.ep-pay-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ep-pay-toggle input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.ep-pay-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.ep-pay-fields label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.ep-pay-fields select,
+.ep-pay-fields input[type="date"] {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.ep-run-card {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 12px;
+  margin-top: 10px;
+}
+.ep-run-card.ep-payday {
+  border-color: var(--accent);
+}
+.ep-run-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+.ep-run-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.ep-cal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ep-cal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+.ep-cal-btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.ep-all-cal {
+  margin-top: 12px;
+}
+.ep-milestone-head {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 4px;
+}

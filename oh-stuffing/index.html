@@ -1470,7 +1470,7 @@
     </form>
     <div id="eventListArea"></div>
     <div class="meal-empty" id="eventEmpty" hidden>No events yet — plan one above and we'll spread out what to buy when.</div>
-    <div class="hint" style="margin-top:14px;">Heads up: this shows what's ready to buy whenever you open the app — it can't send you a push notification on its own yet.</div>
+    <div class="hint" style="margin-top:14px;">Tip: turn on pay-schedule alignment below, then add shopping runs to your phone calendar for a 9:00 AM reminder.</div>
     <button class="dialog-close" id="closeEvent" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
@@ -7015,6 +7015,8 @@
     eventDialog.showModal();
   });
   document.getElementById("closeEvent").addEventListener("click", function(){ eventDialog.close(); });
+  // Let the payday panel re-render milestones when the schedule changes.
+  window.OhEventPlannerRefresh = renderEventList;
 
   var eventSuggestAgainBtn = document.getElementById("eventSuggestAgain");
   var eventSuggestHint = document.getElementById("eventSuggestHint");
@@ -7115,6 +7117,11 @@
       head.appendChild(nameEl);
       head.appendChild(rightWrap);
       card.appendChild(head);
+
+      // Payday-aligned shopping milestones + calendar export (isolated module).
+      if(window.OhEventPlanner && typeof window.OhEventPlanner.appendShoppingMilestones === "function"){
+        window.OhEventPlanner.appendShoppingMilestones(card, ev);
+      }
 
       var ready = ev.items.filter(function(it){ return !it.addedToList && it.earliestBuyDate <= today; });
       var waiting = ev.items.filter(function(it){ return !it.addedToList && it.earliestBuyDate > today; });
@@ -8278,6 +8285,8 @@
 })();
 </script>
 <link rel="stylesheet" href="/js/recipe-vault/recipe-vault.css">
+<link rel="stylesheet" href="/js/event-planner/event-planner.css">
 <script type="module" src="/js/recipe-vault/index.js"></script>
+<script type="module" src="/js/event-planner/index.js"></script>
 </body>
 </html>
