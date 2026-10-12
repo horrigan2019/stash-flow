@@ -1318,8 +1318,11 @@
   <div class="dialog-inner">
     <h2>Recipe vault</h2>
     <div class="hint" id="recipeUnavailableNote" style="margin-bottom:10px;" hidden>Saving and viewing recipes works anytime. Photo scan, scaling, and diet swaps are temporarily unavailable — try again later.</div>
+    <button type="button" class="rv-add-btn" id="rvAddCreateBtn">+ Add / Create Recipe</button>
     <button type="button" class="chip-btn" id="openRecipeImportBtn" style="width:100%;justify-content:center;margin-bottom:12px;padding:12px 14px;font-size:.95rem;">🔗 Import Recipe from Link / Social Media</button>
-    <form class="meal-form" id="recipeForm">
+    <details id="recipeLegacyImporter" style="margin-bottom:12px;">
+      <summary style="cursor:pointer;font-size:.85rem;color:var(--muted);font-weight:600;">Quick paste importer</summary>
+    <form class="meal-form" id="recipeForm" style="margin-top:10px;">
       <div>
         <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Recipe name</label>
         <input type="text" id="recipeTitle" placeholder="e.g. Grandma's Lasagna" autocomplete="off">
@@ -1350,8 +1353,9 @@
       </div>
       <button type="submit">Save recipe</button>
     </form>
+    </details>
     <ul class="meal-list" id="recipeList"></ul>
-    <div class="meal-empty" id="recipeEmpty" hidden>No recipes saved yet — paste one in above, or scan a photo of one.</div>
+    <div class="meal-empty" id="recipeEmpty" hidden>No recipes saved yet — tap + Add / Create Recipe, or import from a link.</div>
     <button class="dialog-close" id="closeRecipeVault" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
@@ -1371,18 +1375,15 @@
     </div>
 
     <div style="margin-top:14px;">
-      <label style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">Adapt for a diet</label>
-      <div class="waste-form-row">
-        <select id="dietSelect" class="dept-select" style="flex:1;">
-          <option value="vegetarian">Vegetarian</option>
-          <option value="vegan">Vegan</option>
-          <option value="gluten-free">Gluten-free</option>
-          <option value="dairy-free">Dairy-free</option>
-          <option value="low-carb">Low-carb</option>
-          <option value="nut-free">Nut-free</option>
-        </select>
-        <button type="button" id="adaptBtn" class="chip-btn">Adapt it</button>
-      </div>
+      <button type="button" id="adaptBtn" class="chip-btn" style="width:100%;">🥗 Adapt for Diet</button>
+      <select id="dietSelect" class="dept-select" hidden aria-hidden="true">
+        <option value="vegetarian">Vegetarian</option>
+        <option value="vegan">Vegan</option>
+        <option value="gluten-free">Gluten-free</option>
+        <option value="dairy-free">Dairy-free</option>
+        <option value="low-carb">Low-carb</option>
+        <option value="nut-free">Nut-free</option>
+      </select>
     </div>
 
     <div class="hint" id="recipeActionStatus" style="margin-top:8px;"></div>
@@ -6555,8 +6556,19 @@
       var body = document.createElement("div");
       body.style.flex = "1";
       body.style.cursor = "pointer";
-      body.innerHTML = '<div class="meal-name">' + r.title + '</div><div class="meal-ing">Serves ' + r.servings + '</div>';
-      body.addEventListener("click", function(){
+      var dietHint = (r.diets && r.diets.length) ? (" · " + r.diets.join(", ")) : "";
+      body.innerHTML = '<div class="meal-name">' + r.title + '</div><div class="meal-ing">Serves ' + r.servings + dietHint + '</div>' +
+        '<div class="rv-card-actions">' +
+        '<button type="button" class="chip-btn rv-adapt-card-btn">Adapt for Diet</button>' +
+        '</div>';
+      body.addEventListener("click", function(ev){
+        if(ev.target && ev.target.closest && ev.target.closest(".rv-adapt-card-btn")){
+          ev.stopPropagation();
+          if(window.OhRecipeVault && typeof window.OhRecipeVault.openDietary === "function"){
+            window.OhRecipeVault.openDietary(r);
+          }
+          return;
+        }
         recipeDialog.close();
         openRecipeDetail(r);
       });
@@ -6622,6 +6634,10 @@
 
   document.getElementById("adaptBtn").addEventListener("click", function(){
     if(!currentRecipe) return;
+    if(window.OhRecipeVault && typeof window.OhRecipeVault.openDietary === "function"){
+      window.OhRecipeVault.openDietary(currentRecipe);
+      return;
+    }
     var diet = document.getElementById("dietSelect").value;
     var prompt = "Here is a recipe:\n\n" + currentRecipe.text +
       "\n\nRewrite it to be " + diet + "-friendly. Substitute or remove any ingredients that don't fit, adjust instructions if the substitutions need it, " +
@@ -6632,23 +6648,71 @@
   document.getElementById("addRecipeToListBtn").addEventListener("click", function(){
     var statusEl = document.getElementById("recipeActionStatus");
     if(!currentRecipe){ return; }
+    var resultBox = document.getElementById("recipeResultBox");
+    var resultTextEl = document.getElementById("recipeResultText");
+    var sourceText = currentRecipe.text;
+    var mealTag = currentRecipe.title;
+    if(resultBox && !resultBox.hidden && resultTextEl && resultTextEl.textContent.trim()){
+      sourceText = resultTextEl.textContent.trim();
+      var resultLabel = document.getElementById("recipeResultLabel");
+      if(resultLabel && resultLabel.textContent.trim()){
+        mealTag = currentRecipe.title + " — " + resultLabel.textContent.trim();
+      }
+    }
     if(!hasTextAI()){ statusEl.textContent = needApiKeyMessage(); return; }
     statusEl.textContent = "Pulling out the ingredients…";
     aiJson(
       "Extract ONLY the ingredient list from this recipe, one ingredient per array entry, written the way you'd jot it on a shopping list " +
-      "(quantity plus item, e.g. \"2 cups flour\"). Reply with ONLY a JSON array of strings.\n\n" + currentRecipe.text,
+      "(quantity plus item, e.g. \"2 cups flour\" or \"almond flour\"). Reply with ONLY a JSON array of strings.\n\n" + sourceText,
       { modelTier: "quick" }
     ).then(function(list){
       if(!Array.isArray(list) || !list.length){
         statusEl.textContent = "Couldn't find a clear ingredient list in this recipe.";
         return;
       }
-      addItems(list.join(", "), currentRecipe.title);
+      addItems(list.join(", "), mealTag);
       statusEl.textContent = "Added " + list.length + " ingredient" + (list.length === 1 ? "" : "s") + " to your list.";
     }).catch(function(e){
       statusEl.textContent = sampleErrorMessage(e && e.code, e && e.message);
     });
   });
+
+  function saveRecipeFromVault(recipe){
+    if(!recipe || !recipe.title || !recipe.text) return null;
+    var row = {
+      id: "r"+Date.now()+Math.random().toString(16).slice(2),
+      title: String(recipe.title).trim(),
+      servings: parseInt(recipe.servings, 10) || 4,
+      text: String(recipe.text).trim()
+    };
+    if(recipe.prepTime) row.prepTime = String(recipe.prepTime);
+    if(recipe.cookTime) row.cookTime = String(recipe.cookTime);
+    if(recipe.notes) row.notes = String(recipe.notes);
+    if(recipe.source) row.source = String(recipe.source);
+    if(recipe.diets) row.diets = recipe.diets.slice();
+    if(recipe.parentId) row.parentId = recipe.parentId;
+    state.recipes.push(row);
+    saveState();
+    renderRecipeList();
+    return row;
+  }
+
+  function updateRecipeInVault(id, patch){
+    var idx = state.recipes.findIndex(function(r){ return r.id === id; });
+    if(idx < 0) return null;
+    var updated = Object.assign({}, state.recipes[idx], patch || {});
+    state.recipes[idx] = updated;
+    saveState();
+    if(currentRecipe && currentRecipe.id === id){
+      currentRecipe = updated;
+      document.getElementById("recipeDetailTitle").textContent = updated.title;
+      document.getElementById("recipeDetailMeta").textContent = "Serves " + updated.servings + " as written" +
+        (updated.diets && updated.diets.length ? " · " + updated.diets.join(", ") : "");
+      document.getElementById("recipeDetailText").textContent = updated.text;
+    }
+    renderRecipeList();
+    return updated;
+  }
 
   document.getElementById("deleteRecipeBtn").addEventListener("click", function(){
     if(!currentRecipe) return;
@@ -8195,7 +8259,25 @@
       navigator.serviceWorker.register("/sw.js").catch(function(){ /* offline shell optional */ });
     });
   }
+
+  // Bridge for isolated Recipe Vault create / diet modules (public/js/recipe-vault/).
+  // Keep aisle sorting + fridge scanner untouched — only expose helpers needed here.
+  window.OhStuffingBridge = Object.assign(window.OhStuffingBridge || {}, {
+    addItems: addItems,
+    aiJson: aiJson,
+    aiText: aiText,
+    hasTextAI: hasTextAI,
+    hasVisionAI: hasVisionAI,
+    needApiKeyMessage: needApiKeyMessage,
+    sampleErrorMessage: sampleErrorMessage,
+    compressImageFile: compressImageFile,
+    saveRecipe: saveRecipeFromVault,
+    updateRecipe: updateRecipeInVault,
+    refreshRecipeList: renderRecipeList
+  });
 })();
 </script>
+<link rel="stylesheet" href="/js/recipe-vault/recipe-vault.css">
+<script type="module" src="/js/recipe-vault/index.js"></script>
 </body>
 </html>
