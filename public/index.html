@@ -8279,11 +8279,8 @@
     if(installHint) installHint.textContent = "You're using the installed Oh Stuffing! app.";
   }
 
-  if("serviceWorker" in navigator){
-    window.addEventListener("load", function(){
-      navigator.serviceWorker.register("/sw.js").catch(function(){ /* offline shell optional */ });
-    });
-  }
+  // Service worker registration + update banner live in /js/update-prompt/index.js
+  // (isolated — do not register /sw.js a second time here).
 
   // Bridge for isolated Recipe Vault create / diet modules (public/js/recipe-vault/).
   // Keep aisle sorting + fridge scanner untouched — only expose helpers needed here.
@@ -8306,5 +8303,7 @@
 <link rel="stylesheet" href="/js/event-planner/event-planner.css">
 <script type="module" src="/js/recipe-vault/index.js"></script>
 <script type="module" src="/js/event-planner/index.js"></script>
+<link rel="stylesheet" href="/js/update-prompt/update-prompt.css">
+<script src="/js/update-prompt/index.js"></script>
 </body>
 </html>
