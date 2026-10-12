@@ -1,0 +1,62 @@
+/* Isolated PWA update banner — does not alter list/aisle styles */
+
+#ohUpdateBanner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+#ohUpdateBanner[hidden] {
+  display: none !important;
+}
+.oh-update-card {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.oh-update-msg {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.oh-update-actions {
+  display: flex;
+  gap: 8px;
+}
+.oh-update-btn {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 10px 14px;
+}
+.oh-update-btn-primary {
+  flex: 1;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.oh-update-btn-later {
+  min-width: 48px;
+  background: var(--surface);
+  color: var(--ink);
+}

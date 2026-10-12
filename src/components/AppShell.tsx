@@ -9,6 +9,7 @@ import { IzzyDashboard } from "@/components/dashboard/IzzyDashboard";
 import { PantrySettings } from "@/components/PantrySettings";
 import { clearCorruptedGroceryList } from "@/lib/storage";
 import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
+import { UpdatePrompt } from "@/components/UpdatePrompt";
 
 function AppShellInner() {
   const [activeTab, setActiveTab] = useState<TabId>("weekly-stash");
@@ -55,6 +56,7 @@ function AppShellInner() {
         ) : null}
       </main>
       <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+      <UpdatePrompt />
     </div>
   );
 }
