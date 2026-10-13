@@ -133,6 +133,12 @@
   .more-menu .chip-btn{
     width:100%; text-align:left; border-radius:12px; padding:12px 14px; font-size:.95rem;
   }
+  .main-view-tabs{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;
+  }
+  .main-view-tabs .chip-btn[aria-current="page"]{
+    background:var(--accent); color:var(--accent-ink); border-color:transparent;
+  }
   .dinner-cta{
     display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
     width:100%; margin-top:12px; gap:2px;
@@ -886,12 +892,12 @@
   <header class="top">
     <div class="shopping-bar" id="shoppingBar" hidden>
       <span>Shopping</span>
-      <button type="button" id="shoppingDoneBtn">Done</button>
+      <button type="button" id="shoppingDoneBtn" data-testid="modal-done-btn">Done</button>
     </div>
     <div class="shopping-bar" id="listBar" hidden>
       <span>List</span>
       <div class="list-bar-actions">
-        <button type="button" id="listModeCloseBtn">Close</button>
+        <button type="button" id="listModeCloseBtn" data-testid="modal-done-btn">Close</button>
         <button type="button" id="listModeSaveBtn" class="list-save-btn">Save</button>
       </div>
     </div>
@@ -911,7 +917,7 @@
           </div>
         </div>
         <div class="brand-actions">
-          <button class="gear" id="moreFeaturesBtn" type="button" aria-label="More features" aria-haspopup="true" aria-expanded="false" aria-controls="moreFeaturesMenu">☰</button>
+          <button class="gear" id="moreFeaturesBtn" type="button" data-testid="menu-trigger" aria-label="More features" aria-haspopup="true" aria-expanded="false" aria-controls="moreFeaturesMenu">☰</button>
           <button class="gear" id="settingsBtn" aria-label="Settings" type="button">⚙️</button>
         </div>
       </div>
@@ -938,7 +944,12 @@
 
     <div class="list-switcher" id="listSwitcher" aria-label="Shopping lists"></div>
 
-    <button class="dinner-cta" id="dinnerScanBtn" type="button">
+    <nav class="main-view-tabs" aria-label="Main views">
+      <button type="button" class="chip-btn" id="tabGroceriesBtn" data-testid="tab-groceries" aria-current="page">Groceries</button>
+      <button type="button" class="chip-btn" id="tabManageNavBtn" data-testid="tab-manage">Manage</button>
+    </nav>
+
+    <button class="dinner-cta" id="dinnerScanBtn" type="button" data-testid="tab-dinner">
       <span class="dinner-cta-title">What's For Dinner</span>
       <span class="dinner-cta-sub">Scan the fridge &amp; pantry</span>
     </button>
@@ -982,7 +993,7 @@
       <input type="text" id="newListName" placeholder="Name a new list" maxlength="40" autocomplete="off">
       <button type="submit">Add list</button>
     </form>
-    <button class="dialog-close" id="closeManageLists" type="button">Done</button>
+    <button class="dialog-close" id="closeManageLists" type="button" data-testid="modal-done-btn">Done</button>
   </div>
 </dialog>
 
@@ -1075,7 +1086,7 @@
       </div>
       <button class="chip-btn" id="installAppBtn" type="button" hidden style="margin-top:8px;">📲 Install app</button>
     </div>
-    <button class="dialog-close" id="closeSettings" type="button">Done</button>
+    <button class="dialog-close" id="closeSettings" type="button" data-testid="modal-done-btn">Done</button>
   </div>
 </dialog>
 
@@ -1190,7 +1201,7 @@
     <textarea id="uploadListText" rows="4" placeholder="Or paste the list here, one item per line" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;resize:vertical;"></textarea>
     <button type="button" class="dialog-close" id="uploadListRunBtn" style="margin-top:12px;">Sort onto my list</button>
     <div class="hint" id="uploadListStatus" style="margin-top:8px;"></div>
-    <button type="button" class="dialog-close" id="closeUploadList" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button type="button" class="dialog-close" id="closeUploadList" data-testid="modal-done-btn" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1251,7 +1262,7 @@
       <div class="produce-tip-box" id="produceTipBox" hidden></div>
     </div>
 
-    <button class="dialog-close" id="closeWaste" type="button" style="margin-top:16px;">Done</button>
+    <button class="dialog-close" id="closeWaste" type="button" data-testid="modal-done-btn" style="margin-top:16px;">Done</button>
   </div>
 </dialog>
 
@@ -1290,7 +1301,7 @@
       <div id="pantryMatches" style="margin-top:10px;"></div>
     </div>
 
-    <button class="dialog-close" id="closePantry" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closePantry" type="button" data-testid="modal-done-btn" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1303,7 +1314,7 @@
     <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead. Photos are kept on this device only (shared with What’s My Stock).</div>
     <button class="dialog-close" id="runDinnerScanBtn" type="button">🍳 Get dinner ideas</button>
     <div class="hint" id="dinnerScanStatus" style="margin-top:8px;"></div>
-    <button class="dialog-close" id="closeDinnerScan" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeDinnerScan" type="button" data-testid="modal-done-btn" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1360,7 +1371,7 @@
     </details>
     <ul class="meal-list" id="recipeList"></ul>
     <div class="meal-empty" id="recipeEmpty" hidden>No recipes saved yet — tap + Add / Create Recipe, or import from a link.</div>
-    <button class="dialog-close" id="closeRecipeVault" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeRecipeVault" type="button" data-testid="modal-done-btn" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1475,7 +1486,7 @@
     <div id="eventListArea"></div>
     <div class="meal-empty" id="eventEmpty" hidden>No events yet — plan one above and we'll spread out what to buy when.</div>
     <div class="hint" style="margin-top:14px;">Tip: turn on pay-schedule alignment, then add shopping runs to your phone calendar for a 9:00 AM reminder.</div>
-    <button class="dialog-close" id="closeEvent" type="button" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeEvent" type="button" data-testid="modal-done-btn" style="margin-top:10px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1486,7 +1497,7 @@
     <div id="storeListsChips" class="deal-banner-actions" style="margin-bottom:12px;" hidden></div>
     <div class="meal-empty" id="storeListsEmpty" hidden>No store lists yet. Check a flyer and save it as Meijer List or Walmart List, then it shows up here.</div>
     <div id="storeListsDetail"></div>
-    <button class="dialog-close" id="closeStoreLists" type="button" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeStoreLists" type="button" data-testid="modal-done-btn" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1495,7 +1506,7 @@
     <h2 id="dealPlanTitle">Your shopping plan</h2>
     <p class="hint" id="dealPlanSummary" style="margin-bottom:12px;"></p>
     <div id="dealPlanDetail"></div>
-    <button class="dialog-close" id="closeDealPlan" type="button" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeDealPlan" type="button" data-testid="modal-done-btn" style="margin-top:14px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1539,7 +1550,7 @@
 
     <div id="planResults" style="margin-top:16px;" hidden></div>
 
-    <button class="dialog-close" id="closeStoreCompare" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeStoreCompare" type="button" data-testid="modal-done-btn" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1596,7 +1607,7 @@
       <div class="hint" id="flyerSaveStoreStatus" style="margin-top:8px;"></div>
     </div>
 
-    <button class="dialog-close" id="closeFlyer" type="button" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
+    <button class="dialog-close" id="closeFlyer" type="button" data-testid="modal-done-btn" style="margin-top:16px;background:var(--surface);color:var(--ink);border:1.5px solid var(--border);">Done</button>
   </div>
 </dialog>
 
@@ -1621,7 +1632,7 @@
     </form>
     <ul class="meal-list" id="mealList"></ul>
     <div class="meal-empty" id="mealEmpty" hidden>No meals added yet — planning one will add what it needs straight to your sorted list.</div>
-    <button class="dialog-close" id="closeMealPlan" type="button">Done</button>
+    <button class="dialog-close" id="closeMealPlan" type="button" data-testid="modal-done-btn">Done</button>
   </div>
 </dialog>
 
@@ -8297,6 +8308,119 @@
     updateRecipe: updateRecipeInVault,
     refreshRecipeList: renderRecipeList
   });
+
+  // ---------- Crawler / demo automation: ?tab= & ?demo=true ----------
+  (function wireAutomationHooks(){
+    document.querySelectorAll(".dialog-close").forEach(function(btn){
+      var label = String(btn.textContent || "").trim().toLowerCase();
+      if(label === "done" || label === "close" || label.indexOf("back") === 0){
+        if(!btn.getAttribute("data-testid")) btn.setAttribute("data-testid", "modal-done-btn");
+      }
+    });
+
+    function setActiveViewTab(tab){
+      var groceriesBtn = document.getElementById("tabGroceriesBtn");
+      var dinnerBtn = document.getElementById("dinnerScanBtn");
+      var manageBtn = document.getElementById("tabManageNavBtn");
+      function mark(el, on){
+        if(!el) return;
+        if(on) el.setAttribute("aria-current", "page");
+        else el.removeAttribute("aria-current");
+      }
+      mark(groceriesBtn, tab === "groceries");
+      mark(manageBtn, tab === "manage");
+      mark(dinnerBtn, tab === "dinner");
+    }
+
+    function dismissBlockingOverlays(){
+      try{ closeUpgradeGate(); }catch(e){}
+      var gate = document.getElementById("accessGate");
+      if(gate) gate.hidden = true;
+      document.body.classList.remove("gated");
+      document.querySelectorAll("dialog[open]").forEach(function(dlg){
+        try{ dlg.close(); }catch(e){}
+      });
+    }
+
+    function applyDemoPrefill(){
+      if(!state.items || !state.items.length){
+        addItems("Baby spinach, Honeycrisp apples, Yellow onions, Chicken thighs, Salmon fillets, Jasmine rice, Black beans, Whole milk, Greek yogurt, Salted butter, Frozen peas, Paper towels");
+      }
+      if(!state.pantryItems) state.pantryItems = {};
+      var pantrySamples = ["eggs", "butter", "cheddar cheese", "leftover rice", "spinach", "garlic", "olive oil"];
+      var stamped = false;
+      pantrySamples.forEach(function(name){
+        var key = name.toLowerCase();
+        if(!state.pantryItems[key]){
+          state.pantryItems[key] = { addedDate: new Date().toISOString().slice(0, 10) };
+          stamped = true;
+        }
+      });
+      if(stamped || (state.items && state.items.length)){
+        saveState();
+        render();
+      }
+    }
+
+    function openDinnerView(){
+      try{ syncPantryAvailability(); }catch(e){}
+      try{ renderPantryPhotoGrid(); }catch(e){}
+      if(dinnerScanStatus) dinnerScanStatus.textContent = "";
+      mealSuggestReturnTo = "dinner";
+      if(dinnerScanDialog && typeof dinnerScanDialog.showModal === "function"){
+        dinnerScanDialog.showModal();
+      }
+    }
+
+    function openManageView(){
+      openAccountSettings();
+    }
+
+    function openGroceriesView(){
+      if(dinnerScanDialog && dinnerScanDialog.open) dinnerScanDialog.close();
+      var settingsDlg = document.getElementById("settingsDialog");
+      if(settingsDlg && settingsDlg.open) settingsDlg.close();
+      var listArea = document.getElementById("listArea");
+      if(listArea && listArea.scrollIntoView) listArea.scrollIntoView({ block: "start" });
+      setActiveViewTab("groceries");
+    }
+
+    var tabGroceriesBtn = document.getElementById("tabGroceriesBtn");
+    var tabManageNavBtn = document.getElementById("tabManageNavBtn");
+    if(tabGroceriesBtn){
+      tabGroceriesBtn.addEventListener("click", function(){ openGroceriesView(); });
+    }
+    if(tabManageNavBtn){
+      tabManageNavBtn.addEventListener("click", function(){
+        dismissBlockingOverlays();
+        setActiveViewTab("manage");
+        openManageView();
+      });
+    }
+    var dinnerScanBtnEl = document.getElementById("dinnerScanBtn");
+    if(dinnerScanBtnEl){
+      dinnerScanBtnEl.addEventListener("click", function(){ setActiveViewTab("dinner"); }, true);
+    }
+
+    var params = new URLSearchParams(window.location.search || "");
+    var tab = String(params.get("tab") || "").toLowerCase();
+    var demo = params.get("demo") === "true";
+    if(!tab && !demo) return;
+
+    dismissBlockingOverlays();
+    if(demo) applyDemoPrefill();
+
+    if(tab === "dinner"){
+      setActiveViewTab("dinner");
+      openDinnerView();
+    } else if(tab === "manage"){
+      setActiveViewTab("manage");
+      openManageView();
+    } else {
+      setActiveViewTab("groceries");
+      openGroceriesView();
+    }
+  })();
 })();
 </script>
 <link rel="stylesheet" href="/js/recipe-vault/recipe-vault.css">
