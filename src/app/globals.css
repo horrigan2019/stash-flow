@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fffbf5;
+  --foreground: #262626;
+  --brand-amber: #b45309;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, #fde68a55, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, #fed7aa44, transparent 45%),
+    linear-gradient(180deg, #fff7ed 0%, #fafaf9 48%, #fffbeb 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), ui-sans-serif, sans-serif;
+  min-height: 100dvh;
+}
+
+@keyframes stash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aisle-stack > section {
+  animation: stash-rise 0.45s ease-out both;
+}
+
+.aisle-stack > section:nth-child(2) {
+  animation-delay: 0.04s;
+}
+.aisle-stack > section:nth-child(3) {
+  animation-delay: 0.08s;
+}
+.aisle-stack > section:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.aisle-stack > section:nth-child(5) {
+  animation-delay: 0.16s;
+}
+.aisle-stack > section:nth-child(6) {
+  animation-delay: 0.2s;
+}
+.aisle-stack > section:nth-child(7) {
+  animation-delay: 0.24s;
+}
+.aisle-stack > section:nth-child(8) {
+  animation-delay: 0.28s;
+}
+.aisle-stack > section:nth-child(9) {
+  animation-delay: 0.32s;
+}
+.aisle-stack > section:nth-child(10) {
+  animation-delay: 0.36s;
+}

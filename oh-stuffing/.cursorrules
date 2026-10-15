@@ -1,0 +1,15 @@
+# Token & Cost Conservation Rules
+
+1. SURGICAL MODIFICATIONS ONLY:
+   - Only edit or inspect the exact lines or files mentioned in the prompt.
+   - Never rewrite entire files if only changing a few lines or components.
+   - Use concise code diffs.
+
+2. RESTRICT SCOPE:
+   - Do not scan the whole repository or execute unprompted background searches.
+   - Do not launch subtasks, subagents, or background loops.
+   - Do not run unprompted terminal commands.
+
+3. DIRECT OUTPUT:
+   - Provide code changes immediately without conversational fluff or lengthy preambles.
+   
