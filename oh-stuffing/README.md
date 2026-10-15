@@ -2,7 +2,7 @@
 
 Your grocery & meal-planning app — ready to use in the browser.
 
-**Paid access:** email signup + Stripe ($7.99/mo or $49/yr). Core features (customize grocery, meal planning, leftover countdown, What's My Stock, etc.) unlock after an active subscription. See the root `README.md` for Vercel env vars and Stripe setup.
+**Paid access:** email signup + Stripe ($7.99/mo or $39/yr). Core features (customize grocery, meal planning, leftover countdown, What's My Stock, etc.) unlock after an active subscription. See the root `README.md` for Vercel env vars and Stripe setup.
 
 Local lists/meals still save on the device; accounts are for paid access (no Supabase).
 
