@@ -32,7 +32,12 @@ export async function POST(request: Request) {
     );
   }
 
-  await setSessionCookie(user);
+  try {
+    await setSessionCookie(user);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not sign in.";
+    return NextResponse.json({ error: message }, { status: 503 });
+  }
   return NextResponse.json({
     ok: true,
     session: toPublicSession(user, {

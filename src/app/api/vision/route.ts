@@ -1,99 +1,90 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, readSessionToken } from "@/lib/auth";
-import { isSubscribed, storeBackend } from "@/lib/store";
+import {
+  ALLOWED_MODELS,
+  MAX_OUTPUT_TOKENS,
+  requireAiAccess,
+  serverApiKey,
+} from "@/lib/ai-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+const MAX_IMAGES = 8;
+const MAX_BODY_BYTES = 12_000_000;
 
 type AnthropicErrorBody = {
   error?: { message?: string; type?: string };
 };
 
+function errorJson(status: number, type: string, message: string) {
+  return NextResponse.json({ error: { type, message } }, { status });
+}
+
+/**
+ * Keep only what the app sends (model, max_tokens, messages) so a subscriber
+ * can't use the server key for arbitrary models, huge outputs or system prompts.
+ */
+function sanitizeBody(raw: string): { body: Record<string, unknown> } | { error: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { error: "Request body must be JSON." };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { error: "Request body must be an object." };
+  }
+  const input = parsed as Record<string, unknown>;
+  const model = String(input.model || "");
+  if (!(ALLOWED_MODELS as readonly string[]).includes(model)) {
+    return { error: "That AI model isn't available." };
+  }
+  if (!Array.isArray(input.messages) || input.messages.length === 0 || input.messages.length > 4) {
+    return { error: "Request needs 1–4 messages." };
+  }
+  let images = 0;
+  for (const message of input.messages) {
+    const content = (message as { content?: unknown })?.content;
+    if (Array.isArray(content)) {
+      images += content.filter((block) => (block as { type?: unknown })?.type === "image").length;
+    }
+  }
+  if (images > MAX_IMAGES) {
+    return { error: `Send at most ${MAX_IMAGES} photos at a time.` };
+  }
+  const maxTokens = Math.min(Math.max(Number(input.max_tokens) || 1024, 1), MAX_OUTPUT_TOKENS);
+  return { body: { model, max_tokens: maxTokens, messages: input.messages } };
+}
+
 /**
  * CORS-safe proxy to Anthropic Messages API.
- * Paid feature: requires an authenticated, subscribed user.
+ * Paid feature: requires an authenticated, subscribed user under today's limit.
  * Product path (like Fiona): set ANTHROPIC_API_KEY as a Vercel env var.
- * Optional: send x-api-key for local/dev when the server env is not set.
  * End users never need (or see) an API key.
  */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    const hasCookie = Boolean(await readSessionToken());
-    const memoryBackend = storeBackend() === "memory";
-    // Cookie-present failures: avoid "Sign in" for a logged-in UI.
-    // When Upstash is missing, say so — that is the usual production cause.
-    if (hasCookie && memoryBackend) {
-      return NextResponse.json(
-        {
-          error: {
-            type: "configuration_error",
-            message:
-              "Photo AI can't load accounts on this server (no Upstash Redis). Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel → Production, then Redeploy. Or log out, sign back in, and Upgrade again so your session cookie carries the unlock.",
-          },
-        },
-        { status: 503 }
-      );
-    }
-    return NextResponse.json(
-      {
-        error: {
-          type: hasCookie ? "unavailable" : "auth_required",
-          message: hasCookie
-            ? "Your account session could not be loaded. Try again, or log out and sign back in."
-            : "Sign in to use Photo & AI features.",
-        },
-      },
-      { status: 401 }
-    );
-  }
-  if (!isSubscribed(user)) {
-    return NextResponse.json(
-      {
-        error: {
-          type: "subscription_required",
-          message:
-            "Photo pantry scans and AI recommendations need an Oh Stuffing Pro trial or subscription ($1.99/wk or $39.99/yr).",
-        },
-      },
-      { status: 402 }
-    );
+  const access = await requireAiAccess();
+  if ("error" in access) {
+    return errorJson(access.error.status, access.error.type, access.error.message);
   }
 
-  const envKey = (process.env.ANTHROPIC_API_KEY || "").trim();
-  const headerKey = (request.headers.get("x-api-key") || "").trim();
-  // Prefer server env; header is a local/dev fallback only when env is unset.
-  const apiKey = envKey || headerKey;
-
+  const apiKey = serverApiKey(request);
   if (!apiKey) {
-    return NextResponse.json(
-      {
-        error: {
-          type: "configuration_error",
-          // Actionable for the site owner; never ask shoppers for a key.
-          message:
-            "Photo AI isn't set up on the server yet (missing ANTHROPIC_API_KEY). Add it in Vercel → Settings → Environment Variables for Production, then Redeploy.",
-        },
-      },
-      { status: 503 }
+    // Actionable for the site owner; never ask shoppers for a key.
+    return errorJson(
+      503,
+      "configuration_error",
+      "Photo AI isn't set up on the server yet (missing ANTHROPIC_API_KEY). Add it in Vercel → Settings → Environment Variables for Production, then Redeploy."
     );
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: { type: "invalid_request_error", message: "Request body must be JSON." } },
-      { status: 400 }
-    );
+  const raw = await request.text();
+  if (raw.length > MAX_BODY_BYTES) {
+    return errorJson(413, "invalid_request_error", "Those photos are too large. Try fewer or smaller photos.");
   }
-
-  if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { error: { type: "invalid_request_error", message: "Request body must be an object." } },
-      { status: 400 }
-    );
+  const clean = sanitizeBody(raw);
+  if ("error" in clean) {
+    return errorJson(400, "invalid_request_error", clean.error);
   }
 
   let upstream: Response;
@@ -105,14 +96,11 @@ export async function POST(request: Request) {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(clean.body),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upstream request failed";
-    return NextResponse.json(
-      { error: { type: "api_error", message } },
-      { status: 502 }
-    );
+    return errorJson(502, "api_error", message);
   }
 
   const text = await upstream.text();
@@ -145,15 +133,10 @@ export async function POST(request: Request) {
       status: upstream.status,
       upstreamType: upstreamType || null,
     });
-    return NextResponse.json(
-      {
-        error: {
-          type: "configuration_error",
-          message:
-            "Photo AI could not authenticate with the AI provider. The site owner should check ANTHROPIC_API_KEY in Vercel (Production) — valid key from console.anthropic.com, then Redeploy.",
-        },
-      },
-      { status: 503 }
+    return errorJson(
+      503,
+      "configuration_error",
+      "Photo AI could not authenticate with the AI provider. The site owner should check ANTHROPIC_API_KEY in Vercel (Production) — valid key from console.anthropic.com, then Redeploy."
     );
   }
 
