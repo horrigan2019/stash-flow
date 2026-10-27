@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   getUserById,
   isSubscribed,
+  storeBackend,
   type SubscriptionStatus,
   type UserRecord,
 } from "@/lib/store";
@@ -20,9 +21,14 @@ export type SessionPayload = {
   trialEndsAt?: string | null;
 };
 
-function authSecret(): string {
+function authSecret(): string | null {
   const secret = (process.env.AUTH_SECRET || "").trim();
   if (secret) return secret;
+  // The fallback is public in this repo, so production must never sign with it.
+  if (process.env.NODE_ENV === "production") {
+    console.error("[auth] AUTH_SECRET is not set — sign-in is disabled.");
+    return null;
+  }
   // Local/dev fallback — sessions reset across restarts; fine without Redis too.
   return "oh-stuffing-dev-secret-change-me";
 }
@@ -43,15 +49,19 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 function sign(payload: SessionPayload): string {
+  const secret = authSecret();
+  if (!secret) throw new Error("Sign-in isn't set up on the server yet (missing AUTH_SECRET).");
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = createHmac("sha256", authSecret()).update(body).digest("base64url");
+  const sig = createHmac("sha256", secret).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
 function unsign(token: string): SessionPayload | null {
+  const secret = authSecret();
+  if (!secret) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = createHmac("sha256", authSecret()).update(body).digest("base64url");
+  const expected = createHmac("sha256", secret).update(body).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
@@ -111,6 +121,9 @@ export async function getSessionUser(): Promise<UserRecord | null> {
   if (!payload) return null;
   const user = await getUserById(payload.userId);
   if (user) return user;
+  // With shared storage, a missing record means the account is gone — don't trust
+  // the cookie's snapshot (it could be up to 30 days stale).
+  if (storeBackend() === "upstash") return null;
 
   // Vercel runs API routes in separate serverless isolates. Without Upstash, the
   // in-memory user Map is NOT shared — /api/auth/session may find the user while

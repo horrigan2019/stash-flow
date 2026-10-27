@@ -85,7 +85,13 @@ export function normalizeEmail(email: string): string {
 
 export function isSubscribed(user: UserRecord | null | undefined): boolean {
   if (!user) return false;
-  return user.subscriptionStatus === "active" || user.subscriptionStatus === "trialing";
+  if (user.subscriptionStatus === "active") return true;
+  if (user.subscriptionStatus !== "trialing") return false;
+  // Stripe ends real trials via webhook; mock trials have nothing to end them.
+  if (user.stripeSubscriptionId?.startsWith("mock_") && user.trialEndsAt) {
+    return Date.parse(user.trialEndsAt) > Date.now();
+  }
+  return true;
 }
 
 export async function getUserById(id: string): Promise<UserRecord | null> {
@@ -128,6 +134,23 @@ export async function createUser(input: {
   };
   await saveUser(user);
   return user;
+}
+
+const USAGE_PREFIX = "ohstuffing:usage:";
+
+/** Count one AI call for today (UTC) and return the new total. */
+export async function bumpDailyUsage(userId: string): Promise<number> {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = `${USAGE_PREFIX}${userId}:${day}`;
+  if (redisConfigured()) {
+    const count = Number(await redisCommand<number>("INCR", key)) || 0;
+    if (count === 1) await redisCommand("EXPIRE", key, 2 * 24 * 60 * 60);
+    return count;
+  }
+  const bag = memoryStore();
+  const count = (Number(bag.get(key)) || 0) + 1;
+  bag.set(key, String(count));
+  return count;
 }
 
 export function storeBackend(): "upstash" | "memory" {

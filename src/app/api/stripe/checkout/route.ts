@@ -51,6 +51,14 @@ export async function POST(request: Request) {
   }
 
   // Local / missing Stripe keys: start a mock 7-day trial unlock.
+  // Never in production — that would hand out free Pro with no card.
+  if (!stripeConfigured() && process.env.NODE_ENV === "production") {
+    console.error("[checkout] STRIPE_SECRET_KEY is not set — refusing mock trial.");
+    return NextResponse.json(
+      { error: "Payments aren't set up on the server yet. Please try again later." },
+      { status: 503 }
+    );
+  }
   if (!stripeConfigured()) {
     user.subscriptionStatus = "trialing";
     user.plan = plan;
@@ -86,9 +94,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
-  const priceId = body.priceId?.startsWith("price_")
-    ? body.priceId
-    : priceIdForPlan(plan);
+  // Only the configured prices — never a price id sent by the browser.
+  const priceId = priceIdForPlan(plan);
   if (priceId.startsWith("price_mock_")) {
     return NextResponse.json(
       {

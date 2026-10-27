@@ -1,10 +1,9 @@
 /* Oh Stuffing — minimal offline shell cache. Never intercepts /api/* (vision stays network-only). */
-const CACHE = "oh-stuffing-shell-v50";
+const CACHE = "oh-stuffing-shell-v51";
 const SHELL = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
-  "/icons/mascot.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/apple-touch-icon.png",
