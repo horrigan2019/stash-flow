@@ -116,6 +116,11 @@
     width:48px; height:48px; border-radius:14px; flex:none;
     background:#FBF7F0; object-fit:cover;
   }
+  /* Shown if the mascot image ever fails to load, so no broken-image box appears. */
+  .mascot-fallback{
+    display:flex; align-items:center; justify-content:center; font-size:1.6rem; line-height:1;
+  }
+  .empty .mascot-fallback{ font-size:4rem; }
   .brand h1{ font-size:1.5rem; color:var(--accent); }
   .brand .tag{ color:var(--muted); font-size:.8rem; }
   .more-menu{
@@ -923,7 +928,7 @@
     <div class="brand-bar">
       <div class="brand">
         <div class="brand-id">
-          <img class="mascot-header" src="/icons/mascot.png" width="48" height="48" alt="">
+          <img class="mascot-header" src="/icons/icon-192.png" width="48" height="48" alt="" onerror="this.onerror=null;var f=document.createElement('span');f.className=this.className+' mascot-fallback';f.setAttribute('aria-hidden','true');f.textContent='🛒';this.replaceWith(f);">
           <div class="brand-copy">
             <h1>Oh Stuffing</h1>
             <div class="tag">Type once. It sorts the aisles — and brings back your regulars on its own.</div>
@@ -3743,7 +3748,7 @@
         ? "Nothing on the list yet."
         : listNow
           ? "Nothing on the list yet.<br>Type or say what you need above."
-          : '<img class="mascot-empty" src="/icons/mascot.png" width="132" height="132" alt="">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
+          : '<img class="mascot-empty" src="/icons/icon-192.png" width="132" height="132" alt="" onerror="this.onerror=null;var f=document.createElement(\'span\');f.className=this.className+\' mascot-fallback\';f.setAttribute(\'aria-hidden\',\'true\');f.textContent=\'🛒\';this.replaceWith(f);">Your list is empty.<br>Type or say what you need above — Oh Stuffing will sort it by aisle.';
       listArea.appendChild(empty);
       return;
     }
