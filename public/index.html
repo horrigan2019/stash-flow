@@ -809,36 +809,6 @@
       linear-gradient(165deg, #1B1812 0%, #242019 50%, #1E2A20 100%);
   }
   :root[data-theme="dark"] .access-panel{ background:rgba(36,32,25,.9); }
-
-  /* ---------- Screenshot / Presentation Mode ---------- */
-  .present-only{ display:none; }
-  body.presentation-mode .present-only{ display:block; }
-  body.presentation-mode #accountChip,
-  body.presentation-mode #accountSettingsRow,
-  body.presentation-mode #accessGate,
-  body.presentation-mode #betaToast,
-  body.presentation-mode #dealBanner,
-  body.presentation-mode #pantryUnavailable,
-  body.presentation-mode #dinnerUnavailable,
-  body.presentation-mode #flyerUnavailable,
-  body.presentation-mode #recipeUnavailableNote,
-  body.presentation-mode #dinnerScanStatus,
-  body.presentation-mode #pantryStatus,
-  body.presentation-mode #flyerStatus{ display:none !important; }
-  /* Stronger secondary text on the cream background for crisp promo shots. */
-  body.presentation-mode{ --muted:#4A4237; }
-  .present-dinners{ margin:4px 0 16px; }
-  .present-dinners h3{ font-size:1rem; color:#2B2620; margin:0 0 10px; }
-  .present-dinner{
-    background:#FFFFFF; border:1.5px solid #E4DCC9; border-radius:16px;
-    padding:12px 14px; margin-bottom:10px; box-shadow:0 2px 8px rgba(43,38,32,.06);
-  }
-  .present-dinner-badge{
-    display:inline-block; background:#3F6B4A; color:#FFFFFF; font-weight:700;
-    font-size:.78rem; border-radius:999px; padding:3px 10px; margin-bottom:6px;
-  }
-  .present-dinner-name{ font-family:var(--font-display, Georgia, serif); font-weight:700; font-size:1.05rem; color:#2B2620; }
-  .present-dinner-desc{ font-size:.86rem; color:#4A4237; margin-top:3px; line-height:1.35; }
 </style>
 </head>
 <body>
@@ -1117,14 +1087,6 @@
       </div>
       <div class="hint" style="margin-top:6px;">Changes the app's main accent color — this stays the same whether you're in light or dark mode, or high contrast.</div>
     </div>
-    <div class="field-row">
-      <label>Screenshot / Presentation Mode</label>
-      <div class="seg" id="presentationSeg">
-        <button data-val="off" type="button" aria-pressed="true">Off</button>
-        <button data-val="on" type="button" aria-pressed="false">On</button>
-      </div>
-      <div class="hint" style="margin-top:6px;">Shows a sample list and dinner ideas for promo screenshots. Your real list is kept safe and comes back when you turn this off.</div>
-    </div>
     <div class="hint" style="margin-top:4px;margin-bottom:8px;">Photo &amp; AI (pantry scans and meal ideas) uses your Oh Stuffing subscription — you never paste an API key here. Free list features stay free.</div>
     <div class="field-row" id="accountSettingsRow">
       <label>Account</label>
@@ -1381,13 +1343,7 @@
 <dialog id="dinnerScanDialog">
   <div class="dialog-inner">
     <h2>Scan Fridge &amp; Pantry for Dinner Ideas</h2>
-    <div class="present-only present-dinners" aria-label="Dinner ideas">
-      <h3>Tonight's dinner ideas</h3>
-      <div class="present-dinner"><span class="present-dinner-badge">⚡ 20 min</span><div class="present-dinner-name">Crispy Skillet Tacos</div><div class="present-dinner-desc">Chicken thighs, smashed avocado, lime and a quick slaw.</div></div>
-      <div class="present-dinner"><span class="present-dinner-badge">🍋 30 min</span><div class="present-dinner-name">Lemon Herb Sheet-Pan Chicken</div><div class="present-dinner-desc">Golden chicken thighs roasted with potatoes and green beans.</div></div>
-      <div class="present-dinner"><span class="present-dinner-badge">🥪 15 min</span><div class="present-dinner-name">Sourdough Grilled Cheese &amp; Tomato Soup</div><div class="present-dinner-desc">Melty cheddar on toasted sourdough with a bowl of tomato soup.</div></div>
-    </div>
-        <div id="dinnerUnavailable" class="hint" hidden>You can still take or pick photos below. Photo AI is temporarily unavailable — try again later.</div>
+    <div id="dinnerUnavailable" class="hint" hidden>You can still take or pick photos below. Photo AI is temporarily unavailable — try again later.</div>
     <div class="hint" style="margin-bottom:10px;">Add photos of your fridge and pantry, then get dinner ideas in one step — spot what’s there and cook from it.</div>
     <div class="camera-grid" id="dinnerPhotoGrid"></div>
     <div class="hint" style="margin:6px 0 12px;">On a phone, this opens your camera directly. On a computer, it opens your file picker instead. Photos are kept on this device only (shared with What’s My Stock).</div>
@@ -1692,13 +1648,7 @@
 <dialog id="mealPlanDialog">
   <div class="dialog-inner">
     <h2>Meal Planning</h2>
-    <div class="present-only present-dinners" aria-label="Dinner ideas">
-      <h3>Tonight's dinner ideas</h3>
-      <div class="present-dinner"><span class="present-dinner-badge">⚡ 20 min</span><div class="present-dinner-name">Crispy Skillet Tacos</div><div class="present-dinner-desc">Chicken thighs, smashed avocado, lime and a quick slaw.</div></div>
-      <div class="present-dinner"><span class="present-dinner-badge">🍋 30 min</span><div class="present-dinner-name">Lemon Herb Sheet-Pan Chicken</div><div class="present-dinner-desc">Golden chicken thighs roasted with potatoes and green beans.</div></div>
-      <div class="present-dinner"><span class="present-dinner-badge">🥪 15 min</span><div class="present-dinner-name">Sourdough Grilled Cheese &amp; Tomato Soup</div><div class="present-dinner-desc">Melty cheddar on toasted sourdough with a bowl of tomato soup.</div></div>
-    </div>
-        <button type="button" class="chip-btn" id="mealPlanImportRecipeBtn" style="width:100%;justify-content:center;margin-bottom:12px;padding:12px 14px;font-size:.95rem;">🔗 Import Recipe from Link / Social Media</button>
+    <button type="button" class="chip-btn" id="mealPlanImportRecipeBtn" style="width:100%;justify-content:center;margin-bottom:12px;padding:12px 14px;font-size:.95rem;">🔗 Import Recipe from Link / Social Media</button>
     <form class="meal-form" id="mealForm">
       <div>
         <label for="mealName" style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;">What are you making?</label>
@@ -1724,31 +1674,6 @@
 <script>
 (function(){
   "use strict";
-
-  // ---------- Screenshot / Presentation Mode ----------
-  // Uses its own storage key and never syncs to the account, so the real list is untouched.
-  // Turn on with ?present=1 (or Settings), off with ?present=0. Lasts for this tab only.
-  var PRESENT_FLAG = "ostuffing.presentation";
-  var PRESENT_STORE_KEY = "ostuffing.presentation.v1";
-  var PRESENTATION = (function(){
-    var param = null;
-    try{ param = new URLSearchParams(window.location.search).get("present"); }catch(e){}
-    try{
-      if(param === "1"){
-        sessionStorage.setItem(PRESENT_FLAG, "1");
-        localStorage.removeItem(PRESENT_STORE_KEY); // fresh sample data each time it's turned on
-      } else if(param === "0"){
-        sessionStorage.removeItem(PRESENT_FLAG);
-      }
-      return sessionStorage.getItem(PRESENT_FLAG) === "1";
-    }catch(e){ return param === "1"; }
-  })();
-  if(PRESENTATION) document.body.classList.add("presentation-mode");
-  function setPresentationMode(on){
-    var url = new URL(window.location.href);
-    url.searchParams.set("present", on ? "1" : "0");
-    window.location.href = url.toString();
-  }
 
   function trackEvent(eventName, properties){
     try{
@@ -1825,7 +1750,6 @@
   }
 
   function hasProAccess(){
-    if(PRESENTATION) return true;
     return !!(isBetaTester() || accessSession.subscribed || accessSession.isPro);
   }
   function updateTrialCta(){
@@ -2777,7 +2701,7 @@
   }
 
   // ---------- Storage ----------
-  var STORE_KEY = PRESENTATION ? PRESENT_STORE_KEY : "ostuffing.v1";
+  var STORE_KEY = "ostuffing.v1";
   function loadState(){
     try{
       var raw = localStorage.getItem(STORE_KEY);
@@ -3183,7 +3107,6 @@
     return copy;
   }
   function pushAccountStash(){
-    if(PRESENTATION) return Promise.resolve();
     if(!accessSession || !accessSession.authenticated) return Promise.resolve();
     return fetch("/api/stash", {
       method: "PUT",
@@ -3197,7 +3120,6 @@
     });
   }
   function scheduleAccountPush(){
-    if(PRESENTATION) return;
     if(!accountStashReady || stashApplying || !accessSession || !accessSession.authenticated) return;
     if(stashPushTimer) clearTimeout(stashPushTimer);
     stashPushTimer = setTimeout(function(){
@@ -3206,7 +3128,6 @@
     }, 800);
   }
   function syncAccountStash(){
-    if(PRESENTATION) return Promise.resolve("skipped");
     if(!accessSession || !accessSession.authenticated) return Promise.resolve("skipped");
     if(stashSyncing && stashSyncPromise) return stashSyncPromise;
     stashSyncing = true;
@@ -5652,14 +5573,6 @@
       b.setAttribute("aria-pressed", (b.getAttribute("data-val") === val).toString());
     });
   }
-  if(PRESENTATION && !state.presentationSeeded) seedPresentation();
-  restorePrefUI("presentationSeg", PRESENTATION ? "on" : "off");
-  document.getElementById("presentationSeg").addEventListener("click", function(e){
-    var btn = e.target.closest("button[data-val]");
-    if(!btn) return;
-    var on = btn.getAttribute("data-val") === "on";
-    if(on !== PRESENTATION) setPresentationMode(on);
-  });
   restorePrefUI("textSizeSeg", state.prefs.textSize);
   restorePrefUI("contrastSeg", state.prefs.contrast);
   restorePrefUI("themeSeg", state.prefs.theme);
@@ -8533,23 +8446,6 @@
     if(changed) saveState();
   }
 
-  function seedPresentation(){
-    var sample = [
-      ["Apples", "produce", false], ["Bananas", "produce", true], ["Avocados", "produce", false],
-      ["Limes", "produce", true], ["Sourdough Bread", "bakery", true],
-      ["Chicken Thighs", "meat", false], ["Ground Beef", "meat", false]
-    ];
-    state.items = sample.map(function(row, i){
-      return normalizeGroceryItem({
-        id: "present" + i, text: row[0], dept: DEPT_BY_ID[row[1]] ? row[1] : classify(row[0]),
-        done: row[2], meals: [], quantity: 1, unit: ""
-      });
-    });
-    state.prefs = Object.assign({}, state.prefs, { theme: "light", contrast: "normal", accentColor: "green" });
-    state.presentationSeeded = true;
-    syncActiveListItems();
-    saveState();
-  }
   reclassifyUnsorted();
   var assistCount = 0;
   state.items.forEach(function(it){
