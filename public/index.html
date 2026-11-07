@@ -3491,6 +3491,69 @@
     }
     return parts.filter(Boolean);
   }
+  // Spoken and scanned lists often arrive as one run-on line ("Eggs apples milk bread")
+  // with no commas. Break it into items using the aisle dictionary, so known multi-word
+  // names ("peanut butter", "half and half") stay whole and "and" between items is dropped.
+  var RUN_ON_JOINERS = { "and":1, "also":1, "plus":1, "then":1, "um":1, "uh":1 };
+  var RUN_ON_LEAD_IN = /^(?:(?:i|we)\s+(?:need|want|gotta get|have to get|should get)|(?:please\s+)?(?:add|get|grab|buy|pick up))\s+/i;
+  function runOnWord(w){
+    return String(w).toLowerCase().replace(/^[^a-z0-9%']+|[^a-z0-9%']+$/g, "");
+  }
+  function splitAtJoiners(chunk){
+    var originals = chunk.replace(RUN_ON_LEAD_IN, "").split(/\s+/).filter(function(w){ return runOnWord(w); });
+    var words = originals.map(runOnWord);
+    var segments = [];
+    var start = 0;
+    var i = 0;
+    while(i < words.length){
+      var end = longestProductEnd(words, i);
+      if(end !== -1){ i = end; continue; }
+      if(RUN_ON_JOINERS[words[i]]){
+        if(i > start) segments.push(originals.slice(start, i).join(" "));
+        start = i + 1;
+      }
+      i++;
+    }
+    if(start < words.length) segments.push(originals.slice(start).join(" "));
+    return segments;
+  }
+  function cleanRunOnPart(text){
+    return String(text).replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9%)]+$/g, "").trim();
+  }
+  // Voice: always split the transcript into separate items.
+  function splitSpokenList(raw){
+    var out = [];
+    String(raw || "").split(/[,;\r\n]+/).forEach(function(chunk){
+      splitAtJoiners(chunk.trim()).forEach(function(segment){
+        splitRunOn(segment).map(cleanRunOnPart).filter(Boolean).forEach(function(p){ out.push(p); });
+      });
+    });
+    return out;
+  }
+  // Uploaded / photographed lists: a line is only broken up when every piece is a known
+  // grocery item, so an unfamiliar name like "Grandma's Stuffing Mix" stays one line.
+  function splitListLine(line){
+    var trimmed = String(line || "").replace(/\s+/g, " ").trim();
+    if(!trimmed) return [];
+    var pieces = [];
+    splitAtJoiners(trimmed).forEach(function(segment){
+      splitRunOn(segment).forEach(function(p){ pieces.push(cleanRunOnPart(p)); });
+    });
+    pieces = pieces.filter(Boolean);
+    if(pieces.length < 2) return [trimmed];
+    var allKnown = pieces.every(function(p){
+      var key = stripQuantity(p);
+      return !!(state.learned[key] || lookupKeyword(key) || lookupKeyword(p.toLowerCase()));
+    });
+    return allKnown ? pieces : [trimmed];
+  }
+  function splitUploadedList(raw){
+    var out = [];
+    String(raw || "").split(/,|\r\n|\n|\r/).forEach(function(line){
+      splitListLine(line).forEach(function(p){ out.push(p); });
+    });
+    return out.join("\n");
+  }
   function splitEntry(raw){
     if(!raw) return [];
     // Only commas and line breaks delimit items — never whitespace inside a name
@@ -5214,7 +5277,7 @@
     var runBtn = document.getElementById("uploadListRunBtn");
     if(!photo){
       var before = state.items.length;
-      addItems(pasted);
+      addItems(splitUploadedList(pasted));
       var added = state.items.length - before;
       uploadListStatus.textContent = added
         ? ("Added " + added + " item" + (added === 1 ? "" : "s") + ", sorted into aisles.")
@@ -5253,7 +5316,7 @@
         return;
       }
       var before = state.items.length;
-      addItems(names.join("\n"), null, { silent: true });
+      addItems(splitUploadedList(names.join("\n")), null, { silent: true });
       var added = state.items.length - before;
       uploadListStatus.textContent = "Added " + added + " item" + (added === 1 ? "" : "s") + ", sorted into aisles.";
       uploadListText.value = "";
@@ -5742,7 +5805,7 @@
       micBtn.setAttribute("aria-pressed","false");
       listenBanner.hidden = true;
       if(finalBuffer.trim()){
-        addItems(finalBuffer);
+        addItems(splitSpokenList(finalBuffer).join("\n"));
         trackEvent("item_added", { method: "voice" });
         finalBuffer = "";
       }
